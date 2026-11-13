@@ -15,6 +15,7 @@
     "@askcalls/adapter-runtime": "workspace:*",
     "@askcalls/api-contract": "workspace:*",
     "@askcalls/client-core": "workspace:*",
+    "@askcalls/crypto": "workspace:*",
     "@askcalls/domain": "workspace:*",
     "@askcalls/ui": "workspace:*",
     "jose": "6.2.17",
