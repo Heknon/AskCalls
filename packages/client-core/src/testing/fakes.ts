@@ -33,7 +33,12 @@ function fnv1a(text: string): number {
 export class FakeEmbedder implements Embedder {
   readonly modelId = 'fake-hash-embedder';
   readonly dimensions = 384 as const;
+  readonly minSimilarity?: number;
   calls = 0;
+
+  constructor(opts: { minSimilarity?: number } = {}) {
+    if (opts.minSimilarity !== undefined) this.minSimilarity = opts.minSimilarity;
+  }
 
   async embed(texts: string[]): Promise<Float32Array[]> {
     this.calls++;

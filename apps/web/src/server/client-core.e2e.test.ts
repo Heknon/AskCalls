@@ -33,7 +33,7 @@ import {
   updateCallMeta,
   updateCallTags,
 } from '@askcalls/client-core';
-import { fakeAudio, MemoryBulkStateStore } from '@askcalls/client-core/testing/fakes';
+import { FakeEmbedder, fakeAudio, MemoryBulkStateStore } from '@askcalls/client-core/testing/fakes';
 import { unzipSync } from 'fflate';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ClientDevice, type ClientHarness, startClientHarness } from './testing/client';
@@ -168,6 +168,20 @@ describe('client-core end to end against the route handlers', () => {
     expect(top.snippet).toContain('photovoltaic');
     const marked = top.highlights.map((x) => top.snippet!.slice(x.start, x.end).toLowerCase());
     expect(marked).toEqual(expect.arrayContaining(['photovoltaic', 'panels', 'price']));
+  });
+
+  it("drops meaning hits under the embedder's floor and ends the results there", async () => {
+    const floored = createClientContext({
+      api: browser.ctx.api,
+      session: browser.session,
+      embedder: new FakeEmbedder({ minSimilarity: 0.1 }),
+    });
+    const unrelated = { text: 'zebra giraffe', semantic: true, limit: 1 };
+    expect((await searchCalls(browser.ctx, unrelated)).items).toHaveLength(1);
+    expect(await searchCalls(floored, unrelated)).toMatchObject({ items: [], nextCursor: null });
+    const related = await searchCalls(floored, { text: 'photovoltaic panels', semantic: true });
+    expect(related.items.map((i) => i.id)).toEqual([ids.en]);
+    expect(related.items[0]!.score).toBeGreaterThanOrEqual(0.1);
   });
 
   it('opens a call: decrypts, verifies the signature, exports TXT and SRT', async () => {

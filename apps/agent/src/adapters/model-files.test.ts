@@ -19,6 +19,7 @@ describe('agent embedding model files', () => {
   it('pins exactly the browser build', () => {
     expect(EMBEDDING_MODEL.build).toBe(BROWSER_MODEL.build);
     expect(EMBEDDING_MODEL.dtype).toBe(BROWSER_MODEL.dtype);
+    expect(EMBEDDING_MODEL.minSimilarity).toBe(BROWSER_MODEL.minSimilarity);
     expect(EMBEDDING_MODEL.files).toEqual(BROWSER_MODEL.files);
     expect(EMBEDDING_MODEL_ID).toBe(BROWSER_MODEL_ID);
   });

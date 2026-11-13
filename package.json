@@ -30,7 +30,8 @@
     "release:dry-run": "bun scripts/release/dry-run.ts",
     "models:derive": "bun scripts/models/derive-keep-set.ts",
     "models:build": "bun scripts/models/build-e5.ts",
-    "models:publish": "bun scripts/models/publish.ts"
+    "models:publish": "bun scripts/models/publish.ts",
+    "models:calibrate": "bun scripts/models/calibrate-similarity.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.7",

@@ -27,6 +27,7 @@ the wire with gzip.
 | `prune-e5.ts` | The pruning: model rows, tokenizer remap, `config.json`, manifest, build hash. |
 | `build-e5.ts` | `bun run models:build [outDir]`: original files + keep-set → `<outDir>/<build>/`. |
 | `publish.ts` | `bun run models:publish`: uploads a build to the model bucket (skips it when already there). |
+| `calibrate-similarity.ts`, `similarity-corpus.json` | `bun run models:calibrate`: the meaning-search floor (`minSimilarity`) against made-up calls and queries. |
 | `source.ts`, `files.ts` | Pinned download of the original files into `node_modules/.cache/askcalls-models`. |
 
 ## Toolchain
@@ -137,7 +138,10 @@ Vercel builds for an instance with `EMBEDDING_MODEL_URL` should set
 2. `bun run models:build`: prints the manifest.
 3. Copy the build hash, keep-set hash/rows and file pins into `apps/web/src/client/assets.ts`
    and `apps/agent/src/adapters/model-files.ts` (tests check they agree).
-4. Deploy. `deploy.yml` runs `bun run models:publish` before the app goes live, on dev and on
+4. `bun run models:calibrate` and set `minSimilarity` in both files. The model scores every
+   pair between about 0.7 and 0.9, so meaning search drops calls under this floor; at 0.78 it
+   keeps 82% of related pairs and shows 32% of unrelated ones.
+5. Deploy. `deploy.yml` runs `bun run models:publish` before the app goes live, on dev and on
    production, so the CDN has the new build before any page pins it. Old builds stay in the
    bucket, so pages still running the previous version keep working.
 
