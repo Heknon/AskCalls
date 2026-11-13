@@ -12,6 +12,7 @@ import * as recording from '../../app/api/calls/[id]/recording/route';
 import * as recordingUpload from '../../app/api/calls/[id]/recording-upload/route';
 import * as callById from '../../app/api/calls/[id]/route';
 import * as calls from '../../app/api/calls/route';
+import * as clientConfig from '../../app/api/client-config/route';
 import * as cron from '../../app/api/cron/retention/route';
 import * as linkSession from '../../app/api/devices/link/[session]/route';
 import * as link from '../../app/api/devices/link/route';
@@ -44,6 +45,7 @@ type Module = Partial<Record<'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', NextHa
 /** Every API route module, by its Next.js path pattern. */
 export const ROUTES: Array<[string, Module]> = [
   ['/api/me', me],
+  ['/api/client-config', clientConfig],
   ['/api/account', account],
   ['/api/keyring', keyring],
   ['/api/keyring/[id]', keyringById],
