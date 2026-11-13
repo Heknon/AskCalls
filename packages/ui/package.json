@@ -16,10 +16,15 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
+    "@ibm/plex-mono": "2.5.0",
+    "@ibm/plex-sans": "1.1.0",
+    "@ibm/plex-sans-arabic": "1.1.0",
+    "@ibm/plex-sans-hebrew": "1.1.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.72.0",
     "radix-ui": "1.8.1",
+    "react-day-picker": "9.14.0",
     "tailwind-merge": "3.7.0"
   },
   "peerDependencies": {
@@ -27,8 +32,12 @@
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.10",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "happy-dom": "21.0.4",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   }

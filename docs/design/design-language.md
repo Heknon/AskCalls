@@ -1,6 +1,6 @@
 # AskCalls design language
 
-The single reference for keeping the UI consistent and for not building the same thing twice. Read this before adding or changing anything in `packages/ui` or a screen.
+The single reference for keeping the UI consistent and for not building the same thing twice. Read this before adding or changing anything in `packages/ui` or a screen. Every entry below is built in `packages/ui/src/components/<Name>.tsx` (import `@askcalls/ui/components/<Name>`), and the gallery at `/dev/components` (development only) shows each one in every variant and state, in both themes and both directions.
 
 - **`design-system.md`** says what the tokens and visual rules are.
 - **This file** says what each component *means*, when to use it, and which screens use it.
@@ -22,7 +22,7 @@ Contents
  Layer 3  Screens            apps/web/src/app/**           compose product components, own data loading and routing
               │  uses only
               ▼
- Layer 2  Product components packages/ui/src/product/*     one component per meaning (this catalog)
+ Layer 2  Product components packages/ui/src/components/*  one component per meaning (this catalog)
               │  composes
               ▼
  Layer 1  Primitives         packages/ui/src/primitives/*  shadcn/ui (Radix) components, styled only through tokens.css
@@ -136,6 +136,21 @@ One icon per concept; one concept per icon. If a new concept needs an icon, add 
 | `undo-2` | Undo | |
 | `keyboard` | Keyboard shortcuts | |
 | `wand-sparkles` | Added by an auto-tag rule | AI features (we do not decorate AI) |
+| `sliders-horizontal` | The filters (end of the folded filter summary) | Settings |
+| `file-key` | The recovery code (unlock method row) | Passkeys, tokens |
+| `rectangle-ellipsis` | The passphrase (unlock method row) | Passwords of third parties |
+| `eye` / `eye-off` | Show / hide a secret being typed | Visibility of content to others |
+| `rewind` / `fast-forward` | Player back / forward 5 s (never mirrored) | Undo, retry |
+| `play` / `pause` | Play / pause a recording or the demo video | |
+| `copy` | Copy to the clipboard; a duplicate import item | Download |
+| `printer` | Print the recovery code | |
+| `pencil` | Rename or edit a row | Notes (use `notebook-pen`) |
+| `ellipsis` | More actions | |
+| `x` | Remove a chip or term, clear a field, close | Delete permanently (use `trash-2`), revoke (use `unlink`) |
+| `plus` | Add (a tag, a condition, an action) | |
+| `file-text` / `file-audio` | Transcription / recording backups (provider cards) | |
+| `mail` | The email port (instance) | |
+| `clock` | Queued, not started | Dates (use `calendar`) |
 
 ### 2.5 Motion meanings
 
@@ -199,7 +214,7 @@ Before writing code, answer in the PR description:
 1. What product concept does it represent? One sentence. If it is purely visual, it belongs in primitives, not here.
 2. Search this catalog for the concept and its synonyms. Can an existing component take a new meaning-based variant instead?
 3. If it looks like an existing component, add a "Not to be confused with" line to both entries explaining the difference in meaning.
-4. Which primitives does it compose? It must not introduce new colours, sizes or radii outside `tokens.css`.
+4. Which primitives does it compose? It must not introduce new colours, sizes or radii outside `packages/ui/src/styles/tokens.css`.
 5. Define all states: default, hover, focus, disabled, loading, empty, error, and locked if it shows user content.
 6. Define a11y: role, accessible name, keyboard behaviour, live-region behaviour.
 7. Define RTL: what mirrors, what stays LTR, where `dir="auto"` applies.
@@ -236,6 +251,12 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Props:** `title`, `action` (one icon button), `back` (shows a back arrow instead of the logo).
 - **Composes:** `Button`. **Screens:** all `/app/**` on mobile. **RTL:** back arrow mirrors.
 
+#### Logo
+- **Purpose:** the AskCalls mark, alone or with the product name.
+- **Use:** sidebar brand, mobile top bar, marketing header and footer, gates. **Don't use:** as an icon for anything else.
+- **Props:** `name?` (the visible product name), `size="sm" | "md"`.
+- **Composes:** inline SVG coloured by `primary` / `primary-foreground`. **Screens:** all. **A11y:** decorative; the surrounding link carries the name. **RTL:** never mirrored.
+
 #### PageHeader
 - **Purpose:** the title and page actions of a page.
 - **Props:** `title`, `description?` (only when it carries information the user acts on; most pages have none), `actions`.
@@ -247,7 +268,7 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Props:** `variant="sidebar" | "icon"`, `autoLockMinutes` (shown only in the tooltip: "Locks after 15 min idle").
 - **Composes:** `Button`, `Tooltip`, `Kbd`.
 - **Screens:** all app routes. **States:** default; locking (instant navigation to the gate).
-- **A11y:** button "Lock now", shortcut Shift+L; locking announces "AskCalls locked" assertively on the gate.
+- **A11y:** the sidebar variant is named by its visible label ("Lock", kept for screen readers in the rail) so the name contains the visible text (WCAG 2.5.3); the icon variant is "Lock now". Shortcut Shift+L (`aria-keyshortcuts`); locking announces "AskCalls locked" assertively on the gate.
 - **RTL:** nothing special.
 
 #### ShortcutsDialog
@@ -267,7 +288,8 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 
 #### PhoneNumber
 - **Purpose:** one phone number, formatted for reading and dialling.
-- **Props:** `e164`, `format="international" | "national"`, `copyable`.
+- **Props:** `e164`, `format="international" | "national"`, `copyLabel` (shows the copy button).
+- **Formatting:** `formatPhone` in `@askcalls/ui/lib/format`: Israeli numbers in their usual grouping ("+972 52-555-0134", national "052-555-0134"), other countries as the code plus digit groups. Swap in libphonenumber here, in one place, when other countries need exact grouping.
 - **Composes:** `bdi`, optional `Button` (copy). **Screens:** C1, C3, K1, U1, S1. **A11y:** reads digits; copy button "Copy number". **RTL:** always `.ltr-island`, never mirrored.
 - **Not to be confused with:** `ContactLabel` (which decides whether to show a number at all).
 
@@ -278,14 +300,14 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 
 #### CallMeta
 - **Purpose:** when a call happened and how long it lasted.
-- **Props:** `startedAt`, `durationSec`, `layout="stacked" | "inline"`.
+- **Props:** `startedAt`, `durationSec`, `locale`, `layout="stacked" | "inline"`, `context="row" | "header"` (the header shows the full date and exact length: "12 Nov 2026, 14:32 · 8 min 12 sec"), `now`.
 - **Composes:** `time` elements. **Screens:** C1, C3. **States:** locked (placeholder). **A11y:** `<time datetime>`; duration reads "8 minutes". **RTL:** uses `Intl` in the UI locale; tabular figures.
 
 #### SignatureBadge
 - **Purpose:** whether the transcript was signed by one of your devices and the signature verified (spec 6.6).
 - **Use:** call header only. **Don't use:** for TLS, account security or marketing claims.
 - **Props:** `status="verified" | "unknown-device" | "invalid" | "missing"`, `deviceLabel`.
-- **Composes:** `Badge`, `Tooltip` (explains the check), `HoverCard` on desktop.
+- **Composes:** `Badge`, `Tooltip` (explains the check; the badge is focusable when it has one).
 - **Screens:** C3. **States:** verified (success, `shield-check`, "Signed by MacBook Air"), unknown device (warning, "Signed by a device that is no longer linked"), invalid (destructive, "Signature doesn't match. This transcript may have been changed."), missing (warning, "Not signed: imported through the inbox").
 - **A11y:** status text always visible, not icon-only. **RTL:** device label `dir="auto"`.
 
@@ -328,7 +350,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### FilterBlank
 - **Purpose:** one filter inside the sentence: its current value, and the button that changes it.
-- **Props:** `facet` (`starred`, `contact`, `tag`, `intent`, `date`, `direction`, `match`), `empty` text ("anyone"), `value` text ("דנה לוי", "Hot lead + 1" for several), `open`, `readOnly` (marketing samples).
+- **Props:** `facet` (`starred`, `contact`, `tag`, `intent`, `date`, `direction`, `match`), `empty` text ("anyone"), `value` ("Hot lead", or `<bdi>דנה לוי</bdi> + 1` for several: user text is a bidi island so the "+ 1" stays in the sentence's direction), `readOnly` (marketing samples), `inactive` (no effect right now), `busy` (loading the meaning model). The open state comes from the picker (`data-state="open"`).
 - **Looks:** empty = bold text with a dashed underline; set = accent tint with a solid accent underline. Never a pill or a chip.
 - **Match blank:** "matching [exact words | meaning]" is the semantic search switch. It is a single-choice blank because it is one concept: how the text is matched. Choosing "meaning" sorts by best match and loads the meaning model once.
 - **Composes:** `Button`. Opens `FilterPicker`. **Screens:** C1, C2, M1.
@@ -337,7 +359,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### FilterPicker
 - **Purpose:** the short list of values for one blank.
 - **Props:** `title` ("Which tag?"), `options` (from decrypted local catalogs: contacts, tags, intents; fixed lists for starred, direction, match; presets plus a calendar range for date), `multiple` (contacts, tags, intents; others close on one tap), `searchable` (automatic over 8 options, and when opened from a group suggestion), `total` (calls matching now, from the server, for the "Show 18 calls" button).
-- **Composes:** `Popover` (desktop, anchored to the blank) or `Sheet` side="bottom" (phones, 80 % height, no auto-focus so the keyboard doesn't cover the options), chips as `Toggle`s, `Input` (search), `Button`, `Calendar` (date range).
+- **Composes:** `Popover` (desktop, the blank is its trigger) or `Sheet` side="bottom" (phones, 80 % height, no auto-focus so the keyboard doesn't cover the options), chips as `Toggle`s, `Input` (search), `Button`, `Calendar` (date range, `range` prop). The screen wraps each `FilterBlank` in its `FilterPicker` and passes them to `FilterSentence` as `items`.
 - **Order:** fixed when the picker opens (chosen first, then recent use), so a chip never moves under the next tap. Natural order for ordered values (date presets).
 - **No per-option counts** (same reason as suggestions). A value with no calls stays visible; picking it gives an empty list with ways out.
 - **Screens:** C1, C2. **States:** default, searched with no match ("No tag matches “xyz”"), empty catalog ("No tags yet. Tags you add appear here.").
@@ -351,7 +373,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### FoldedFilterSummary
 - **Purpose:** on phones, once the search block scrolls away, one line at the top says what's filtered and brings the block back.
-- **Props:** `summary` ("“מחיר” · Purchase interest · the last 30 days", or "All calls"), `total`.
+- **Props:** `summary` ("“מחיר” · Purchase interest · the last 30 days", or "All calls"; the typed text inside `<bdi>`), `total`, `label`, `onShow`. `useFolded(ref)` from the same module tells the screen when the search block has scrolled away.
 - **Composes:** `Button` fixed under the safe area. **Screens:** C1, C2 (mobile only).
 - **A11y:** "Show search and filters"; tapping scrolls to the top and focuses the search box. **RTL:** icons at both ends mirror positions; text `dir="auto"`.
 
@@ -362,7 +384,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Composes:** `StarToggle`, `ContactLabel`, `CallDirection`, `CallMeta`, `TagChip`, `SearchSnippet`, `DropdownMenu` / `ContextMenu` (row actions).
 - **Screens:** C1, C2, K1.
 - **States:** locked (all text replaced by `DecryptingPlaceholder`), default, hover, selected (start-edge accent bar + accent background), focus ring, starred.
-- **A11y:** row is a link to the call with an accessible name "Dana Levi, incoming, today 14:32, 8 minutes"; `aria-setsize`/`aria-posinset` in virtualized lists; `j`/`k` move the cursor.
+- **A11y:** row is a link to the call named "Dana Levi, incoming, today 14:32, 8 minutes": the visible contact plus `a11yDetail` (", incoming, today 14:32, 8 minutes") as screen-reader text, so the name contains the visible text; `aria-setsize`/`aria-posinset` in virtualized lists; `j`/`k` move the cursor. Row actions: a menu button on hover/focus and the same items on right-click.
 - **RTL:** grid mirrors; the snippet aligns to the UI direction with `dir="auto"`.
 
 #### SearchSnippet
@@ -443,13 +465,13 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### AskMessage
 - **Purpose:** one question or answer in the ask conversation.
-- **Props:** `role="question" | "answer"`, `text`, `citations`. **Composes:** `TimestampLink`. **Screens:** C3.
+- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. **Composes:** `TimestampLink`. **Screens:** C3.
 
 #### ConsentSheet
 - **Purpose:** asks for consent before a call's plaintext is sent to an LLM provider, naming who receives it.
 - **Use:** first ask per unlocked session, and again whenever the provider or route changes. **Don't use:** for transcription consent at upload (that is `DataFlowNote` in the upload flow, which the user reads before starting).
 - **Props:** `provider`, `model`, `route="managed" | "direct" | "passthrough"`, `retention` text.
-- **Composes:** `Dialog` (desktop) / `Drawer` (mobile), `DataFlowNote`, `Checkbox`, `Button`.
+- **Composes:** `Dialog` (a centred dialog from `md`, a bottom sheet below it), `DataFlowNote`, `Checkbox`, `Button`.
 - **Screens:** C4. **A11y:** initial focus on "Send and ask"; Cancel returns focus to the input. **RTL:** route diagram mirrors its order (device at the start edge).
 
 #### NotesEditor
@@ -553,11 +575,19 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### RuleCondition / RuleAction
 - **Purpose:** one condition row ("Keyword contains any of …") / one action row ("Add tag …", "Star").
-- **Composes:** `Select`, `Command` (term input with chips), `Switch` (fuzzy). **Screens:** T3.
+- **Composes:** `Select`, `TermInput` (keywords, with the fuzzy `Switch`), `TagChip`. Two files: `RuleCondition.tsx`, `RuleAction.tsx`. **Screens:** T3.
+
+#### TermInput
+- **Purpose:** a list of words or phrases typed as removable chips.
+- **Use:** keyword conditions in rules, the forms of a synonym group. **Don't use:** for tags on a call (`TagChip`) or filter values (`FilterPicker`).
+- **Props:** `terms`, `onChange`, `label`, `removeLabel(term)`, `fuzzy?` (the fuzzy switch for keyword conditions).
+- **Composes:** chips, `Input`, `Switch`. **Screens:** T3, T4.
+- **A11y:** Enter or comma adds, Backspace on an empty field removes the last; each chip's remove button is named ("Remove מחיר"). **RTL:** terms are `bdi`; the input is `dir="auto"`.
+- **Not to be confused with:** the variant pills in `ResultLine` (words the search also matched, which can be excluded, not edited).
 
 #### SynonymRow
 - **Purpose:** one synonym group mapping several forms to one canonical term.
-- **Composes:** `Input` with term chips, `Button`. **Screens:** T4. **RTL:** each term `dir="auto"`.
+- **Composes:** `Input` (canonical term), `TermInput`, `Button`. **Screens:** T4. **RTL:** each term `dir="auto"`.
 
 #### ContactRow
 - **Purpose:** one saved contact name for one or more numbers.
@@ -627,7 +657,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### EmptyState
 - **Purpose:** explains why a view is empty and offers the next step.
-- **Props:** `reason="first-use" | "no-results" | "filtered" | "feature-off"`, `action`.
+- **Props:** `reason="first-use" | "no-results" | "filtered" | "feature-off"`, `title`, `detail?`, `action`, `icon` (the subject's icon for first use and feature off; searches use `search`).
 - **Composes:** icon circle, text, `Button`. **Screens:** C1, C2, C3, U2, T1–T4, K1, S4, S7.
 
 #### ErrorState
@@ -637,11 +667,12 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### StatusBanner
 - **Purpose:** a page-wide condition the user should know about while working (offline, import in progress, quota reached, inbox items waiting).
+- **Props:** `condition="offline" | "import" | "limit" | "inbox"` (sets the tone and icon: attention for offline and limit, accent for work the user started), `action`.
 - **Composes:** `Alert`. **Screens:** app shell.
 
 #### Notice (toast)
 - **Purpose:** a short confirmation or event that needs no decision (inbox processed, locked, call deleted with undo).
-- **Props:** `kind="event" | "undo" | "error"`. **Composes:** `Sonner`. **Screens:** global.
+- **Props:** `kind="event" | "undo" | "error"`, `icon` (the event's own icon from 2.4), `action` (Undo or one follow-up). **Composes:** the Radix `Toast` primitive; `NoticeRegion` is rendered once near the root. **Screens:** global.
 
 #### ConfirmDialog
 - **Purpose:** confirms an irreversible action, naming exactly what will be lost.
@@ -691,7 +722,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | O5 | Onboarding: try it with a sample call | Stepper, SearchBox, ResultLine, CallRow, TranscriptSegment |
 | O6 | Onboarding: connect your AI | Stepper, CopyableCode, DataFlowNote |
 | G1 | Unlock gate | CodeGroupInput, PassphraseField, ErrorState, Notice |
-| C1 | Calls list | AppSidebar, MobileTabBar, MobileTopBar, PageHeader, SearchBox, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
+| C1 | Calls list | Logo, AppSidebar, MobileTabBar, MobileTopBar, PageHeader, SearchBox, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
 | C2 | Search results | SearchBox, SearchSuggestion, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, SearchSnippet, HitMark, StarToggle, TagChip, EmptyState |
 | C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
@@ -699,8 +730,8 @@ Screen codes are used in the catalog above and in `screens.md`.
 | U2 | Upload: bulk | FileDropZone, PreflightSummary, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
 | T1 | Tags | TagManagerRow, TagChip, ConfirmDialog, SaveStatus, EmptyState |
 | T2 | Intents | IntentEditor, SaveStatus |
-| T3 | Rules | RuleBuilder, RuleCondition, RuleAction, TagChip, JobProgress, SaveStatus |
-| T4 | Synonyms | SynonymRow, SaveStatus |
+| T3 | Rules | RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |
+| T4 | Synonyms | SynonymRow, TermInput, SaveStatus |
 | K1 | Contacts | ContactRow, ContactLabel, PhoneNumber, CallRow (compact), FileDropZone (VCF), EmptyState |
 | S1 | Settings: security | SettingsSection, UnlockMethodRow, RecoveryCodeGrid, CodeGroupInput, PassphraseField, ConfirmDialog |
 | D1 | Device linking dialog | Stepper, DeviceLinkCode, FingerprintCode |
