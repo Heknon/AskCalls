@@ -11,7 +11,7 @@ ARG ASKCALLS_BUILD_ID
 ENV ASKCALLS_BUILD_ID=${ASKCALLS_BUILD_ID}
 RUN bun install --frozen-lockfile && bun run --cwd apps/web build
 
-FROM node:22-slim AS runtime
+FROM node:25-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 ASKCALLS_DATA_DIR=/data
 RUN useradd --system --uid 1001 askcalls && mkdir -p /data && chown askcalls /data
