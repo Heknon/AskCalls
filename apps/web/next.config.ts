@@ -22,7 +22,10 @@ const config: NextConfig = {
     '@askcalls/adapter-transcription-soniox',
     '@askcalls/adapter-transcription-openai-compatible',
     '@askcalls/adapter-llm-ai-sdk',
+    '@askcalls/adapter-db-postgres',
   ],
+  // Database drivers load native/WebAssembly assets at runtime: keep them out of the bundle.
+  serverExternalPackages: ['pg', '@electric-sql/pglite', '@electric-sql/pglite-pgvector'],
   // The CSP for /app/** and /admin/** is set per request by middleware (nonce for Next.js
   // bootstrap scripts).
   async headers() {
