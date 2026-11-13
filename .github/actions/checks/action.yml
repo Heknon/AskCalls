@@ -1,5 +1,9 @@
 name: Fast checks
-description: Lint, typecheck, boundaries and unit + contract tests. Runs inside the job that deploys.
+description: >-
+  Lint, typecheck, boundaries, and the unit and contract tests (PGlite and in-memory adapters,
+  including the leak test), so no service container is needed. Run after ./.github/actions/setup.
+  Every workflow runs these through this action, inside the job that deploys, so they cost no
+  extra runner.
 runs:
   using: composite
   steps:

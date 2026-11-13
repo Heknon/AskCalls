@@ -13,7 +13,7 @@ browser (own-bucket mode signs on the device, spec 11.2a). Stores ciphertext onl
 | `region` | `S3_REGION` | default `auto` with a custom endpoint (R2), `us-east-1` otherwise |
 | `forcePathStyle` | | default `true` with a custom endpoint, virtual-hosted on AWS |
 | `accessKeyId` / `secretAccessKey` | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | omit to use the SDK's default credential chain |
-| `keyPrefix` | | e.g. `preview/pr-12/` for preview deployments |
+| `keyPrefix` | `S3_KEY_PREFIX` | e.g. `preview/pr-12/`: previews share the dev bucket, each under its own prefix; `deletePrefix("")` clears only that prefix |
 
 The client sets `requestChecksumCalculation` and `responseChecksumValidation` to `WHEN_REQUIRED`.
 SDK 3.729+ otherwise adds CRC32 checksums to every upload, which R2/B2/older MinIO reject and which
