@@ -566,7 +566,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### FileDropZone
 - **Purpose:** where files, folders or a ZIP are dropped or picked.
-- **Props:** `accept="audio+transcript" | "manifest"`, `multiple`, `directory`.
+- **Props:** `accept="audio+transcript" | "manifest" | "contacts"`, `multiple`, `directory`, `onPickFolder` (opens the File System Access folder picker instead of the `webkitdirectory` input, so a bulk import can read the folder again after a reload; the screen passes it only where the browser supports it).
 - **Composes:** custom + `Button`. **Screens:** U1, U2. **A11y:** a real button opens the picker; drop is an enhancement. **RTL:** none.
 
 #### PreflightSummary
@@ -602,6 +602,14 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### RuleBuilder
 - **Purpose:** defines when a rule fires and what it does.
 - **Composes:** `RuleCondition`, `RuleAction`, `Select`, `Button`, `JobProgress` (apply to existing). **Screens:** T3.
+
+#### RuleListItem
+- **Purpose:** one rule in the list beside the `RuleBuilder`: its name, a one-line summary of what it does, and an "Off" badge when it doesn't run at import.
+- **Props:** `name`, `summary` ("invoice, bill → tag Billing, star"), `enabled`, `offLabel`, `selected` (the rule open in the builder), `onSelect`.
+- **Composes:** `button` in a list item, `Badge`. **Screens:** T3.
+- **States:** default, hover, focus ring, selected (accent tint, `aria-current="true"`), off (badge).
+- **A11y:** a real button named by its name and summary; the list is a `ul`. **RTL:** name and summary `dir="auto"`, aligned to the start edge.
+- **Not to be confused with:** `SettingsNav` items (navigation between pages; a rule item opens the rule in the builder on the same page) and `TagManagerRow` (a tag in the catalog, edited in place).
 
 #### RuleCondition / RuleAction
 - **Purpose:** one condition row ("Keyword contains any of …") / one action row ("Add tag …", "Star").
@@ -760,7 +768,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | U2 | Upload: bulk | FileDropZone, PreflightSummary, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
 | T1 | Tags | TagManagerRow, TagChip, ConfirmDialog, SaveStatus, EmptyState |
 | T2 | Intents | IntentEditor, SaveStatus |
-| T3 | Rules | RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |
+| T3 | Rules | RuleListItem, RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |
 | T4 | Synonyms | SynonymRow, TermInput, SaveStatus |
 | K1 | Contacts | ContactRow, ContactLabel, PhoneNumber, CallRow (compact), FileDropZone (VCF), EmptyState |
 | S1 | Settings: security | SettingsNav, SettingsSection, UnlockMethodRow, RecoveryCodeGrid, CodeGroupInput, PassphraseField, ConfirmDialog |

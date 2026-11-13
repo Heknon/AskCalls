@@ -12,6 +12,11 @@ export type FileDropZoneProps = {
   /** Offers a folder picker too (desktop browsers). */
   directory?: boolean;
   onFiles: (files: File[]) => void;
+  /**
+   * Opens the browser's folder picker (File System Access) instead of the `webkitdirectory`
+   * input, so the folder can be read again after a reload.
+   */
+  onPickFolder?: () => void;
   labels: {
     /** "Drop files, a folder or a ZIP". */
     title: string;
@@ -37,6 +42,7 @@ export function FileDropZone({
   multiple = false,
   directory = false,
   onFiles,
+  onPickFolder,
   labels,
   disabled,
 }: FileDropZoneProps) {
@@ -77,7 +83,7 @@ export function FileDropZone({
           <Button
             variant="outline"
             disabled={disabled}
-            onClick={() => folder.current?.click()}
+            onClick={() => (onPickFolder ? onPickFolder() : folder.current?.click())}
             className="max-md:hidden"
           >
             {labels.folder}
@@ -90,9 +96,12 @@ export function FileDropZone({
         hidden
         multiple={multiple}
         accept={acceptTypes[accept]}
-        onChange={(e) => onFiles([...(e.target.files ?? [])])}
+        onChange={(e) => {
+          onFiles([...(e.target.files ?? [])]);
+          e.target.value = '';
+        }}
       />
-      {directory ? (
+      {directory && !onPickFolder ? (
         <input
           ref={(el) => {
             folder.current = el;
