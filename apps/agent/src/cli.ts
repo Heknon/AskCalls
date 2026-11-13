@@ -6,6 +6,7 @@ import { registerLink } from './commands/link';
 import { registerLocal } from './commands/local';
 import { registerLogin } from './commands/login';
 import { registerMcp } from './commands/mcp';
+import { VERSION } from './version';
 
 export function buildProgram(): Command {
   const program = new Command()
@@ -13,7 +14,7 @@ export function buildProgram(): Command {
     .description(
       'Search, read and import your AskCalls calls from this computer. Keys stay on this device.',
     )
-    .version('0.0.0');
+    .version(VERSION);
   registerLogin(program);
   registerLink(program);
   registerMcp(program);
