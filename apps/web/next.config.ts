@@ -14,6 +14,14 @@ const config: NextConfig = {
     '@askcalls/ui',
     '@askcalls/adapter-mocks',
     '@askcalls/adapter-runtime',
+    '@askcalls/adapter-blob-fs',
+    '@askcalls/adapter-blob-s3',
+    '@askcalls/adapter-transcription-elevenlabs',
+    '@askcalls/adapter-transcription-openai',
+    '@askcalls/adapter-transcription-deepgram',
+    '@askcalls/adapter-transcription-soniox',
+    '@askcalls/adapter-transcription-openai-compatible',
+    '@askcalls/adapter-llm-ai-sdk',
   ],
   // The CSP for /app/** and /admin/** is set per request by middleware (nonce for Next.js
   // bootstrap scripts).

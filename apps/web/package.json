@@ -11,8 +11,16 @@
     "test:e2e": "playwright test --trace off"
   },
   "dependencies": {
+    "@askcalls/adapter-blob-fs": "workspace:*",
+    "@askcalls/adapter-blob-s3": "workspace:*",
+    "@askcalls/adapter-llm-ai-sdk": "workspace:*",
     "@askcalls/adapter-mocks": "workspace:*",
     "@askcalls/adapter-runtime": "workspace:*",
+    "@askcalls/adapter-transcription-deepgram": "workspace:*",
+    "@askcalls/adapter-transcription-elevenlabs": "workspace:*",
+    "@askcalls/adapter-transcription-openai": "workspace:*",
+    "@askcalls/adapter-transcription-openai-compatible": "workspace:*",
+    "@askcalls/adapter-transcription-soniox": "workspace:*",
     "@askcalls/api-contract": "workspace:*",
     "@askcalls/client-core": "workspace:*",
     "@askcalls/domain": "workspace:*",

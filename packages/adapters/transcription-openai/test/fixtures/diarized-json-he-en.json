@@ -1,0 +1,43 @@
+{
+  "task": "transcribe",
+  "duration": 12.48,
+  "text": "שלום, מדבר דני מהמוסך. הרכב שלך מוכן, המחיר הוא 1,250 שקל. Great, thanks. Can I pick it up tomorrow at nine? כן, בטח. נתראה מחר.",
+  "segments": [
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_000",
+      "start": 0.12,
+      "end": 2.19,
+      "text": "שלום, מדבר דני מהמוסך.",
+      "speaker": "A"
+    },
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_001",
+      "start": 1.9,
+      "end": 5.27,
+      "text": "הרכב שלך מוכן, המחיר הוא 1,250 שקל.",
+      "speaker": "A"
+    },
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_002",
+      "start": 5.1,
+      "end": 9.84,
+      "text": "Great, thanks. Can I pick it up tomorrow at nine?",
+      "speaker": "B"
+    },
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_003",
+      "start": 9.4,
+      "end": 11.26,
+      "text": "כן, בטח. נתראה מחר.",
+      "speaker": "A"
+    }
+  ],
+  "usage": {
+    "type": "duration",
+    "seconds": 13
+  }
+}
