@@ -1,16 +1,26 @@
 'use client';
 
 import { AppSidebar } from '@askcalls/ui/components/AppSidebar';
+import { AppTopBar } from '@askcalls/ui/components/AppTopBar';
+import {
+  GateAccount,
+  GateDivider,
+  GateHeading,
+  GateLayout,
+  GateNote,
+} from '@askcalls/ui/components/Gate';
 import { Kbd } from '@askcalls/ui/components/Kbd';
+import { LanguageSwitcher } from '@askcalls/ui/components/LanguageSwitcher';
 import { LockStatus } from '@askcalls/ui/components/LockStatus';
 import { Logo } from '@askcalls/ui/components/Logo';
 import { MobileTabBar } from '@askcalls/ui/components/MobileTabBar';
 import { MobileTopBar } from '@askcalls/ui/components/MobileTopBar';
 import { PageHeader } from '@askcalls/ui/components/PageHeader';
+import { SettingsNav } from '@askcalls/ui/components/SettingsNav';
 import { ShortcutsDialog } from '@askcalls/ui/components/ShortcutsDialog';
 import { Badge } from '@askcalls/ui/primitives/badge';
 import { Button } from '@askcalls/ui/primitives/button';
-import { Upload } from 'lucide-react';
+import { Lock, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { Specimen, State, useCopy } from '../shell';
 
@@ -39,6 +49,31 @@ const copy = {
     lock: { lock: 'Lock', lockNow: 'Lock now', autoLock: 'Locks after 15 min idle' },
     account: { name: 'Dana Levi', initials: 'DL', detail: 'Free beta · 212/500' },
     calls: 'Calls',
+    gate: {
+      unlock: 'Unlock your calls',
+      body: 'Use the passkey you created for AskCalls.',
+      or: 'or',
+      account: 'Signed in as',
+      signOut: 'Sign out',
+      note: 'Without a passkey or recovery code, calls can’t be recovered.',
+      step: 'Step 3 of 5',
+    },
+    language: 'Language',
+    hints: [
+      { keys: ['/'], label: 'Search' },
+      { keys: ['j', 'k'], label: 'Move' },
+      { keys: ['s'], label: 'Star' },
+      { keys: ['?'], label: 'All shortcuts' },
+    ],
+    sections: [
+      ['security', 'Security'],
+      ['recordings', 'Recordings'],
+      ['retention', 'Retention'],
+      ['api', 'API and MCP'],
+      ['providers', 'Providers'],
+      ['privacy', 'Privacy'],
+    ],
+    sectionsLabel: 'Settings sections',
     call: 'Call',
     back: 'Back to calls',
     upload: 'Upload',
@@ -111,6 +146,31 @@ const copy = {
     lock: { lock: 'נעילה', lockNow: 'נעילה עכשיו', autoLock: 'ננעל אחרי 15 דקות ללא פעילות' },
     account: { name: 'דנה לוי', initials: 'דל', detail: 'בטא חינמית · 212/500' },
     calls: 'שיחות',
+    gate: {
+      unlock: 'ביטול נעילה של השיחות',
+      body: 'עם מפתח הגישה שיצרת ל-AskCalls.',
+      or: 'או',
+      account: 'החשבון המחובר:',
+      signOut: 'יציאה',
+      note: 'בלי מפתח גישה או קוד שחזור אי אפשר לשחזר את השיחות.',
+      step: 'שלב 3 מתוך 5',
+    },
+    language: 'שפה',
+    hints: [
+      { keys: ['/'], label: 'חיפוש' },
+      { keys: ['j', 'k'], label: 'מעבר' },
+      { keys: ['s'], label: 'כוכב' },
+      { keys: ['?'], label: 'כל הקיצורים' },
+    ],
+    sections: [
+      ['security', 'אבטחה'],
+      ['recordings', 'הקלטות'],
+      ['retention', 'שמירת נתונים'],
+      ['api', 'API ו-MCP'],
+      ['providers', 'ספקים'],
+      ['privacy', 'פרטיות'],
+    ],
+    sectionsLabel: 'חלקי ההגדרות',
     call: 'שיחה',
     back: 'חזרה לשיחות',
     upload: 'העלאה',
@@ -167,6 +227,8 @@ const noop = () => {};
 export function FrameGroup() {
   const c = useCopy(copy);
   const [shortcuts, setShortcuts] = useState(false);
+  const [lang, setLang] = useState('en');
+  const items = c.sections.map(([key, label]) => ({ key: key!, label: label!, href: '#' }));
   return (
     <>
       <Specimen name="AppSidebar" note="lg: 240 px sidebar · md: 72 px rail · phones: hidden">
@@ -250,6 +312,75 @@ export function FrameGroup() {
           />
         </Specimen>
       </div>
+      <Specimen name="AppTopBar" note="md and up; hints from xl" wide>
+        <div className="overflow-hidden rounded-lg border border-border [&>div]:flex">
+          <AppTopBar
+            hints={c.hints}
+            actions={
+              <Button variant="primary">
+                <Upload className="size-4" aria-hidden />
+                {c.upload}
+              </Button>
+            }
+          />
+        </div>
+      </Specimen>
+      <Specimen name="LanguageSwitcher" note="two languages: one button; more: a menu">
+        <State label="two languages">
+          <div>
+            <LanguageSwitcher
+              value={lang}
+              onChange={setLang}
+              label={c.language}
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'he', label: 'עברית' },
+              ]}
+            />
+          </div>
+        </State>
+        <State label="three or more">
+          <div>
+            <LanguageSwitcher
+              value="en"
+              onChange={noop}
+              label={c.language}
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'he', label: 'עברית' },
+                { value: 'ru', label: 'Русский' },
+              ]}
+            />
+          </div>
+        </State>
+      </Specimen>
+      <Specimen name="SettingsNav">
+        <State label="list (desktop, beside the section)">
+          <SettingsNav items={items} active="privacy" label={c.sectionsLabel} className="w-52" />
+        </State>
+        <State label="index (tablet and phone)">
+          <SettingsNav items={items} label={c.sectionsLabel} variant="index" />
+        </State>
+      </Specimen>
+      <Specimen name="GateLayout, GateHeading, GateDivider, GateAccount, GateNote" wide>
+        <div className="overflow-hidden rounded-lg border border-border bg-background [&>div]:min-h-0">
+          <GateLayout brand="AskCalls" homeHref="#" end={c.gate.step}>
+            <GateHeading icon={Lock} title={c.gate.unlock} description={<p>{c.gate.body}</p>} />
+            <GateDivider label={c.gate.or} />
+            <GateAccount
+              initials={c.account.initials}
+              action={
+                <Button variant="link" size="sm">
+                  {c.gate.signOut}
+                </Button>
+              }
+            >
+              {c.gate.account} <bdi>dana@studio-noa.example</bdi>
+            </GateAccount>
+            <GateNote>{c.gate.note}</GateNote>
+          </GateLayout>
+        </div>
+      </Specimen>
       <Specimen name="PageHeader" wide>
         <State label="title only">
           <PageHeader title={c.calls} />

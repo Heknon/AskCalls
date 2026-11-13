@@ -135,6 +135,7 @@ One icon per concept; one concept per icon. If a new concept needs an icon, add 
 | `rotate-ccw` | Retry | Undo |
 | `undo-2` | Undo | |
 | `keyboard` | Keyboard shortcuts | |
+| `languages` | The UI language (`LanguageSwitcher`) | Transcript language, translation |
 | `wand-sparkles` | Added by an auto-tag rule | AI features (we do not decorate AI) |
 | `sliders-horizontal` | The filters (end of the folded filter summary) | Settings |
 | `file-key` | The recovery code (unlock method row) | Passkeys, tokens |
@@ -257,6 +258,14 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Props:** `name?` (the visible product name), `size="sm" | "md"`.
 - **Composes:** inline SVG coloured by `primary` / `primary-foreground`. **Screens:** all. **A11y:** decorative; the surrounding link carries the name. **RTL:** never mirrored.
 
+#### AppTopBar
+- **Purpose:** the 56 px bar above a page's content from `md` up: page actions at the end edge, shortcut hints before them on wide screens.
+- **Use:** app pages that have a page action or shortcut hints (Upload and hints on Calls, the back link on the call view). **Don't use:** on phones (`MobileTopBar`), or for the page title (`PageHeader`).
+- **Props:** `hints` (`{ keys, label }[]`, shown from `xl`, `aria-hidden` because the shortcuts dialog is the accessible list), `actions`, `start`.
+- **Composes:** `Kbd`, layout. **Screens:** C1, C3, every app page with an action.
+- **States:** with hints, actions only. **A11y:** not a landmark of its own; the actions are ordinary buttons and links. **RTL:** actions at the end edge; key glyphs never mirror.
+- **Not to be confused with:** `MobileTopBar`, which also carries the title, the logo or back arrow and the lock button.
+
 #### PageHeader
 - **Purpose:** the title and page actions of a page.
 - **Props:** `title`, `description?` (only when it carries information the user acts on; most pages have none), `actions`.
@@ -270,6 +279,27 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Screens:** all app routes. **States:** default; locking (instant navigation to the gate).
 - **A11y:** the sidebar variant is named by its visible label ("Lock", kept for screen readers in the rail) so the name contains the visible text (WCAG 2.5.3); the icon variant is "Lock now". Shortcut Shift+L (`aria-keyshortcuts`); locking announces "AskCalls locked" assertively on the gate.
 - **RTL:** nothing special.
+
+#### SettingsNav
+- **Purpose:** the list of Settings sections.
+- **Props:** `items` (`key`, `href`, `label`), `active`, `label` ("Settings sections"), `variant="list" | "index"` (`list`: the 208 px column beside a section on desktop; `index`: the full-width list with chevrons that is the Settings page on tablets and phones).
+- **Composes:** `nav`, links. **Screens:** S1–S8.
+- **States:** current section (`aria-current="page"`, the sidebar's selected look). **A11y:** `nav` named by `label`. **RTL:** chevrons mirror.
+- **Not to be confused with:** `AppSidebar` (primary navigation between areas); `Tabs` (views of one page, as on Tags and rules).
+
+#### LanguageSwitcher
+- **Purpose:** chooses the UI language.
+- **Props:** `value`, `options` (`value`, `label` in the language itself), `onChange`, `label` ("Language"), `busy`.
+- **Behaviour:** with two languages it is one ghost button naming the other language in that language ("עברית" on the English UI); with three or more, a menu of all of them. The screen saves the choice (cookie and account) and re-renders in place.
+- **Composes:** `Button`, `DropdownMenu`, the `languages` icon. **Screens:** M1–M5 (`MarketingHeader` `language` slot), M4, G1, S (under the section list).
+- **A11y:** named "Language: עברית", which contains the visible text; each label carries its own `lang`. **RTL:** none.
+
+#### Gate (GateLayout, GateHeading, GateDivider, GateAccount, GateNote)
+- **Purpose:** the frame of a focused flow without app navigation: sign in, the unlock gate, onboarding.
+- **Parts:** `GateLayout` (logo at the top start linking home, one control at the top end: the language switcher or "Step 3 of 5", optional full-width `top` such as the `Stepper`, then a centred column, `width="narrow"` 432 px or `"wide"` 560 px); `GateHeading` (optional icon in a tinted tile, the gate title as `h1`, one line); `GateDivider` ("or" between sign-in methods); `GateAccount` (who is signed in, with Sign out); `GateNote` (the footnote line: legal, what happens without a recovery code).
+- **Composes:** `Logo`, `Avatar`. **Screens:** M4, O1–O6, G1.
+- **A11y:** the column is `main`; the heading is focusable so steps can move focus to it. **RTL:** logo at the start edge, the end control at the end edge.
+- **Not to be confused with:** `PageHeader` (the title of a page inside the app shell); `EmptyState` (a view with nothing in it; its icon circle is round and quiet).
 
 #### ShortcutsDialog
 - **Purpose:** lists every keyboard shortcut available in the current context.
@@ -712,17 +742,17 @@ Screen codes are used in the catalog above and in `screens.md`.
 | M1 | Marketing home | MarketingHeader, DemoFrame, StepList, TrustDiagram, DataFlowNote, UseCaseCard, FilterBlank (read-only), CopyableCode, LimitsTable, FaqList, MarketingFooter |
 | M2 | Pricing | MarketingHeader, LimitsTable, FaqList, MarketingFooter |
 | M3 | Security | MarketingHeader, TrustDiagram, DataFlowNote, CopyableCode, FaqList, MarketingFooter |
-| M4 | Login | ErrorState, Notice |
+| M4 | Login | GateLayout, GateHeading, GateDivider, GateNote, LanguageSwitcher, ErrorState, Notice |
 | M5 | MCP / self-host pages | MarketingHeader, StepList, CopyableCode, MarketingFooter |
-| O1 | Onboarding: welcome | Stepper, TrustDiagram (compact) |
-| O2 | Onboarding: create passkey | Stepper, ChoiceCard, ErrorState |
-| O2b | Onboarding: passphrase fallback | Stepper, PassphraseField |
-| O3 | Onboarding: recovery code | Stepper, RecoveryCodeGrid |
-| O4 | Onboarding: confirm recovery code | Stepper, CodeGroupInput |
-| O5 | Onboarding: try it with a sample call | Stepper, SearchBox, ResultLine, CallRow, TranscriptSegment |
-| O6 | Onboarding: connect your AI | Stepper, CopyableCode, DataFlowNote |
-| G1 | Unlock gate | CodeGroupInput, PassphraseField, ErrorState, Notice |
-| C1 | Calls list | Logo, AppSidebar, MobileTabBar, MobileTopBar, PageHeader, SearchBox, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
+| O1 | Onboarding: welcome | GateLayout, GateHeading, Stepper, TrustDiagram (compact) |
+| O2 | Onboarding: create passkey | GateLayout, GateHeading, Stepper, ChoiceCard, ErrorState |
+| O2b | Onboarding: passphrase fallback | GateLayout, GateHeading, Stepper, PassphraseField |
+| O3 | Onboarding: recovery code | GateLayout, GateHeading, Stepper, RecoveryCodeGrid |
+| O4 | Onboarding: confirm recovery code | GateLayout, GateHeading, Stepper, CodeGroupInput |
+| O5 | Onboarding: try it with a sample call | GateLayout, GateHeading, Stepper, SearchBox, ResultLine, CallRow, TranscriptSegment |
+| O6 | Onboarding: connect your AI | GateLayout, GateHeading, Stepper, CopyableCode, DataFlowNote |
+| G1 | Unlock gate | GateLayout, GateHeading, GateAccount, GateNote, LanguageSwitcher, CodeGroupInput, PassphraseField, ConfirmDialog, ErrorState, Notice |
+| C1 | Calls list | Logo, AppSidebar, AppTopBar, MobileTabBar, MobileTopBar, PageHeader, SearchBox, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
 | C2 | Search results | SearchBox, SearchSuggestion, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, SearchSnippet, HitMark, StarToggle, TagChip, EmptyState |
 | C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
@@ -733,13 +763,13 @@ Screen codes are used in the catalog above and in `screens.md`.
 | T3 | Rules | RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |
 | T4 | Synonyms | SynonymRow, TermInput, SaveStatus |
 | K1 | Contacts | ContactRow, ContactLabel, PhoneNumber, CallRow (compact), FileDropZone (VCF), EmptyState |
-| S1 | Settings: security | SettingsSection, UnlockMethodRow, RecoveryCodeGrid, CodeGroupInput, PassphraseField, ConfirmDialog |
+| S1 | Settings: security | SettingsNav, SettingsSection, UnlockMethodRow, RecoveryCodeGrid, CodeGroupInput, PassphraseField, ConfirmDialog |
 | D1 | Device linking dialog | Stepper, DeviceLinkCode, FingerprintCode |
 | S2 | Settings: recordings | SettingsSection, UsageMeter |
 | S3 | Settings: retention | SettingsSection, ChoiceCard, ConfirmDialog |
 | S4 | Settings: API and MCP | SettingsSection, TokenRow, MaskedSecret, CopyableCode, DataFlowNote (inbox), UsageMeter |
 | S5 | Settings: providers | SettingsSection, ProviderCard, DataFlowNote, MaskedSecret, TestConnectionResult, UsageMeter |
-| S6 | Settings: privacy | SettingsSection (telemetry opt-in, single-key shortcuts) |
+| S6 | Settings: privacy | SettingsNav, SettingsSection (telemetry opt-in, single-key shortcuts), LanguageSwitcher (under the section list) |
 | S7 | Settings: audit log | SettingsSection, AuditEventRow, EmptyState |
 | S8 | Settings: data | SettingsSection, JobProgress, ConfirmDialog |
 | A1 | Admin instance | PageHeader, ProviderCard, HealthBadge, EnvLockedField, MaskedSecret, TestConnectionResult, OfflineBlockerList, UsageMeter |
