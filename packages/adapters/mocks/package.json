@@ -1,0 +1,19 @@
+{
+  "name": "@askcalls/adapter-mocks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@askcalls/domain": "workspace:*",
+    "uuidv7": "1.2.1"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  }
+}

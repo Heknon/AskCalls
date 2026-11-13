@@ -1,0 +1,25 @@
+{
+  "language_code": "heb",
+  "language_probability": 0.98,
+  "text": "שלום, מה שלומך? Fine, thanks. (laughs) יופי.",
+  "words": [
+    { "text": "שלום,", "start": 0.12, "end": 0.6, "type": "word", "speaker_id": "speaker_0" },
+    { "text": " ", "start": 0.6, "end": 0.64, "type": "spacing", "speaker_id": "speaker_0" },
+    { "text": "מה", "start": 0.64, "end": 0.8, "type": "word", "speaker_id": "speaker_0" },
+    { "text": " ", "start": 0.8, "end": 0.84, "type": "spacing", "speaker_id": "speaker_0" },
+    { "text": "שלומך?", "start": 0.84, "end": 1.3, "type": "word", "speaker_id": "speaker_0" },
+    { "text": " ", "start": 1.3, "end": 1.6, "type": "spacing", "speaker_id": "speaker_1" },
+    { "text": "Fine,", "start": 1.6, "end": 1.9, "type": "word", "speaker_id": "speaker_1" },
+    { "text": " ", "start": 1.9, "end": 1.95, "type": "spacing", "speaker_id": "speaker_1" },
+    { "text": "thanks.", "start": 1.95, "end": 2.4, "type": "word", "speaker_id": "speaker_1" },
+    {
+      "text": "(laughs)",
+      "start": 2.5,
+      "end": 3.0,
+      "type": "audio_event",
+      "speaker_id": "speaker_1"
+    },
+    { "text": " ", "start": 3.0, "end": 3.2, "type": "spacing", "speaker_id": "speaker_0" },
+    { "text": "יופי.", "start": 3.2, "end": 3.7, "type": "word", "speaker_id": "speaker_0" }
+  ]
+}

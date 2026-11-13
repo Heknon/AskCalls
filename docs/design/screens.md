@@ -201,7 +201,7 @@ Mock: right state. **Content:** H1, one line naming two random groups, two `Code
 
 ### O5 Try it with a sample call
 
-**Purpose:** reach the activation event (first search with a result). **Content:** H1, "Import sample call" (Hebrew or English sample chosen by locale, the other offered as a link), then a guided `SearchBar` pre-filled with a word from the sample with a typo ("מחיק" / "pirce"), the resulting `CallRow` with "Also matched", and "Open the call" which lands in C3 with the hit highlighted. "Skip" goes to O6.
+**Purpose:** reach the activation event (first search with a result). **Content:** H1, "Import sample call" (Hebrew or English sample chosen by locale, the other offered as a link), then a guided `SearchBox` pre-filled with a word from the sample with a typo ("מחיק" / "pirce"), the resulting `CallRow` with "Also matched", and "Open the call" which lands in C3 with the hit highlighted. "Skip" goes to O6.
 
 | Key | English | Hebrew |
 | --- | --- | --- |
@@ -266,7 +266,7 @@ Mock: [`calls.html`](mocks/calls.html) (shown with an active search; without a q
 
 **Purpose:** browse every call, newest first.
 
-**Layout:** desktop: app shell, top bar (shortcut hints, Upload), page title "Calls", `SearchBar` with the `SearchChip` row, then the virtualized list in one card (row height 72 px estimate, rows grow with tags). Mobile: top bar (title, Upload, Lock), search, horizontally scrolling chips with a fade edge and set chips first, list edge to edge; bottom navigation.
+**Layout:** desktop: app shell, top bar (shortcut hints, Upload), page title "Calls", then the search block (C2: `SearchBox`, `FilterSentence`, `ResultLine`), then the virtualized list in one card (row height 72 px estimate, rows grow with tags). Mobile: top bar (title, Upload, Lock), the same search block full width (the sentence wraps over two or three lines), the list edge to edge, bottom navigation; once the search block scrolls away, `FoldedFilterSummary` pins one line to the top.
 
 **Row (`CallRow` context="list"):** star toggle, contact name or number, direction icon, number under or beside the name, date and duration on one line at the end, tag chips (intent chips outlined, rule tags with the wand icon). Without a query, no snippet.
 
@@ -278,7 +278,7 @@ Mock: [`calls.html`](mocks/calls.html) (shown with an active search; without a q
 - Infinite scroll: a quiet "Loading more calls" row; at the end, nothing (no "you've reached the end").
 - Over the limit: `StatusBanner` "You've reached 500 calls. Delete calls to upload more."
 
-**Interactions:** row click or Enter opens C3; star toggles in place (optimistic, reverts with a toast on failure); right-click or the row menu offers Open, Star, Tags, Open in WhatsApp, Delete. Filters persist in the URL query (filter ids only, never text: the query text stays in memory and is not put in the URL, because URLs reach history and logs).
+**Interactions:** row click or Enter opens C3; star toggles in place (optimistic, reverts with a toast on failure); right-click or the row menu offers Open, Star, Tags, Open in WhatsApp, Delete. Filter values persist in the URL as opaque ids (tag and intent ids, a contact token reference, date preset, direction, match); the typed text and contact names never go in the URL, because URLs reach history and logs.
 
 **Keyboard:** `/` focuses search; `j`/`k` move the row cursor (scrolling the virtualizer); Enter opens; `s` stars; `t` opens the tag picker for the cursor row.
 
@@ -302,38 +302,120 @@ Mock: [`calls.html`](mocks/calls.html) (shown with an active search; without a q
 | `common.incoming` / `outgoing` | Incoming / Outgoing | נכנסת / יוצאת |
 | `common.star` / `unstar` | Star / Unstar | סימון בכוכב / הסרת כוכב |
 
-### C2 Search results (same route, query active)
+### C2 Search and filters (same route)
 
-**Purpose:** find calls by who, what or intent.
+Mocks: [`calls.html`](mocks/calls.html) (text and two filters set), [`calls-suggestions.html`](mocks/calls-suggestions.html) (suggestions open), [`calls-picker.html`](mocks/calls-picker.html) (tag picker: popover on desktop, bottom sheet on phones), [`calls-scrolled.html`](mocks/calls-scrolled.html) (phone, folded summary).
 
-**Search bar:** free text plus `SearchToken`s. Typing plain text searches keywords with fuzzy expansion; results update 250 ms after the last keystroke, keeping the previous results visible (dimmed only after 400 ms). Typed qualifiers `contact:`, `tag:`, `intent:`, `date:`, `is:starred`, `dir:in|out` open the matching picker (contact autocomplete shown in [`states.html`](mocks/states.html)); choosing converts the qualifier into a token. Backspace in an empty input focuses the last token; Backspace again removes it.
+**Purpose:** find calls by who, what or intent, with one search box and every filter readable as a sentence. This is the owner's `ListFilters` pattern, adapted; there is no chip bar and no row of filter buttons.
 
-**Chips:** Contact, Tag, Intent (pickers with type-to-filter, multi-select, "is / is not"), Starred (toggle), Date (presets Today, Last 7 days, Last 30 days, This year, Custom range with calendar), Direction (Incoming, Outgoing), Meaning (switch). A set chip shows its value as a separate part after a divider, never "Label: value".
+**1. Search box (`SearchBox`).** Placeholder "Search names, numbers, tags or words". Typing does two things at once:
+- the text runs as a keyword search 250 ms after the last keystroke (fuzzy, Hebrew prefixes, synonyms), keeping the previous results visible;
+- a list of up to 6 `SearchSuggestion`s drops below the box, built on the device from the decrypted local catalogs:
+  - contacts by name or number ("דנה לוי · Contact · show only this"),
+  - calls with that contact ("Call with דנה לוי · Today, 14:32 · 8 min"; opens the call),
+  - tags and intents ("Hot lead · Tag · show only this"; "Tag · add to the filter" when other tags are chosen; "Tag · chosen, tap to remove" when it is set),
+  - "Starred" ("Starred calls · show only these"), date presets ("Last 7 days · Date"), directions,
+  - group names: "tag", "intent", "contact", "date" (and Hebrew "תגית", "כוונה", "איש קשר", "תאריך") suggest "Tag · see all 9" and open that picker,
+  - the word search itself, last ("Words: מחיר · Search the transcripts").
+- Matching is by word start (case-insensitive, Hebrew normalized as in indexing: final letters, niqqud, one prefix letter), and the matched part is bold with an accent underline.
+- Order: filter values first, then up to 2 calls (4 when no value matches). Text that looks like an identifier (contains a digit, or is 6+ characters) puts calls and contacts-by-number first: typing "0134" offers the calls with +972 52-555-0134 before anything else.
+- ↑ ↓ move, Enter applies the highlighted suggestion (or runs the word search when none is highlighted), Esc closes the list, a second Esc clears the text. Choosing a filter suggestion applies it and clears the text.
+- No counts appear in suggestions or pickers (see below).
 
-**Results line:** "{n} calls · newest first" (or "best match" with Meaning on) and "Also matched:" with excludable variants. With Meaning on, the snippet is the best-matching passage and the order is by similarity.
+**2. Filter sentence (`FilterSentence` + `FilterBlank`s).** Under the box, the filters read as one sentence. Each blank is a button: dashed underline when empty, accent tint with a solid underline when set, "A + 2" when several values are chosen. A "Clear" link ends the sentence when anything is set.
 
-**Row (`CallRow` context="search"):** adds the two-line snippet with hits marked; snippets align to the UI direction with `dir="auto"`.
+English, nothing set:
 
-**States:** typing (no spinner in the bar); no results ("No calls match" + "Also tried: …" + Clear filters); semantic model loading the first time Meaning is turned on (chip shows a spinner and "Loading the meaning model (34 MB, once)"; keyword results stay); error ("Search failed. Try again."); offline (search disabled with tooltip "Search needs a connection").
+> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[exact words]**
 
-**Keyboard:** Esc clears the text first, then blurs; Enter in the bar opens the cursor row; ↓ from the bar moves into the list.
+English, filters set:
+
+> Showing **[starred calls]** · with **[דנה לוי + 1]** · tagged **[Hot lead]** · about **[Purchase interest]** · from **[the last 30 days]** · **[incoming only]** · matching **[meaning]**  Clear
+
+Hebrew, nothing set (reads right to left; prepositions written by the Hebrew message, some folded into the value):
+
+> מציג **[כל השיחות]** · עם **[כל איש קשר]** · עם התגית **[כל תגית]** · בנושא **[כל כוונה]** · **[בכל זמן]** · **[נכנסות ויוצאות]** · לפי **[מילים מדויקות]**
+
+Hebrew, filters set:
+
+> מציג **[שיחות מסומנות בכוכב]** · עם **[דנה לוי + 1]** · עם התגית **[ליד חם]** · בנושא **[עניין ברכישה]** · **[ב-30 הימים האחרונים]** · **[נכנסות בלבד]** · לפי **[משמעות]**  ניקוי
+
+Blanks and their pickers (`FilterPicker`):
+
+| Blank | Picker title | Options | Choice |
+| --- | --- | --- | --- |
+| calls | Which calls? / אילו שיחות? | All calls · Starred calls | one |
+| with | Which contacts? / אילו אנשי קשר? | contacts from the local catalog, searchable; numbers without a name as numbers | several |
+| tagged | Which tag? / איזו תגית? | tags with their colour dot | several |
+| about | Which intent? / איזו כוונה? | built-in and custom intents | several |
+| from | When? / מתי? | Today · Last 7 days · Last 30 days · This year · Custom range (calendar) | one |
+| direction | Which direction? / איזה כיוון? | In and out · Incoming only · Outgoing only | one |
+| matching | Match by / התאמה לפי | Exact words · Meaning | one |
+
+"Matching [meaning]" is the semantic search: the text is embedded on the device and results sort by best match. The first time it is chosen, the blank shows a spinner and the result line says "Loading the meaning model (34 MB, once)"; keyword results stay until it is ready. With no text typed, the blank has no effect and reads in muted style.
+
+Pickers are a popover anchored to the blank on desktop and a bottom sheet on phones (80 % height, no automatic keyboard). Multi-choice pickers end with "{n} chosen" and "Show {total} calls"; single-choice pickers close on tap ("Tap one to show only that."). Over 8 options, or when opened from a group suggestion, the picker has a search field ("Search 23 contacts"). The order is fixed while open: chosen first, then by recent use.
+
+**No per-option counts.** Neither suggestions nor pickers show how many calls a value would return. The server stores tag, intent and contact tokens and could count them, but counting every option of every picker per keystroke multiplies requests, and contact and tag names can only be listed by the device that decrypted them. The only count shown is the total for the current filters, from the search response. If a later version adds counts, they must come from already-loaded results or a token-based facets endpoint that never sees names.
+
+**3. Result line (`ResultLine`).** "18 calls" (keeps the previous number while loading), then "also matched" with the fuzzy and synonym variants as dashed pills, each removable (removing excludes that variant from this search), then the sort menu at the end: Newest first · Oldest first · Longest first; "Best match" is added and selected when matching by meaning.
+
+**4. Phones: folded summary (`FoldedFilterSummary`).** Once the search block scrolls out of view, one line pins to the top: search icon, the summary ("„מחיר” · Purchase interest · the last 30 days", or "All calls"), the count, and a filter icon. Tapping it scrolls back up and focuses the box.
+
+**Rows (`CallRow` context="search"):** as C1, plus the two-line snippet with hits marked; snippets align to the UI direction with `dir="auto"`.
+
+**States:**
+- Typing: no spinner; suggestions update as you type.
+- No suggestions: the list stays closed; Enter runs the word search.
+- No results: `EmptyState` "No calls match all of these." with up to two ways out as buttons: "Clear the search “מחיר”", "Any intent", "Any time" (the most recently set filters first). No counts on these buttons.
+- Picker search with no match: "No tag matches “xyz”".
+- Empty catalog in a picker: "No tags yet. Tags you add appear here."
+- Error: "Search failed. Try again."
+- Offline: the box and blanks stay usable for already-loaded results; new searches show "Search needs a connection".
+
+**Keyboard:** `/` focuses the box; ↑ ↓ Enter Esc in suggestions; Tab moves through the blanks in reading order; Enter or Space opens a blank's picker; Esc closes it and returns focus to the blank; ↓ from the box (with no suggestions open) moves into the list.
 
 | Key | English | Hebrew |
 | --- | --- | --- |
-| `search.placeholder` | Search by word, name or number | חיפוש לפי מילה, שם או מספר |
+| `search.placeholder` | Search names, numbers, tags or words | חיפוש שמות, מספרים, תגיות או מילים |
 | `search.label` | Search calls | חיפוש שיחות |
 | `search.clear` | Clear search | ניקוי החיפוש |
-| `search.chip.contact` / `tag` / `intent` / `starred` / `date` / `direction` / `meaning` | Contact / Tag / Intent / Starred / Date / Direction / Meaning | איש קשר / תגית / כוונה / מסומנות בכוכב / תאריך / כיוון / משמעות |
-| `search.date.presets` | Today · Last 7 days · Last 30 days · This year · Custom range | היום · 7 הימים האחרונים · 30 הימים האחרונים · השנה · טווח מותאם |
-| `search.is` / `isNot` | is / is not | הוא / אינו |
-| `search.count` | {n, plural, one {# call} other {# calls}} | {n, plural, one {שיחה אחת} other {# שיחות}} |
-| `search.order.newest` / `best` | newest first / best match | מהחדשה לישנה / ההתאמה הטובה ביותר |
-| `search.alsoMatched` | Also matched: | נמצאו גם: |
-| `search.exclude` | Exclude {term} | החרגת {term} |
-| `search.noResults` | No calls match | אין שיחות תואמות |
-| `search.alsoTried` | Also tried: {terms} | נוסו גם: {terms} |
-| `search.removeToken` | Remove filter {label} | הסרת מסנן {label} |
-| `search.meaningLoading` | Loading the meaning model ({size}, once) | טוען את מודל המשמעות ({size}, פעם אחת) |
+| `search.s.contact` | Contact · show only this | איש קשר · להציג רק את זה |
+| `search.s.add` | {kind} · add to the filter | {kind} · להוסיף למסנן |
+| `search.s.chosen` | {kind} · chosen, tap to remove | {kind} · נבחר, הקשה מסירה |
+| `search.s.only` | {kind} · show only this | {kind} · להציג רק את זה |
+| `search.s.group` | {kind} · see all {n} | {kind} · כל ה-{n} |
+| `search.s.callWith` | Call with {contact} | שיחה עם {contact} |
+| `search.s.words` | Words: {q} | מילים: {q} |
+| `search.s.wordsMeta` | Search the transcripts | חיפוש בתמלולים |
+| `filters.showing` | Showing | מציג |
+| `filters.calls.empty` / `starred` | all calls / starred calls | כל השיחות / שיחות מסומנות בכוכב |
+| `filters.contact.before` / `empty` | with / anyone | עם / כל איש קשר |
+| `filters.tag.before` / `empty` | tagged / any tag | עם התגית / כל תגית |
+| `filters.intent.before` / `empty` | about / any intent | בנושא / כל כוונה |
+| `filters.date.before` / `empty` | from / any time | (none) / בכל זמן |
+| `filters.date.values` | today · the last 7 days · the last 30 days · this year · {from} to {to} | היום · ב-7 הימים האחרונים · ב-30 הימים האחרונים · השנה · בין {from} ל-{to} |
+| `filters.dir.empty` / `in` / `out` | in and out / incoming only / outgoing only | נכנסות ויוצאות / נכנסות בלבד / יוצאות בלבד |
+| `filters.match.before` / `words` / `meaning` | matching / exact words / meaning | לפי / מילים מדויקות / משמעות |
+| `filters.more` | {first} + {n} | {first} + {n} |
+| `filters.clear` | Clear | ניקוי |
+| `picker.titles` | Which calls? · Which contacts? · Which tag? · Which intent? · When? · Which direction? · Match by | אילו שיחות? · אילו אנשי קשר? · איזו תגית? · איזו כוונה? · מתי? · איזה כיוון? · התאמה לפי |
+| `picker.search` | Search {n} {kinds} | חיפוש ב-{n} {kinds} |
+| `picker.chosen` / `pickMany` | {n} chosen / Pick as many as you like | {n} נבחרו / אפשר לבחור כמה שרוצים |
+| `picker.show` | Show {n, plural, one {# call} other {# calls}} | הצגת {n, plural, one {שיחה אחת} other {# שיחות}} |
+| `picker.tapOne` | Tap one to show only that. | הקשה על אחת מציגה רק אותה. |
+| `picker.noMatch` | No {kind} matches “{q}” | אין {kind} שמתאימה ל„{q}” |
+| `picker.noTags` | No tags yet. Tags you add appear here. | אין עדיין תגיות. תגיות שיתווספו יופיעו כאן. |
+| `results.count` | {n, plural, one {# call} other {# calls}} | {n, plural, one {שיחה אחת} other {# שיחות}} |
+| `results.alsoMatched` | also matched | נמצאו גם |
+| `results.exclude` | Exclude {term} | החרגת {term} |
+| `results.sort` | Newest first · Oldest first · Longest first · Best match | מהחדשה לישנה · מהישנה לחדשה · מהארוכה לקצרה · ההתאמה הטובה ביותר |
+| `results.meaningLoading` | Loading the meaning model ({size}, once) | טוען את מודל המשמעות ({size}, פעם אחת) |
+| `noMatches.title` | No calls match all of these. | אין שיחות שמתאימות לכל אלה. |
+| `noMatches.clearSearch` | Clear the search “{q}” | ניקוי החיפוש „{q}” |
+| `noMatches.any` | Any {kind} | {kind} כלשהי |
+| `folded.all` | All calls | כל השיחות |
+| `folded.show` | Show search and filters | הצגת החיפוש והמסננים |
 | `search.error` | Search failed. Try again. | החיפוש נכשל. כדאי לנסות שוב. |
 | `search.offline` | Search needs a connection | חיפוש דורש חיבור |
 

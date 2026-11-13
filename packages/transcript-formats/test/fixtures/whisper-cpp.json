@@ -1,0 +1,22 @@
+{
+  "systeminfo": "AVX = 1 | AVX2 = 1 | NEON = 0",
+  "model": { "type": "large-v3", "multilingual": true, "vocab": 51866 },
+  "params": { "model": "models/ggml-large-v3.bin", "language": "he", "translate": false },
+  "result": { "language": "he" },
+  "transcription": [
+    {
+      "timestamps": { "from": "00:00:00,000", "to": "00:00:03,640" },
+      "offsets": { "from": 0, "to": 3640 },
+      "text": " היי, זה עומר מהמוסך."
+    },
+    {
+      "timestamps": { "from": "00:00:03,640", "to": "00:00:08,120" },
+      "offsets": { "from": 3640, "to": 8120 },
+      "text": " The car is ready, אפשר לבוא לאסוף מחר בבוקר."
+    },
+    {
+      "timestamps": { "from": "00:00:08,120", "to": "00:00:12,500" },
+      "text": " החשבון יוצא 1,850 שקל כולל מע״מ."
+    }
+  ]
+}

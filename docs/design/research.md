@@ -49,6 +49,8 @@ Contents
 
 ### Decisions
 
+> **Revised (owner directive):** D1, D3 and D7 are replaced by the owner's `ListFilters` pattern from their other product: one search box that suggests filter values and records as you type (max 6, identifiers put records first, group names open pickers), the filters written as a sentence of underlined blanks that open short chip pickers (popover on desktop, bottom sheet on phones), a result line with the sort, and a folded one-line summary on phones. It keeps what the research valued (discoverable filters without operators, as in Gmail and Slack; type-to-filter pickers, as in Raycast and Linear; one row of state, as eBay advises) while reading as plain language in both directions. Per-option counts from the reference are dropped: the server can't count over encrypted names. D2, D4, D5 and D6 still apply. See `design-language.md` 4.3 and `screens.md` C2.
+
 - **D1. One bar, two layers.** The query bar holds free text plus removable filter tokens ("Intent  Purchase interest ×"). Directly below it sits a single row of filter chips: Contact, Tag, Intent, Starred, Date, Direction, and a Meaning switch. A chip with a value is filled (primary-subtle) and its token appears in the bar; removing either removes both. This follows Gmail and Slack: chips for discovery, tokens for state.
 - **D2. Typed qualifiers are optional accelerators.** Typing `contact:`, `tag:`, `intent:`, `date:` or `is:starred` opens the matching picker inline (GitHub, Slack). They are never required and are listed in the shortcuts dialog.
 - **D3. Pickers use Command (cmdk).** Every chip opens a Popover containing a type-to-filter Command list (Raycast, Linear). Date offers presets (Today, Last 7 days, Last 30 days, This year) and a range calendar (Notion).

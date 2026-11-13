@@ -1,0 +1,409 @@
+{
+  "language_code": "heb",
+  "language_probability": 0.93,
+  "text": "שלום, מדבר דני מהמוסך. הרכב שלך מוכן, המחיר הוא 1,250 שקל. Great, thanks. Can I pick it up tomorrow at nine? כן, בטח. נתראה מחר.",
+  "words": [
+    {
+      "text": "שלום,",
+      "start": 0.12,
+      "end": 0.61,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 0.61,
+      "end": 0.67,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "מדבר",
+      "start": 0.67,
+      "end": 1.09,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 1.09,
+      "end": 1.15,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "דני",
+      "start": 1.15,
+      "end": 1.5,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 1.5,
+      "end": 1.56,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "מהמוסך.",
+      "start": 1.56,
+      "end": 2.19,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 2.19,
+      "end": 1.9,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "הרכב",
+      "start": 1.9,
+      "end": 2.32,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 2.32,
+      "end": 2.38,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "שלך",
+      "start": 2.38,
+      "end": 2.73,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 2.73,
+      "end": 2.79,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "מוכן,",
+      "start": 2.79,
+      "end": 3.28,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 3.28,
+      "end": 3.34,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "המחיר",
+      "start": 3.34,
+      "end": 3.83,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 3.83,
+      "end": 3.89,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "הוא",
+      "start": 3.89,
+      "end": 4.24,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 4.24,
+      "end": 4.3,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "1,250",
+      "start": 4.3,
+      "end": 4.79,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 4.79,
+      "end": 4.85,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "שקל.",
+      "start": 4.85,
+      "end": 5.27,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 5.27,
+      "end": 5.1,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "Great,",
+      "start": 5.1,
+      "end": 5.66,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 5.66,
+      "end": 5.72,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "thanks.",
+      "start": 5.72,
+      "end": 6.35,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 6.35,
+      "end": 6.41,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "Can",
+      "start": 6.41,
+      "end": 6.76,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 6.76,
+      "end": 6.82,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "I",
+      "start": 6.82,
+      "end": 7.03,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 7.03,
+      "end": 7.09,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "pick",
+      "start": 7.09,
+      "end": 7.51,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 7.51,
+      "end": 7.57,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "it",
+      "start": 7.57,
+      "end": 7.85,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 7.85,
+      "end": 7.91,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "up",
+      "start": 7.91,
+      "end": 8.19,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 8.19,
+      "end": 8.25,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "tomorrow",
+      "start": 8.25,
+      "end": 8.95,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 8.95,
+      "end": 9.01,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "at",
+      "start": 9.01,
+      "end": 9.29,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 9.29,
+      "end": 9.35,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "nine?",
+      "start": 9.35,
+      "end": 9.84,
+      "type": "word",
+      "speaker_id": "speaker_1",
+      "logprob": -0.04
+    },
+    {
+      "text": "(laughs)",
+      "start": 9.94,
+      "end": 10.44,
+      "type": "audio_event",
+      "speaker_id": "speaker_1",
+      "logprob": -0.4
+    },
+    {
+      "text": " ",
+      "start": 9.84,
+      "end": 9.4,
+      "type": "spacing",
+      "speaker_id": "speaker_1",
+      "logprob": 0.0
+    },
+    {
+      "text": "כן,",
+      "start": 9.4,
+      "end": 9.75,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 9.75,
+      "end": 9.81,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "בטח.",
+      "start": 9.81,
+      "end": 10.23,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 10.23,
+      "end": 10.29,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "נתראה",
+      "start": 10.29,
+      "end": 10.78,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    },
+    {
+      "text": " ",
+      "start": 10.78,
+      "end": 10.84,
+      "type": "spacing",
+      "speaker_id": "speaker_0",
+      "logprob": 0.0
+    },
+    {
+      "text": "מחר.",
+      "start": 10.84,
+      "end": 11.26,
+      "type": "word",
+      "speaker_id": "speaker_0",
+      "logprob": -0.04
+    }
+  ],
+  "audio_duration_secs": 12.48,
+  "transcription_id": "Y3JhNk9vYXlPd1RwZ0lSb0dzZkI"
+}

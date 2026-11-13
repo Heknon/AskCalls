@@ -1,0 +1,17 @@
+name: Fast checks
+description: Lint, typecheck, boundaries and unit + contract tests. Runs inside the job that deploys.
+runs:
+  using: composite
+  steps:
+    - name: Lint and format
+      shell: bash
+      run: bun run lint
+    - name: Typecheck
+      shell: bash
+      run: bun run typecheck
+    - name: Boundaries
+      shell: bash
+      run: bun run boundaries
+    - name: Unit and contract tests
+      shell: bash
+      run: bun run test

@@ -233,7 +233,7 @@ A remote MCP endpoint serves clients that can't run a local process. It has no k
 Create a personal access token in **Settings → API and MCP**, then:
 
 ```sh
-claude mcp add --transport http askcalls-remote https://askcalls.com/api/mcp/mcp \
+claude mcp add --transport http askcalls-remote https://askcalls.com/api/mcp \
   --header "Authorization: Bearer ac_..."
 ```
 
@@ -243,7 +243,7 @@ For clients configured with JSON:
 {
   "mcpServers": {
     "askcalls-remote": {
-      "url": "https://askcalls.com/api/mcp/mcp",
+      "url": "https://askcalls.com/api/mcp",
       "headers": { "Authorization": "Bearer ac_..." }
     }
   }

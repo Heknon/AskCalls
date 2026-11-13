@@ -248,7 +248,7 @@ App UI runs at 14 px; reading text (transcripts, marketing body, notes) at 16 px
 | `rounded-xs` | 4 | Keyboard keys, mark highlight |
 | `rounded-sm` | 6 | Tags, query tokens, small buttons |
 | `rounded-md` | 8 | Buttons, inputs (default `--radius`) |
-| `rounded-lg` | 12 | Cards, lists, popovers, query bar |
+| `rounded-lg` | 12 | Cards, lists, popovers, suggestion rows |
 | `rounded-xl` | 16 | Dialogs, sheets |
 | `rounded-2xl` | 24 | Marketing panels, demo frame |
 | `rounded-full` | | Chips, avatars, switches, meters |
@@ -258,7 +258,7 @@ App UI runs at 14 px; reading text (transcripts, marketing body, notes) at 16 px
 | Token | Use |
 | --- | --- |
 | `shadow-xs` | Cards and outline buttons at rest |
-| `shadow-sm` | Query bar, segmented control thumb |
+| `shadow-sm` | Segmented control thumb |
 | `shadow-md` | Popovers, dropdowns, command menus |
 | `shadow-lg` | Dialogs, sheets, toasts |
 
@@ -316,7 +316,7 @@ Rules (D49):
 - **Focus ring (D47):** `outline: 2px solid var(--ring); outline-offset: 2px` on `:focus-visible` for every interactive element, including list rows, chips and transcript timestamps. Inputs show the ring with 1 px offset and the border turns `--ring`. Ring contrast ≥ 3:1 against every surface (table above).
 - **Not obscured (2.4.11):** sticky top bar, the docked player and the bottom navigation set `scroll-padding-top` / `scroll-padding-bottom` so focused items scroll into view clear of them. Toasts stack at the bottom end corner above the bottom navigation and never cover the focused element's row.
 - **Targets (D48):** 32 px minimum for dense desktop controls with ≥ 8 px spacing; 44 px under `pointer: coarse` (`.tap-target`). Star toggles and chip remove buttons expand their hit area with padding, not with visual size.
-- **Landmarks:** `header`, `nav` (Main), `main`, `aside` (call side panel, labelled "Ask and notes"), `search` role on the query bar.
+- **Landmarks:** `header`, `nav` (Main), `main`, `aside` (call side panel, labelled "Ask and notes"), `search` role on the search box.
 - **Live regions:** result counts and "Also matched" (`polite`), upload queue summary (`polite`, throttled to once every 5 s), ask streaming (`aria-busy` on the answer, final text announced once), lock events (`assertive`: "AskCalls locked").
 - **Dialogs:** Radix Dialog / AlertDialog: focus trap, `Esc` closes, focus returns to the trigger. Destructive dialogs place initial focus on Cancel.
 - **Forms:** visible labels always (no placeholder-only fields); errors linked with `aria-describedby`; error summary at the top of long forms (wizard, admin cards).
@@ -443,8 +443,11 @@ shadcn/ui primitive (Radix underneath) or "custom" when composed. All live in `p
 | Card | `Card` | |
 | Badge | `Badge` | Status badges with icon |
 | Tag chip | custom on `Badge` | Colour dot + name, removable variant |
-| Query bar with tokens | custom (input + token list) | `role="search"`, tokens are buttons |
-| Filter chip | custom on `Toggle` + `Popover` + `Command` | Shows value when set |
+| Search box with suggestions | custom on `Input` (combobox) + listbox | `SearchBox`, `SearchSuggestion`; max 6 suggestions |
+| Filter sentence and blanks | custom (text + `Button`s) | `FilterSentence`, `FilterBlank`; dashed underline empty, accent tint set |
+| Filter picker | `Popover` (desktop) / `Sheet` bottom (phones) + `Toggle` chips + `Input` | `FilterPicker`; no per-option counts |
+| Result line with sort | custom + `DropdownMenu` | `ResultLine`; also-matched variants |
+| Folded filter summary | custom fixed `Button` | `FoldedFilterSummary`, phones only |
 | Command menu (pickers, `contact:` autocomplete) | `Command` (cmdk) in `Popover` | |
 | Date range picker | `Calendar` (react-day-picker) in `Popover` | Manual RTL migration per shadcn docs |
 | Dropdown menu (row and call actions) | `DropdownMenu` | |

@@ -1,0 +1,23 @@
+{
+  "name": "@askcalls/adapter-llm-ai-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "4.0.104",
+    "@ai-sdk/google": "4.0.120",
+    "@ai-sdk/openai": "4.0.117",
+    "@ai-sdk/openai-compatible": "3.0.92",
+    "@askcalls/domain": "workspace:*",
+    "ai": "7.0.172"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  }
+}

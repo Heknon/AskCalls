@@ -1,0 +1,342 @@
+{
+  "id": "73d4357d-cad2-4338-a60d-ec6f2044f721",
+  "text": "שלום, מדבר דני מהמוסך. הרכב שלך מוכן, המחיר הוא 1,250 שקל. Great, thanks. Can I pick it up tomorrow at nine? כן, בטח. נתראה מחר.",
+  "tokens": [
+    {
+      "text": "שלום",
+      "start_ms": 120,
+      "end_ms": 610,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ",",
+      "start_ms": 610,
+      "end_ms": 610,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " מדבר",
+      "start_ms": 670,
+      "end_ms": 1090,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " דני",
+      "start_ms": 1150,
+      "end_ms": 1500,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " מהמ",
+      "start_ms": 1560,
+      "end_ms": 1875,
+      "confidence": 0.95,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": "וסך",
+      "start_ms": 1875,
+      "end_ms": 2190,
+      "confidence": 0.97,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ".",
+      "start_ms": 2190,
+      "end_ms": 2190,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " הרכב",
+      "start_ms": 1900,
+      "end_ms": 2320,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " שלך",
+      "start_ms": 2380,
+      "end_ms": 2730,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " מוכן",
+      "start_ms": 2790,
+      "end_ms": 3280,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ",",
+      "start_ms": 3280,
+      "end_ms": 3280,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " המח",
+      "start_ms": 3340,
+      "end_ms": 3585,
+      "confidence": 0.95,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": "יר",
+      "start_ms": 3585,
+      "end_ms": 3830,
+      "confidence": 0.97,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " הוא",
+      "start_ms": 3890,
+      "end_ms": 4240,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " 1,2",
+      "start_ms": 4300,
+      "end_ms": 4545,
+      "confidence": 0.95,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": "50",
+      "start_ms": 4545,
+      "end_ms": 4790,
+      "confidence": 0.97,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " שקל",
+      "start_ms": 4850,
+      "end_ms": 5270,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ".",
+      "start_ms": 5270,
+      "end_ms": 5270,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " Gre",
+      "start_ms": 5100,
+      "end_ms": 5380,
+      "confidence": 0.95,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": "at",
+      "start_ms": 5380,
+      "end_ms": 5660,
+      "confidence": 0.97,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": ",",
+      "start_ms": 5660,
+      "end_ms": 5660,
+      "confidence": 0.99,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " tha",
+      "start_ms": 5720,
+      "end_ms": 6035,
+      "confidence": 0.95,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": "nks",
+      "start_ms": 6035,
+      "end_ms": 6350,
+      "confidence": 0.97,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": ".",
+      "start_ms": 6350,
+      "end_ms": 6350,
+      "confidence": 0.99,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " Can",
+      "start_ms": 6410,
+      "end_ms": 6760,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " I",
+      "start_ms": 6820,
+      "end_ms": 7030,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " pick",
+      "start_ms": 7090,
+      "end_ms": 7510,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " it",
+      "start_ms": 7570,
+      "end_ms": 7850,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " up",
+      "start_ms": 7910,
+      "end_ms": 8189,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " tom",
+      "start_ms": 8250,
+      "end_ms": 8600,
+      "confidence": 0.95,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": "orrow",
+      "start_ms": 8600,
+      "end_ms": 8950,
+      "confidence": 0.97,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " at",
+      "start_ms": 9010,
+      "end_ms": 9290,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " nine",
+      "start_ms": 9350,
+      "end_ms": 9840,
+      "confidence": 0.96,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": "?",
+      "start_ms": 9840,
+      "end_ms": 9840,
+      "confidence": 0.99,
+      "speaker": "2",
+      "language": "en"
+    },
+    {
+      "text": " כן",
+      "start_ms": 9400,
+      "end_ms": 9750,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ",",
+      "start_ms": 9750,
+      "end_ms": 9750,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " בטח",
+      "start_ms": 9810,
+      "end_ms": 10230,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ".",
+      "start_ms": 10230,
+      "end_ms": 10230,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " נתר",
+      "start_ms": 10290,
+      "end_ms": 10535,
+      "confidence": 0.95,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": "אה",
+      "start_ms": 10535,
+      "end_ms": 10780,
+      "confidence": 0.97,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": " מחר",
+      "start_ms": 10840,
+      "end_ms": 11260,
+      "confidence": 0.96,
+      "speaker": "1",
+      "language": "he"
+    },
+    {
+      "text": ".",
+      "start_ms": 11260,
+      "end_ms": 11260,
+      "confidence": 0.99,
+      "speaker": "1",
+      "language": "he"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "askcalls",
+  "version": "0.0.0",
+  "description": "AskCalls agent: local MCP server, bulk ingest, device linking and local mode",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "askcalls": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "build:binary": "bun build ./src/cli.ts --compile --outfile dist/askcalls"
+  },
+  "dependencies": {
+    "@askcalls/api-contract": "workspace:*",
+    "@askcalls/client-core": "workspace:*",
+    "@askcalls/domain": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@napi-rs/keyring": "2.1.2",
+    "commander": "15.1.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  }
+}

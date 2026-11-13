@@ -1,0 +1,8 @@
+[00:00:01] Dana: Hi, this is Dana from Blue Sky Realty. Is this a good time?
+[00:00:05] Michael: כן, בטח. I saw the apartment listing in רמת גן.
+[00:00:11] Dana: Great. הדירה ברחוב ביאליק, ארבעה חדרים, קומה שלישית.
+[00:00:19] Michael: What's the asking price?
+[00:00:22] Dana: שלושה מיליון ומאתיים אלף שקל, but there's room to negotiate.
+[00:01:02] Michael: אוקיי, אפשר לקבוע סיור ביום שלישי?
+And can my wife join?
+[00:01:09] Dana: Of course. Tuesday at 17:30 works.
