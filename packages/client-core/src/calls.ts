@@ -126,7 +126,9 @@ async function verifySignature(
 ): Promise<SignatureStatus> {
   if (!meta.signature) return { status: 'unsigned' };
   const { deviceKeyId } = meta.signature;
-  const device = (await ctx.devices()).get(deviceKeyId);
+  const device =
+    (await ctx.devices()).get(deviceKeyId) ??
+    (await ctx.devices({ refresh: true })).get(deviceKeyId);
   if (!device) return { status: 'unknown_device', deviceKeyId };
   const ok = await verifyCall(
     device.signingPublicKey,

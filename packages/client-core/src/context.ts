@@ -53,7 +53,8 @@ export interface ClientContext extends Required<Pick<ClientDeps, 'api' | 'sessio
   vocabulary: VocabularySync;
   intents: IntentCache;
   tagDirectory(): Promise<TagDirectory>;
-  devices(): Promise<Map<string, DeviceInfo>>;
+  /** Registered device signing keys, cached per session; `refresh` refetches. */
+  devices(opts?: { refresh?: boolean }): Promise<Map<string, DeviceInfo>>;
 }
 
 export function createClientContext(deps: ClientDeps): ClientContext {
@@ -84,7 +85,8 @@ export function createClientContext(deps: ClientDeps): ClientContext {
         knownIntentIds(settings.customIntents.map((i) => i.id)),
       );
     },
-    devices() {
+    devices(opts = {}) {
+      if (opts.refresh) devices = null;
       devices ??= api.request(listKeyring, {}).then(
         (r) =>
           new Map(
