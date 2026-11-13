@@ -42,7 +42,7 @@ export const SAMPLE_CALLS: Record<'en' | 'he', SampleCall> = {
         [1, 'Of course. The oak cabinets with the long island, right?', 4],
         [
           0,
-          "Exactly. My partner and I measured again, the wall is four metres twenty, not four. Does that change the price much?",
+          'Exactly. My partner and I measured again, the wall is four metres twenty, not four. Does that change the price much?',
           9,
         ],
         [
@@ -56,7 +56,11 @@ export const SAMPLE_CALLS: Record<'en' | 'he', SampleCall> = {
           'Installation yes. The worktop is separate, about eleven thousand for quartz. Granite is a bit more.',
           8,
         ],
-        [0, "Quartz is fine. If the quote is in by Sunday we'd like to put the deposit down next week.", 7],
+        [
+          0,
+          "Quartz is fine. If the quote is in by Sunday we'd like to put the deposit down next week.",
+          7,
+        ],
         [1, "I'll have it to you before Sunday, with the delivery date. Speak soon.", 5],
       ],
     ),
@@ -75,7 +79,11 @@ export const SAMPLE_CALLS: Record<'en' | 'he', SampleCall> = {
         [0, 'שלום, מדברת נועה לוי. היינו אצלכם באולם התצוגה ביום חמישי בקשר למטבח.', 6],
         [1, 'כן, בטח. ארונות האלון עם האי הארוך, נכון?', 4],
         [0, 'בדיוק. מדדנו שוב, הקיר הוא ארבעה מטר ועשרים ולא ארבעה. זה משנה הרבה את המחיר?', 9],
-        [1, 'קצת. עשרים הסנטימטרים הנוספים הם עוד יחידה צרה. אני יכול לשלוח מחיר מעודכן עד מחר.', 8],
+        [
+          1,
+          'קצת. עשרים הסנטימטרים הנוספים הם עוד יחידה צרה. אני יכול לשלוח מחיר מעודכן עד מחר.',
+          8,
+        ],
         [0, 'מצוין. והמחיר כולל התקנה ומשטח אבן?', 5],
         [1, 'התקנה כן. המשטח בנפרד, בערך אחד עשר אלף לקוורץ. גרניט קצת יותר.', 8],
         [0, 'קוורץ מתאים לנו. אם ההצעה תגיע עד יום ראשון, נשאיר מקדמה בשבוע הבא.', 7],

@@ -10,7 +10,16 @@ export const DEFAULT_LOCALE: Locale = 'en';
 /** The cookie that remembers the choice for signed-out pages and new sessions. */
 export const LOCALE_COOKIE = 'locale';
 
-const RTL_LANGUAGES: ReadonlySet<string> = new Set(['ar', 'ckb', 'dv', 'fa', 'he', 'ps', 'ur', 'yi']);
+const RTL_LANGUAGES: ReadonlySet<string> = new Set([
+  'ar',
+  'ckb',
+  'dv',
+  'fa',
+  'he',
+  'ps',
+  'ur',
+  'yi',
+]);
 
 /** Region used for dates and numbers, so "10 Nov" and "10 בנוב׳" read as people expect. */
 const INTL_LOCALE: Partial<Record<string, string>> = { en: 'en-GB', he: 'he-IL' };

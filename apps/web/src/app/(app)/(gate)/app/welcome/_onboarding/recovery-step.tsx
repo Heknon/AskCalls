@@ -11,8 +11,16 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 /** The text of the downloaded and printed copy: code, account, date, where to use it. */
-function recoveryText(lines: { heading: string; code: string; account: string; created: string; use: string }) {
-  return [lines.heading, '', lines.code, '', lines.account, lines.created, lines.use, ''].join('\n');
+function recoveryText(lines: {
+  heading: string;
+  code: string;
+  account: string;
+  created: string;
+  use: string;
+}) {
+  return [lines.heading, '', lines.code, '', lines.account, lines.created, lines.use, ''].join(
+    '\n',
+  );
 }
 
 /** O3 and O4: show the recovery code, then retype two groups; finishing uploads the keys. */

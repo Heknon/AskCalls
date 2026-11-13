@@ -64,7 +64,9 @@ const UNLOCK_KINDS = new Set(['passkey', 'recovery', 'passphrase']);
  * navigation from a public page (sign-in, home) keeps that page's CSP, so reload once.
  */
 function loadedAsAppDocument(): boolean {
-  const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+  const nav = performance.getEntriesByType('navigation')[0] as
+    | PerformanceNavigationTiming
+    | undefined;
   const path = nav ? new URL(nav.name).pathname : location.pathname;
   return /^\/(app|admin)(\/|$)/.test(path);
 }
@@ -102,6 +104,7 @@ export function AppSessionProvider({
     setMe(await api.request(getMe, {}));
   }, [api]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` re-runs the load on retry
   useEffect(() => {
     if (!loadedAsAppDocument()) {
       window.location.reload();

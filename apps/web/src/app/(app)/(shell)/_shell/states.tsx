@@ -4,7 +4,14 @@ import { EmptyState, type EmptyStateProps } from '@askcalls/ui/components/EmptyS
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { Skeleton } from '@askcalls/ui/primitives/skeleton';
 import { useTranslations } from 'next-intl';
-import { type DependencyList, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type DependencyList,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useLockWipe } from '../../../../client/session/session';
 
 export type Async<T> =
@@ -40,7 +47,8 @@ export function useAsync<T>(load: () => Promise<T>, deps: DependencyList): Async
   }, [...deps, attempt]);
   const reload = useCallback(() => setAttempt((a) => a + 1), []);
   if (state.status === 'ready') return { status: 'ready', data: state.data, reload };
-  if (state.status === 'error') return { status: 'error', data: undefined, error: state.error, reload };
+  if (state.status === 'error')
+    return { status: 'error', data: undefined, error: state.error, reload };
   return { status: 'loading', data: undefined, reload };
 }
 
@@ -89,7 +97,14 @@ export type AsyncViewProps<T> = {
 };
 
 /** The loading, empty, error and ready states of one async surface, in one place. */
-export function AsyncView<T>({ state, loading, empty, isEmpty, error, children }: AsyncViewProps<T>) {
+export function AsyncView<T>({
+  state,
+  loading,
+  empty,
+  isEmpty,
+  error,
+  children,
+}: AsyncViewProps<T>) {
   const t = useTranslations('common');
   const showSkeleton = useSkeletonDelay(state.status === 'loading');
   if (state.status === 'loading') {

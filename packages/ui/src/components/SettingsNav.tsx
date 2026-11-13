@@ -28,7 +28,12 @@ export function SettingsNav({
 }: SettingsNavProps) {
   const index = variant === 'index';
   return (
-    <nav data-component="SettingsNav" data-variant={variant} aria-label={label} className={className}>
+    <nav
+      data-component="SettingsNav"
+      data-variant={variant}
+      aria-label={label}
+      className={className}
+    >
       <ul
         className={cn(
           'm-0 flex list-none flex-col p-0',
@@ -47,12 +52,16 @@ export function SettingsNav({
                   index
                     ? 'tap-target min-h-13 px-4 hover:bg-accent'
                     : 'h-9 rounded-md px-2.5 font-medium text-sm hover:bg-accent',
-                  current && 'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
+                  current &&
+                    'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
                 )}
               >
                 <span className="min-w-0 flex-1 truncate">{it.label}</span>
                 {index ? (
-                  <ChevronRight className="icon-directional size-4 text-muted-foreground" aria-hidden />
+                  <ChevronRight
+                    className="icon-directional size-4 text-muted-foreground"
+                    aria-hidden
+                  />
                 ) : null}
               </Link>
             </li>

@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { Screen } from '../../_shell/screen';
-import { SettingsMenu } from './_settings/settings-nav';
 import { sectionHref } from './_settings/sections';
+import { SettingsMenu } from './_settings/settings-nav';
 
 const DESKTOP = '(min-width: 1024px)';
 

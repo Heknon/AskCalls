@@ -45,10 +45,7 @@ export function GateLayout({
       {top ? <div className="mb-10 w-full max-w-240">{top}</div> : null}
       <main
         id="main"
-        className={cn(
-          'flex w-full flex-col gap-6',
-          width === 'narrow' ? 'max-w-108' : 'max-w-140',
-        )}
+        className={cn('flex w-full flex-col gap-6', width === 'narrow' ? 'max-w-108' : 'max-w-140')}
       >
         {children}
       </main>

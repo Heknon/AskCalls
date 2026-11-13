@@ -105,7 +105,12 @@ export function PasskeyStep({
             {creating ? t('pass.creating') : t('pass.cta')}
           </Button>
           {state !== 'noPrf' ? (
-            <Button variant="ghost" size="lg" onClick={() => setMode('passkey')} disabled={creating}>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => setMode('passkey')}
+              disabled={creating}
+            >
               {t('pass.back')}
             </Button>
           ) : null}
@@ -116,7 +121,11 @@ export function PasskeyStep({
 
   return (
     <>
-      <GateHeading icon={KeyRound} title={t('passkey.title')} description={<p>{t('passkey.body')}</p>} />
+      <GateHeading
+        icon={KeyRound}
+        title={t('passkey.title')}
+        description={<p>{t('passkey.body')}</p>}
+      />
       {state === 'noPrf' ? (
         <>
           <Alert tone="warning" role="alert">
@@ -139,9 +148,17 @@ export function PasskeyStep({
         </p>
       ) : (
         <>
-          {state === 'cancelled' ? <ErrorState scope="inline" title={t('passkey.cancelled')} /> : null}
+          {state === 'cancelled' ? (
+            <ErrorState scope="inline" title={t('passkey.cancelled')} />
+          ) : null}
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="lg" autoFocus loading={state === 'waiting'} onClick={create}>
+            <Button
+              variant="primary"
+              size="lg"
+              autoFocus
+              loading={state === 'waiting'}
+              onClick={create}
+            >
               {state === 'waiting' ? t('passkey.waiting') : t('passkey.cta')}
             </Button>
             <Button

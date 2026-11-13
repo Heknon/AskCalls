@@ -2,7 +2,15 @@
 
 import { Notice, type NoticeProps, NoticeRegion } from '@askcalls/ui/components/Notice';
 import { useTranslations } from 'next-intl';
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 export type NoticeInput = Omit<NoticeProps, 'open' | 'onOpenChange'>;
 
@@ -24,24 +32,30 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
     setItems((list) => list.map((n) => (n.id === id ? { ...n, open: false } : n)));
   const drop = (id: number) => setItems((list) => list.filter((n) => n.id !== id));
   const value = useMemo(() => notify, [notify]);
+  // Radix renders the region with an inline style; under `style-src 'self'` it must not be in
+  // the server HTML, so it mounts on the client.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   return (
     <NoticesContext.Provider value={value}>
-      <NoticeRegion label={t('notifications')}>
-        {children}
-        {items.map(({ id, open, ...n }) => (
-          <Notice
-            key={id}
-            {...n}
-            duration={duration(n)}
-            open={open}
-            onOpenChange={(o) => {
-              if (o) return;
-              close(id);
-              setTimeout(() => drop(id), 300);
-            }}
-          />
-        ))}
-      </NoticeRegion>
+      {children}
+      {mounted ? (
+        <NoticeRegion label={t('notifications')}>
+          {items.map(({ id, open, ...n }) => (
+            <Notice
+              key={id}
+              {...n}
+              duration={duration(n)}
+              open={open}
+              onOpenChange={(o) => {
+                if (o) return;
+                close(id);
+                setTimeout(() => drop(id), 300);
+              }}
+            />
+          ))}
+        </NoticeRegion>
+      ) : null}
     </NoticesContext.Provider>
   );
 }

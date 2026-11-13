@@ -1,7 +1,7 @@
 'use client';
 
-import { ingestCall } from '@askcalls/client-core/ingest';
 import { getCall } from '@askcalls/client-core/calls';
+import { ingestCall } from '@askcalls/client-core/ingest';
 import { highlightRanges, type SearchResponse, searchCalls } from '@askcalls/client-core/search';
 import { CallRow } from '@askcalls/ui/components/CallRow';
 import { EmptyState } from '@askcalls/ui/components/EmptyState';
@@ -100,7 +100,11 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
     if (!item || !result) return setPassage(null);
     if (item.snippet) {
       const text = item.snippet;
-      return setPassage({ id: item.id, text, hits: item.highlights.map((h) => text.slice(h.start, h.end)) });
+      return setPassage({
+        id: item.id,
+        text,
+        hits: item.highlights.map((h) => text.slice(h.start, h.end)),
+      });
     }
     let stale = false;
     const forms = new Set(result.alsoMatched.map((w) => w.toLowerCase()));
@@ -151,7 +155,13 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
             />
           ) : null}
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="primary" size="lg" autoFocus loading={importing} onClick={importSample}>
+            <Button
+              variant="primary"
+              size="lg"
+              autoFocus
+              loading={importing}
+              onClick={importSample}
+            >
               {importing ? t('importing') : t('import')}
             </Button>
             <Button
@@ -166,7 +176,7 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
       ) : (
         <div className="flex flex-col gap-4">
           <p role="status">{lang === 'he' ? t('searchHintHe') : t('searchHintEn')}</p>
-          <div role="search">
+          <search>
             <SearchBox
               value={text}
               onChange={setText}
@@ -174,7 +184,7 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
               labels={{ search: t('search'), clear: t('clear') }}
               slashShortcut={false}
             />
-          </div>
+          </search>
           {searchFailed ? (
             <ErrorState scope="inline" title={t('searchFailed')} />
           ) : (

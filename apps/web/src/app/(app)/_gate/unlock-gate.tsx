@@ -97,8 +97,7 @@ export function UnlockGate() {
     void run(method);
   };
 
-  const offline =
-    failure === 'offline' ? <ErrorState scope="panel" title={t('offline')} /> : null;
+  const offline = failure === 'offline' ? <ErrorState scope="panel" title={t('offline')} /> : null;
   const other = failure === 'other' ? <ErrorState scope="panel" title={t('failed')} /> : null;
 
   return (
@@ -182,12 +181,7 @@ export function UnlockGate() {
                 {t('back')}
               </Button>
             </div>
-            <form
-              ref={form}
-              onSubmit={submit(view)}
-              className="flex flex-col gap-6"
-              noValidate
-            >
+            <form ref={form} onSubmit={submit(view)} className="flex flex-col gap-6" noValidate>
               {view === 'recovery' ? (
                 <>
                   <GateHeading title={t('rc.title')} description={<p>{t('rc.body')}</p>} />

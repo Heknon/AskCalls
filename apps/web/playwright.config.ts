@@ -15,9 +15,7 @@ const ci = Boolean(process.env.CI);
 const models = join(import.meta.dirname, 'public', 'models');
 const REAL_MODEL =
   existsSync(models) &&
-  readdirSync(models).some((rev) =>
-    existsSync(join(models, rev, 'Xenova/multilingual-e5-small/onnx/model_quantized.onnx')),
-  );
+  readdirSync(models, { recursive: true }).some((f) => String(f).endsWith('.onnx'));
 
 /**
  * Runs against the production build (`next build` first, see the `test:e2e` script) with the

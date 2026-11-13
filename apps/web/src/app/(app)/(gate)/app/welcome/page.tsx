@@ -14,7 +14,7 @@ export default function WelcomePage() {
 
   useEffect(() => {
     if (needed.current === false) router.replace('/app');
-  }, [router, status]);
+  }, [router]);
 
   return needed.current ? <OnboardingFlow /> : null;
 }

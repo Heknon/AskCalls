@@ -8,8 +8,8 @@ import { StatusBanner } from '@askcalls/ui/components/StatusBanner';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { initials } from '../../_gate/unlock-gate';
+import { type ReactNode, useMemo, useState, useSyncExternalStore } from 'react';
+import { useAppSession } from '../../../../client/session/session';
 import type { ShortcutGroup as Group } from '../../../../client/shortcuts/registry';
 import {
   ShortcutsProvider,
@@ -17,7 +17,7 @@ import {
   useShortcut,
   useSingleKeyShortcuts,
 } from '../../../../client/shortcuts/shortcuts';
-import { useAppSession } from '../../../../client/session/session';
+import { initials } from '../../_gate/unlock-gate';
 import { keyCaps } from './keys';
 import { APP_HREFS, routeOf } from './routes';
 import { ShellContext } from './shell-context';
@@ -38,9 +38,24 @@ function GlobalShortcuts({ onDialog, onLock }: { onDialog: () => void; onLock: (
   const go = (href: string) => () => router.push(href);
   useShortcut({ keys: ['?'], run: onDialog, group: 'everywhere', label: t('list') });
   useShortcut({ keys: ['L'], run: onLock, group: 'everywhere', label: t('lock') });
-  useShortcut({ keys: ['g', 'c'], run: go(APP_HREFS.calls), group: 'everywhere', label: t('goCalls') });
-  useShortcut({ keys: ['g', 'u'], run: go(APP_HREFS.upload), group: 'everywhere', label: t('goUpload') });
-  useShortcut({ keys: ['g', 't'], run: go(APP_HREFS.tags), group: 'everywhere', label: t('goTags') });
+  useShortcut({
+    keys: ['g', 'c'],
+    run: go(APP_HREFS.calls),
+    group: 'everywhere',
+    label: t('goCalls'),
+  });
+  useShortcut({
+    keys: ['g', 'u'],
+    run: go(APP_HREFS.upload),
+    group: 'everywhere',
+    label: t('goUpload'),
+  });
+  useShortcut({
+    keys: ['g', 't'],
+    run: go(APP_HREFS.tags),
+    group: 'everywhere',
+    label: t('goTags'),
+  });
   useShortcut({
     keys: ['g', 's'],
     run: go(APP_HREFS.settings),
@@ -94,22 +109,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const active = routeOf(pathname);
   const [dialog, setDialog] = useState(false);
-  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+  const online = useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
+  );
 
-  useEffect(() => setDialog(false), [pathname]);
-
-  const lockLabels = {
-    lock: t('lock.button'),
-    lockNow: t('lock.now'),
-    autoLock: autoLockMinutes > 0 ? t('lock.tooltip', { n: autoLockMinutes }) : t('lock.tooltipOff'),
-  };
+  const autoLock =
+    autoLockMinutes > 0 ? t('lock.tooltip', { n: autoLockMinutes }) : t('lock.tooltipOff');
+  const lockLabels = useMemo(
+    () => ({ lock: t('lock.button'), lockNow: t('lock.now'), autoLock }),
+    [t, autoLock],
+  );
   const shell = useMemo(
     () => ({
       mobileLock: <LockStatus variant="icon" onLock={lock} labels={lockLabels} shortcut={false} />,
       openShortcuts: () => setDialog(true),
     }),
-    // biome-ignore lint/correctness/useExhaustiveDependencies: labels are derived from these
-    [lock, lockLabels.autoLock, lockLabels.lock, lockLabels.lockNow],
+    [lock, lockLabels],
   );
   if (!me) return null;
 
@@ -148,16 +165,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               initials: initials(me),
               detail,
             }}
-            lock={<LockStatus variant="sidebar" onLock={lock} labels={lockLabels} shortcut={false} />}
+            lock={
+              <LockStatus variant="sidebar" onLock={lock} labels={lockLabels} shortcut={false} />
+            }
             onShortcuts={() => setDialog(true)}
             linkAs={Link}
           />
           <div className="flex min-w-0 flex-1 flex-col pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))] md:pb-0">
-            {online ? null : (
-              <StatusBanner condition="offline">
-                {t('banner.offline')}
-              </StatusBanner>
-            )}
+            {online ? null : <StatusBanner condition="offline">{t('banner.offline')}</StatusBanner>}
             {children}
           </div>
         </div>

@@ -28,8 +28,10 @@ export function SettingsMenu({ variant }: { variant: 'list' | 'index' }) {
         }))}
         linkAs={Link}
       />
-      <div className="flex flex-col items-start gap-1.5 px-2.5" role="group" aria-labelledby={id}>
-        <Label id={id}>{t('language.label')}</Label>
+      <div className="flex flex-col items-start gap-1.5 px-2.5">
+        <Label id={id} aria-hidden>
+          {t('language.label')}
+        </Label>
         <LanguageControl />
       </div>
     </div>

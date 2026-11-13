@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE, type Locale } from './locales';
 import type admin from './messages/en/admin.json';
 import type auth from './messages/en/auth.json';
 import type call from './messages/en/call.json';
@@ -13,7 +14,6 @@ import type shell from './messages/en/shell.json';
 import type tags from './messages/en/tags.json';
 import type unlock from './messages/en/unlock.json';
 import type upload from './messages/en/upload.json';
-import { DEFAULT_LOCALE, type Locale } from './locales';
 
 /**
  * One message file per area and locale: `messages/<locale>/<namespace>.json`. A screen adds its

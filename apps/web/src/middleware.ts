@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { directOrigins, readDirectCookie, rewriteConnectSrc } from './client/direct-origins';
+import { enabledProviders } from './server/auth/config';
 import { readSessionUserId } from './server/auth/secret';
 import { getContainer } from './server/container';
-import { enabledProviders } from './server/auth/config';
 import { appCsp, DIRECT_PROVIDER_ORIGINS, newNonce, publicCsp } from './server/http/csp';
 
 /**

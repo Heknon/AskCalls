@@ -40,8 +40,10 @@ export async function saveAndConfirmRecoveryCode(page: Page): Promise<string[]> 
   expect(groups).toHaveLength(8);
   await page.getByLabel('I saved my recovery code somewhere safe').check();
   await page.getByRole('button', { name: 'Continue' }).click();
-  const body = await page.getByText(/^Type group \d and group \d from your saved copy\.$/).innerText();
-  const [a, b] = [...body.matchAll(/group (\d)/g)].map((m) => Number(m[1]));
+  const body = await page
+    .getByText(/^Type group \d and group \d from your saved copy\.$/)
+    .textContent();
+  const [a, b] = [...(body ?? '').matchAll(/group (\d)/g)].map((m) => Number(m[1]));
   await page.getByLabel(`Group ${a}`).fill(groups[a! - 1]!);
   await page.getByLabel(`Group ${b}`).fill(groups[b! - 1]!);
   await page.getByRole('button', { name: 'Confirm and finish setup' }).click();
