@@ -1,11 +1,11 @@
 import { describeBlobStoreContract } from '@askcalls/domain/contracts/blob-store';
 import { describeCallRepositoryContract } from '@askcalls/domain/contracts/call-repository';
 import { describeKeyringRepositoryContract } from '@askcalls/domain/contracts/keyring-repository';
+import { describeLocalCredentialRepositoryContract } from '@askcalls/domain/contracts/local-credentials';
 import {
   describeLlmProviderContract,
   describeTranscriptionProviderContract,
 } from '@askcalls/domain/contracts/providers';
-import { describeLocalCredentialRepositoryContract } from '@askcalls/domain/contracts/local-credentials';
 import { describeSearchIndexContract } from '@askcalls/domain/contracts/search-index';
 import {
   describeApiTokenRepositoryContract,

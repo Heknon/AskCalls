@@ -46,9 +46,7 @@ export function describeLocalCredentialRepositoryContract(name: string, harness:
         'cred-a1',
         'cred-a2',
       ]);
-      expect((await s.store.listPasskeys(s.userB)).map((p) => p.credentialId)).toEqual([
-        'cred-b1',
-      ]);
+      expect((await s.store.listPasskeys(s.userB)).map((p) => p.credentialId)).toEqual(['cred-b1']);
     });
 
     it('rejects a credential id registered twice', async () => {

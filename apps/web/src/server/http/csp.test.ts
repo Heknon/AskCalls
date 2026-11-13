@@ -45,14 +45,18 @@ describe('app CSP', () => {
     ).toEqual(['https://b.s3.eu-central-1.amazonaws.com', 'https://s3.eu-central-1.amazonaws.com']);
   });
 
+  const LOCAL_ONLY = {
+    OFFLINE_MODE: 'true',
+    AUTH_LOCAL_ACCOUNTS: 'true',
+    AUTH_PROVIDERS: 'none',
+    TRANSCRIPTION_PROVIDER: 'none',
+    LLM_PROVIDER: 'none',
+  };
+
   it('drops provider origins in offline mode', () => {
     const online = appCsp(config({ BLOB_DRIVER: 'memory' }), 'n', 'production');
     expect(online).toContain(DIRECT_PROVIDER_ORIGINS[0]);
-    const offline = appCsp(
-      config({ BLOB_DRIVER: 'memory', OFFLINE_MODE: 'true', AUTH_LOCAL_ACCOUNTS: 'true' }),
-      'n',
-      'production',
-    );
+    const offline = appCsp(config({ BLOB_DRIVER: 'memory', ...LOCAL_ONLY }), 'n', 'production');
     expect(directive(offline, 'connect-src')).toBe("connect-src 'self'");
   });
 
@@ -74,8 +78,7 @@ describe('app CSP', () => {
   it('serves the model from this origin in offline mode', () => {
     const c = config({
       BLOB_DRIVER: 'memory',
-      OFFLINE_MODE: 'true',
-      AUTH_LOCAL_ACCOUNTS: 'true',
+      ...LOCAL_ONLY,
       EMBEDDING_MODEL_URL: 'https://models.example.com',
     });
     expect(embeddingModelUrl(c)).toBeNull();
@@ -97,6 +100,15 @@ describe('public CSP (/ and /login)', () => {
     const off = publicCsp('n', 'production', false);
     expect(off).not.toContain('google');
     expect(directive(off, 'frame-src')).toBe("frame-src 'none'");
+  });
+
+  it('names no outside origin at all in offline mode', () => {
+    const offline = publicCsp('n', 'production', false, true);
+    expect(offline).not.toMatch(/https:\/\//);
+    expect(directive(offline, 'form-action')).toBe("form-action 'self'");
+    expect(directive(publicCsp('n', 'production', false), 'form-action')).toContain(
+      'https://github.com',
+    );
   });
 
   it('keeps accounts.google.com out of the app CSP', () => {

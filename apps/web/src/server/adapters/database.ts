@@ -16,6 +16,7 @@ import type {
   VocabularyStore,
 } from '@askcalls/domain';
 import type { InstanceConfig } from '../config/schema';
+import { assertLocalTarget } from '../http/offline-fetch';
 import { AdapterUnavailableError } from './errors';
 
 export interface DatabasePorts {
@@ -41,7 +42,7 @@ export function expandHome(path: string): string {
 }
 
 function withoutMigrate(db: PostgresDatabase): DatabasePorts {
-  const { migrate: _migrate, ...ports } = db;
+  const { migrate: _migrate, serverInfo: _serverInfo, ...ports } = db;
   return ports;
 }
 
@@ -77,6 +78,7 @@ export async function buildDatabase(config: InstanceConfig): Promise<DatabasePor
     }
     case 'postgres': {
       if (!config.db.url) throw new Error('db.url is required when db.driver is postgres');
+      assertLocalTarget(config.offlineMode, config.db.url);
       // Loaded lazily so the drivers and PGlite's WebAssembly load only when used.
       const { createPostgresDatabase } = await import('@askcalls/adapter-db-postgres');
       const db = await createPostgresDatabase({ driver: 'pg', url: config.db.url });

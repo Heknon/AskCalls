@@ -5,7 +5,10 @@ import type { InstanceConfig } from '../config/schema';
 import { AdapterUnavailableError } from './errors';
 
 /** LLM_PROVIDER → adapter. `none` turns "ask" off (null). llm-ai-sdk handles every SDK provider id. */
-export async function buildLlm(config: InstanceConfig): Promise<LlmProvider | null> {
+export async function buildLlm(
+  config: InstanceConfig,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LlmProvider | null> {
   const { provider, apiKey, model, baseUrl } = config.llm;
   switch (provider) {
     case 'none':
@@ -22,6 +25,7 @@ export async function buildLlm(config: InstanceConfig): Promise<LlmProvider | nu
       }
       return new AiSdkLlmProvider({
         provider,
+        fetch: fetchImpl,
         ...(apiKey ? { apiKey } : {}),
         ...(model ? { model } : {}),
         ...(baseUrl ? { baseUrl } : {}),

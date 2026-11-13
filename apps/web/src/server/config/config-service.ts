@@ -1,6 +1,7 @@
 import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { offlineBlockers } from './offline';
 import { ENV_BINDINGS, type InstanceConfig, InstanceConfigSchema, SECRET_PATHS } from './schema';
 
 export class ConfigError extends Error {
@@ -31,9 +32,14 @@ function getPath(obj: unknown, path: string): unknown {
   return cur;
 }
 
+/** Merges `over` into `base`; arrays replace, and `null` removes a setting. */
 function deepMerge(base: Json, over: Json): Json {
   const out: Json = { ...base };
   for (const [k, v] of Object.entries(over)) {
+    if (v === null) {
+      delete out[k];
+      continue;
+    }
     const b = out[k];
     out[k] =
       v &&
@@ -111,6 +117,11 @@ export class ConfigService {
     return env === 'development' || env === 'test' ? env : 'production';
   }
 
+  /** Where config.json and the setup token live. */
+  get dataDir(): string {
+    return dirname(this.configFilePath);
+  }
+
   get configFilePath(): string {
     const dataDir =
       this.env.ASKCALLS_DATA_DIR ?? (this.env.APP_MODE === 'local' ? '~/.askcalls' : './data');
@@ -178,19 +189,28 @@ export class ConfigService {
   }
 
   /**
-   * Applies a patch from the admin UI. Rejects locked paths and hosted instances, validates
-   * the result, writes config.json with owner-only permissions, then notifies listeners.
+   * Validates a patch from the admin UI or the setup wizard without saving it: rejects hosted
+   * instances, env-locked paths and any result that would not boot (an incomplete combination).
    */
-  async update(patch: Json): Promise<ResolvedConfig> {
+  preview(patch: Json, opts: { allowIncomplete?: boolean } = {}): ResolvedConfig {
     const cur = this.get();
     if (cur.config.hosted)
       throw new ConfigError(['this instance is hosted; its configuration is locked']);
-    const touched = flattenPaths(patch);
-    const blocked = touched.filter((p) => cur.locked.has(p));
+    const blocked = flattenPaths(patch).filter((p) => cur.locked.has(p));
     if (blocked.length)
       throw new ConfigError(blocked.map((p) => `${p}: set by the server environment`));
+    const next = this.resolveLayers(deepMerge(this.fileLayer, patch));
+    if (next.incomplete.length && !opts.allowIncomplete) throw new ConfigError(next.incomplete);
+    return next;
+  }
+
+  /**
+   * Applies a validated patch (see `preview`), writes config.json with owner-only permissions,
+   * then notifies listeners.
+   */
+  async update(patch: Json): Promise<ResolvedConfig> {
+    const next = this.preview(patch);
     const nextFile = deepMerge(this.fileLayer, patch);
-    const next = this.resolveLayers(nextFile);
     await writeConfigFile(this.configFilePath, nextFile);
     this.fileLayer = nextFile;
     this.current = next;
@@ -203,14 +223,38 @@ export class ConfigService {
     return () => this.listeners.delete(listener);
   }
 
-  /** The config as the admin UI may see it: secrets replaced by a mask or null. */
-  redacted(): { config: Json; locked: string[] } {
+  /**
+   * The config as the admin UI may see it: every secret removed (`secrets` lists the ones that
+   * are set), and the Postgres URL without its password.
+   */
+  redacted(): { config: Json; locked: string[]; secrets: string[] } {
     const { config, locked } = this.get();
     const copy = structuredClone(config) as Json;
+    const secrets: string[] = [];
     for (const path of SECRET_PATHS) {
-      if (getPath(copy, path) !== undefined) setPath(copy, path, '••••••••');
+      if (getPath(copy, path) === undefined) continue;
+      secrets.push(path);
+      deletePath(copy, path);
     }
-    return { config: copy, locked: [...locked] };
+    if (config.db.url) setPath(copy, 'db.urlDisplay', withoutPassword(config.db.url));
+    return { config: copy, locked: [...locked], secrets };
+  }
+}
+
+function deletePath(obj: Json, path: string) {
+  const keys = path.split('.');
+  const parent = getPath(obj, keys.slice(0, -1).join('.'));
+  if (parent && typeof parent === 'object') delete (parent as Json)[keys.at(-1)!];
+}
+
+/** `postgres://user:secret@host/db` → `postgres://user@host/db`. */
+export function withoutPassword(url: string): string {
+  try {
+    const u = new URL(url);
+    u.password = '';
+    return u.toString();
+  } catch {
+    return '';
   }
 }
 
@@ -235,7 +279,7 @@ export interface CombinationProblem {
   message: string;
 }
 
-/** Cross-field rules. Offline-mode URL checks are added by the offline-mode work (spec 11.2b). */
+/** Cross-field rules, including offline mode: nothing may point outside the local network. */
 export function validateCombination(c: InstanceConfig): CombinationProblem[] {
   const out: CombinationProblem[] = [];
   if (c.db.driver === 'postgres' && !c.db.url) {
@@ -261,6 +305,15 @@ export function validateCombination(c: InstanceConfig): CombinationProblem[] {
       paths: ['hosted', 'offlineMode'],
       message: 'OFFLINE_MODE: not available on the hosted instance',
     });
+  }
+  if (c.offlineMode) {
+    for (const b of offlineBlockers(c)) {
+      if (b.id === 'local-accounts') continue;
+      out.push({
+        paths: ['offlineMode', ...b.paths],
+        message: `OFFLINE_MODE: ${b.paths[0]} reaches ${b.host}, outside the local network`,
+      });
+    }
   }
   return out;
 }

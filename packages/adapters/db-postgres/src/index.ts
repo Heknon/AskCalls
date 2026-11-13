@@ -11,7 +11,8 @@ import type {
   UserRepository,
   VocabularyStore,
 } from '@askcalls/domain';
-import { type Driver, openDriver, type PostgresDatabaseConfig } from './driver';
+import { sql } from 'drizzle-orm';
+import { type Driver, openDriver, type PostgresDatabaseConfig, rows } from './driver';
 import { type MigrationResult, runMigrations } from './migrate';
 import { createApiTokenRepository } from './repos/api-tokens';
 import { createAuditLog } from './repos/audit';
@@ -42,7 +43,33 @@ export interface PostgresDatabase {
   rateLimiter: RateLimiter;
   /** Applies pending committed migrations. Idempotent and safe to run concurrently. */
   migrate(): Promise<MigrationResult>;
+  /** Server and pgvector versions, for the setup wizard's connection test. */
+  serverInfo(): Promise<ServerInfo>;
   close(): Promise<void>;
+}
+
+export interface ServerInfo {
+  version: string;
+  /** Installed pgvector version, or null. */
+  vector: string | null;
+  /** pgvector can be installed with CREATE EXTENSION. */
+  vectorAvailable: boolean;
+}
+
+async function serverInfo(driver: Driver): Promise<ServerInfo> {
+  const [r] = await driver.asSystem((db) =>
+    rows<{ version: string; vector: string | null; available: boolean }>(
+      db,
+      sql`SELECT current_setting('server_version') AS version,
+            (SELECT extversion FROM pg_extension WHERE extname = 'vector') AS vector,
+            EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') AS available`,
+    ),
+  );
+  return {
+    version: (r?.version ?? '').split(' ')[0]!,
+    vector: r?.vector ?? null,
+    vectorAvailable: r?.available === true,
+  };
 }
 
 export function buildPostgresDatabase(driver: Driver): PostgresDatabase {
@@ -59,6 +86,7 @@ export function buildPostgresDatabase(driver: Driver): PostgresDatabase {
     audit: createAuditLog(driver),
     rateLimiter: createRateLimiter(driver),
     migrate: () => runMigrations(driver),
+    serverInfo: () => serverInfo(driver),
     close: () => driver.close(),
   };
 }
