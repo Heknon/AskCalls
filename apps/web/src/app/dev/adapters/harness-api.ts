@@ -18,13 +18,14 @@ import { DeviceDb } from '@/client/adapters/idb';
 import { WebAuthnPasskeyAuthenticator } from '@/client/adapters/passkey';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from '@/client/adapters/stores';
 import { createBrowserClient } from '@/client/browser-client';
+import { readEmbeddingModelUrl } from '@/client/runtime-config';
 
 /**
  * Functions the Playwright driver calls with `page.evaluate`. Inputs and outputs are plain
  * JSON; audio crosses as base64. Development only.
  */
 
-const embedder = new WorkerEmbedder();
+const embedder = new WorkerEmbedder({ modelBaseUrl: readEmbeddingModelUrl() });
 const codec = new BrowserAudioCodec();
 const db = new DeviceDb('askcalls-dev-harness');
 
@@ -54,6 +55,16 @@ export async function embedPairs(texts: string[]) {
   const vectors = await embedder.embed(texts);
   const sim = vectors.map((a) => vectors.map((b) => dot(a, b)));
   return { dims: vectors.map((v) => v.length), norms: vectors.map(norm), sim };
+}
+
+/**
+ * One text per call (the q8 model's activation quantization is per batch), as plain arrays,
+ * for comparing with the agent's vectors.
+ */
+export async function embedEach(texts: string[]) {
+  const out: number[][] = [];
+  for (const t of texts) out.push(Array.from((await embedder.embed([t]))[0]!));
+  return out;
 }
 
 /** Embeds `count` passages of ~120 words in batches; returns ms per passage. */

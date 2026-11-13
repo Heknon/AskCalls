@@ -162,6 +162,11 @@ Atlantic round trip on every query.
      GitHub `preview` environment for blob cleanup.
 4. The S3 endpoint is `https://<account-id>.eu.r2.cloudflarestorage.com` (the `.eu.` host for
    EU-jurisdiction buckets); region `auto`.
+5. The embedding model has its own public bucket, `askcalls-models`, on the custom domain
+   `models.askcalls.com`, with a Cache Rule and CORS for GET/HEAD. Publish each model build
+   with `bun run models:publish` before deploying the code that pins it. Browsers verify every
+   file's SHA-256 before using it, so the bucket needs no access control.
+   Full steps: [`scripts/models/README.md`](../scripts/models/README.md).
 
 ### 3. Vercel
 
@@ -209,6 +214,8 @@ Atlantic round trip on every query.
    | `ANTHROPIC_API_KEY` | prod key | non-prod key | non-prod key |
    | `CRON_SECRET` | required (`openssl rand -base64 32`) | — | — |
    | `TELEMETRY` | `none`, or the backends in use (content-free) | `none` | `none` |
+   | `EMBEDDING_MODEL_URL` | `https://models.askcalls.com` | same | same |
+   | `ASKCALLS_SKIP_MODEL_DOWNLOAD` | `1` | `1` | `1` |
 
    - `ASKCALLS_HOSTED=true` only in production: it locks the instance config, hides the offline
      toggle, and keeps the Auth.js test provider off.

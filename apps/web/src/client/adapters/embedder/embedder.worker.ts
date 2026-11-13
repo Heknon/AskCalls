@@ -1,24 +1,31 @@
 /// <reference lib="webworker" />
 import { env, type FeatureExtractionPipeline, pipeline } from '@huggingface/transformers';
-import { EMBEDDING_MODEL, MODEL_BASE_PATH, ORT_BASE_PATH } from '../../assets';
+import { EMBEDDING_MODEL, ORT_BASE_PATH } from '../../assets';
+import { ModelFiles } from './model-files';
 import type { EmbedderDevice, EmbedderEvent, EmbedderRequest } from './protocol';
 
 /**
  * multilingual-e5-small in a dedicated worker (spec 3.3): mean pooling, L2-normalized, 384
- * dimensions. Model and ONNX Runtime files come from this origin only: remote models are off
- * and the WebAssembly paths point at /ort. Texts are never logged or stored.
+ * dimensions. ONNX Runtime comes from this origin (/ort). Model files come from the directory
+ * the page passes in `load`, through ModelFiles, which checks each against its pinned SHA-256
+ * before transformers.js parses it; the library itself never fetches. Texts are never logged
+ * or stored.
  */
 declare const self: DedicatedWorkerGlobalScope;
 
 const origin = self.location.origin;
+/** A path, not a URL: transformers.js only looks up "local" files for non-URL paths. */
+const MODEL_PREFIX = '/askcalls-model/';
+const MODEL_NAME = 'e5';
 env.allowRemoteModels = false;
 env.allowLocalModels = true;
-// A path, not a URL: transformers.js only probes local files for non-URL paths.
-env.localModelPath = MODEL_BASE_PATH;
-// Model files persist in Cache Storage (public weights, no user data). The ORT factory is
-// imported by URL rather than as a blob, so a worker CSP without `blob:` still works.
-env.useBrowserCache = true;
+env.localModelPath = MODEL_PREFIX;
+// ModelFiles keeps verified bytes in Cache Storage. The ORT factory is imported by URL rather
+// than as a blob, so a worker CSP without `blob:` still works.
+env.useBrowserCache = false;
 env.useWasmCache = false;
+
+let files: ModelFiles | null = null;
 
 function setWasmPaths(device: EmbedderDevice) {
   const name = device === 'webgpu' ? 'ort-wasm-simd-threaded.asyncify' : 'ort-wasm-simd-threaded';
@@ -50,19 +57,24 @@ async function webGpuAvailable(): Promise<boolean> {
 
 async function create(device: EmbedderDevice): Promise<FeatureExtractionPipeline> {
   setWasmPaths(device);
-  return (await pipeline('feature-extraction', EMBEDDING_MODEL.id, {
+  return (await pipeline('feature-extraction', MODEL_NAME, {
     device,
     dtype: EMBEDDING_MODEL.dtype,
-    progress_callback: (p: { status: string; file?: string; loaded?: number; total?: number }) => {
-      if (p.status === 'progress' && p.file) {
-        post({ type: 'progress', file: p.file, loaded: p.loaded ?? 0, total: p.total ?? 0 });
-      }
-    },
   })) as FeatureExtractionPipeline;
 }
 
-function load(prefer: EmbedderDevice | 'auto'): Promise<FeatureExtractionPipeline> {
+function load(
+  prefer: EmbedderDevice | 'auto',
+  modelUrl?: string,
+): Promise<FeatureExtractionPipeline> {
+  if (modelUrl && !files) {
+    files = new ModelFiles(modelUrl, origin, (file, loaded, total) =>
+      post({ type: 'progress', file, loaded, total }),
+    );
+    env.fetch = files.fetchFor(`${MODEL_PREFIX}${MODEL_NAME}/`);
+  }
   extractor ??= (async () => {
+    if (!files) throw new Error('model location not set');
     const started = performance.now();
     let device: EmbedderDevice = prefer === 'auto' ? 'webgpu' : prefer;
     if (device === 'webgpu' && !(await webGpuAvailable())) device = 'wasm';
@@ -79,7 +91,7 @@ function load(prefer: EmbedderDevice | 'auto'): Promise<FeatureExtractionPipelin
   })();
   extractor.catch(() => {
     extractor = null;
-    post({ type: 'load_failed' });
+    post({ type: 'load_failed', reason: files?.verificationFailed ? 'verification' : 'other' });
   });
   return extractor;
 }
@@ -120,7 +132,7 @@ self.onmessage = ({ data }: MessageEvent<EmbedderRequest>) => {
     return;
   }
   if (data.type === 'load') {
-    load(data.prefer).catch(() => {});
+    load(data.prefer, data.modelUrl).catch(() => {});
     return;
   }
   const { id, texts, batchSize } = data;

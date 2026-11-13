@@ -1,0 +1,78 @@
+{
+  "he": [
+    "passage: שלום, אני מתקשר לגבי ההזמנה שלי מיום שלישי",
+    "passage: הפגישה נדחתה ליום רביעי בשעה שלוש אחר הצהריים",
+    "passage: אפשר לקבל הצעת מחיר מעודכנת עד סוף השבוע?",
+    "passage: המשלוח הגיע פגום ואני רוצה להחזיר את המוצר",
+    "passage: תודה רבה על העזרה, היה ממש נעים לדבר איתך",
+    "passage: אני לא מרוצה מהשירות ומבקש לדבר עם מנהל",
+    "passage: בוא נקבע שיחת המשך בשבוע הבא כדי לסגור את הפרטים",
+    "passage: הטכנאי יגיע מחר בין שמונה לעשר בבוקר",
+    "passage: עורך הדין שלי ישלח לכם מכתב רשמי בנושא החוזה",
+    "passage: החשבונית האחרונה כוללת חיוב כפול על אותו חודש",
+    "query: מתי הפגישה הבאה עם הלקוח",
+    "query: תלונה על איחור במשלוח"
+  ],
+  "en": [
+    "passage: Hi, I'm calling about the order I placed last Tuesday",
+    "passage: The meeting has been moved to Wednesday at three in the afternoon",
+    "passage: Could you send me an updated quote by the end of the week?",
+    "passage: The package arrived damaged and I would like a refund",
+    "passage: Thanks so much for your help, it was great talking to you",
+    "passage: I'm not happy with the service and I want to speak to a manager",
+    "passage: Let's schedule a follow-up call next week to finalize the details",
+    "passage: The technician will come tomorrow between eight and ten in the morning",
+    "passage: My lawyer will send you a formal letter regarding the contract",
+    "passage: The last invoice charges us twice for the same month",
+    "query: when is the next meeting with the client",
+    "query: complaint about late delivery"
+  ],
+  "ar": [
+    "passage: مرحبا، أتصل بخصوص الطلب الذي قدمته يوم الثلاثاء الماضي",
+    "passage: تم تأجيل الاجتماع إلى يوم الأربعاء الساعة الثالثة بعد الظهر",
+    "passage: هل يمكنك إرسال عرض سعر محدث قبل نهاية الأسبوع؟",
+    "passage: وصلت الشحنة تالفة وأريد استرداد المبلغ",
+    "passage: شكرا جزيلا على مساعدتك، كان من الرائع التحدث معك",
+    "passage: لست راضيا عن الخدمة وأريد التحدث مع المدير",
+    "passage: لنحدد مكالمة متابعة الأسبوع المقبل لإنهاء التفاصيل",
+    "passage: سيصل الفني غدا بين الثامنة والعاشرة صباحا",
+    "passage: سيرسل لكم محاميّ رسالة رسمية بشأن العقد",
+    "passage: الفاتورة الأخيرة تحتسب علينا نفس الشهر مرتين",
+    "query: متى الاجتماع القادم مع العميل",
+    "query: شكوى بخصوص تأخر التوصيل"
+  ],
+  "ru": [
+    "passage: Здравствуйте, я звоню по поводу заказа, который сделал в прошлый вторник",
+    "passage: Встречу перенесли на среду, на три часа дня",
+    "passage: Не могли бы вы прислать обновлённое коммерческое предложение до конца недели?",
+    "passage: Посылка пришла повреждённой, и я хочу вернуть деньги",
+    "passage: Большое спасибо за помощь, было приятно с вами поговорить",
+    "passage: Я недоволен обслуживанием и хочу поговорить с руководителем",
+    "passage: Давайте назначим повторный звонок на следующей неделе, чтобы всё согласовать",
+    "passage: Мастер придёт завтра с восьми до десяти утра",
+    "passage: Мой адвокат направит вам официальное письмо по договору",
+    "passage: В последнем счёте нам дважды выставили оплату за один и тот же месяц",
+    "query: когда следующая встреча с клиентом",
+    "query: жалоба на задержку доставки"
+  ],
+  "mixed": [
+    "passage: שלחתי לך את ה-invoice במייל, תבדוק את ה-spam folder",
+    "passage: הלקוח ביקש demo של ה-dashboard החדש לפני ה-meeting",
+    "passage: Он сказал, что пришлёт invoice после созвона в Zoom",
+    "passage: قال إن الـ meeting تأجل إلى الأسبوع القادم بسبب الـ deadline",
+    "passage: אמרתי לו: Let's talk tomorrow, ואז הוא ניתק",
+    "passage: I spoke with Mohammed and Olga, они согласны на условия, والعقد جاهز"
+  ],
+  "names_numbers": [
+    "passage: Dana Levi from Tel Aviv called about order 48213 for 1,250 shekels",
+    "passage: דני כהן מחיפה ביקש החזר של 349.90 ש\"ח על הזמנה 77812",
+    "passage: Иван Петров из Новосибирска оплатил счёт № 2024-117 на 15 000 рублей",
+    "passage: اتصل أحمد الخطيب من الناصرة بخصوص الدفعة رقم 3302 بقيمة 2,500 دولار",
+    "passage: The meeting with Yossi Mizrahi is on 14/03/2025 at 09:30, room 4B",
+    "passage: Call me back at [PHONE] or email [EMAIL], ask for [NAME]",
+    "passage: הפגישה עם [NAME] נקבעה ל-12.11 בשעה 16:45, טלפון [PHONE]",
+    "passage: Код подтверждения 739-204, срок действия до 31.12.2026",
+    "passage: Order #A-90231 shipped via DHL, tracking 1Z999AA10123456784, ETA 3-5 business days",
+    "passage: الرقم المرجعي 55-8812-ق وموعد التسليم 2026/01/15"
+  ]
+}

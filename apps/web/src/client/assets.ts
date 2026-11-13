@@ -1,9 +1,11 @@
 /**
- * Self-hosted runtime assets (spec 2.4): the embedding model, the ONNX Runtime WebAssembly
- * build and the ffmpeg.wasm core are served from this app's origin, never from a CDN.
- * `scripts/fetch-browser-assets.ts` places them under `apps/web/public` at these paths and
- * verifies every file against the hashes below. Paths carry the version, so they are cached
- * as immutable.
+ * Browser runtime assets (spec 2.4). ONNX Runtime and the ffmpeg.wasm core always come from this
+ * app's origin: they execute. The embedding model is data: it comes from this origin by default
+ * (self-host, offline, development) or from `EMBEDDING_MODEL_URL` when the instance sets one
+ * (the hosted site serves it from a bucket). Either way every model file is checked against the
+ * SHA-256 below before ONNX Runtime or the tokenizer sees it. `scripts/fetch-browser-assets.ts`
+ * places the files under `apps/web/public`; paths carry a version or content hash, so they are
+ * cached as immutable.
  */
 
 export interface AssetFile {
@@ -12,18 +14,27 @@ export interface AssetFile {
   sha256: string;
 }
 
+/**
+ * multilingual-e5-small, 8-bit, with the vocabulary pruned to Hebrew, English, Arabic and
+ * Russian (scripts/models/README.md). The agent's embedder pins the same files.
+ */
 export const EMBEDDING_MODEL = {
+  /** The upstream model the files are derived from. */
   id: 'Xenova/multilingual-e5-small',
-  /** Hugging Face commit the files are pinned to. */
-  revision: '761b726dd34fb83930e26aab4e9ac3899aa1fa78',
-  /** 8-bit weights (`onnx/model_quantized.onnx`) on every device, so vectors agree. */
+  /** Content address of the pruned build: `e5-pruned/<build>/` on every host. */
+  build: '0c5a50de057d0d47',
+  /** scripts/models/e5-keep-set.txt the build was pruned with. */
+  keepSet: {
+    rows: 31_229,
+    sha256: '409381efc0e9ce6c87352acd351baf6c21b4c505cc8fc34613f4c9a36b4756fe',
+  },
   dtype: 'q8',
   dimensions: 384,
   files: [
     {
       path: 'config.json',
-      bytes: 658,
-      sha256: 'cb99455288675345e1a4f411438d5d0adbba5fbd3a67ea4fb03c015433b996c1',
+      bytes: 564,
+      sha256: '7b64b4f7c522ee67a392090c5298300980b5b977e8581d9ff4090fda1d4a5db7',
     },
     {
       path: 'tokenizer_config.json',
@@ -37,19 +48,34 @@ export const EMBEDDING_MODEL = {
     },
     {
       path: 'tokenizer.json',
-      bytes: 17_082_730,
-      sha256: '0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39',
+      bytes: 1_387_736,
+      sha256: '51f0e573c05ffe38c6073bb4b09d24b51c6ad87eeebb5d7c70c9aeb7fc1c729a',
     },
     {
       path: 'onnx/model_quantized.onnx',
-      bytes: 118_308_185,
-      sha256: 'f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193',
+      bytes: 34_285_913,
+      sha256: '2ae6cdb83c25aeea0e65fb6fad23f037b8d6712e174c717371daff5ece743686',
     },
   ] satisfies AssetFile[],
 } as const;
 
-/** `env.localModelPath`: transformers.js appends `<model id>/<file>`. */
-export const MODEL_BASE_PATH = `/models/${EMBEDDING_MODEL.revision.slice(0, 12)}/`;
+/** Embedder model id: the upstream model and the pruned build, shared with the agent. */
+export const EMBEDDING_MODEL_ID = `${EMBEDDING_MODEL.id}@pruned-${EMBEDDING_MODEL.build}`;
+
+/** Where `scripts/models` publishes a build, relative to a model host's base URL. */
+export const MODEL_BUILD_PATH = `e5-pruned/${EMBEDDING_MODEL.build}/`;
+
+/** Same-origin model files (self-host, offline, development). */
+export const SAME_ORIGIN_MODEL_BASE = '/models/';
+
+/**
+ * Directory URL the worker fetches the model from: `<base>/e5-pruned/<build>/`. `base` is the
+ * instance's `EMBEDDING_MODEL_URL`, or this origin's `/models/` when it has none.
+ */
+export function modelDirectoryUrl(base: string | null, origin: string): string {
+  const root = new URL(base ?? SAME_ORIGIN_MODEL_BASE, origin).href.replace(/\/*$/, '/');
+  return new URL(MODEL_BUILD_PATH, root).href;
+}
 
 /** Must match the onnxruntime-web version @huggingface/transformers resolves to. */
 export const ORT_VERSION = '1.31.0-dev.20260914-8d85527a0';
@@ -67,5 +93,5 @@ export const FFMPEG_CORE_VERSION = '0.12.10';
 export const FFMPEG_BASE_PATH = `/ffmpeg/${FFMPEG_CORE_VERSION}/`;
 export const FFMPEG_FILES = ['ffmpeg-core.js', 'ffmpeg-core.wasm'] as const;
 
-/** Every self-hosted asset lives under one of these prefixes (immutable cache headers). */
+/** Every same-origin asset lives under one of these prefixes (immutable cache headers). */
 export const ASSET_PREFIXES = ['/models/', '/ort/', '/ffmpeg/'] as const;

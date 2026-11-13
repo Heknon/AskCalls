@@ -92,6 +92,21 @@ export const InstanceConfigSchema = z.object({
     .default({ provider: 'anthropic' }),
 
   embeddingModel: z.string().default('Xenova/multilingual-e5-small'),
+  /**
+   * Where browsers fetch the embedding model files: a base URL under which
+   * `e5-pruned/<build>/` is published (`bun run models:publish`). Unset: this app's /models/.
+   * Ignored in offline mode. Files are verified against the hashes the app ships either way.
+   */
+  embeddingModelUrl: z
+    .string()
+    .url()
+    .refine(
+      (u) => /^https:\/\//.test(u) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(u),
+      {
+        message: 'must be an https URL',
+      },
+    )
+    .optional(),
 
   limits: z
     .object({ freeTierMaxCalls: z.number().int().positive().default(500) })
@@ -197,6 +212,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['ANTHROPIC_API_KEY', 'llm.apiKey', str],
   ['LLM_BASE_URL', 'llm.baseUrl', str],
   ['EMBEDDING_MODEL', 'embeddingModel', str],
+  ['EMBEDDING_MODEL_URL', 'embeddingModelUrl', str],
   ['FREE_TIER_MAX_CALLS', 'limits.freeTierMaxCalls', int],
   ['TELEMETRY', 'telemetry.backends', list],
   ['OTEL_EXPORTER_OTLP_ENDPOINT', 'telemetry.otel.endpoint', str],
