@@ -40,6 +40,18 @@ bun run format             # Biome autofix
 - Components are named by meaning (`CallRow`, `LockedValue`, `DataFlowNote`, `TagChip`), not by look (`GrayBox`, `Card2`).
 - One component per meaning. Before writing a component, search the catalog and `packages/ui`. Need a variation? Add a variant with a meaning (`TagChip variant="star"`), don't copy. A new component is added to the catalog in the same PR.
 
+## Copy: no slop
+
+Every word on screen must earn its place. If removing it loses nothing, remove it.
+
+- No captions that restate what's visible, no reassurance lines, no taglines inside the app. A page title needs no subtitle unless the subtitle carries information the user acts on.
+- Don't advertise encryption in the app. Mention it only where it changes what the user does or decides: unlocking, the recovery code, consent before data goes to a provider, the inbox in-transit notice, and the data-flow line on provider cards. Locked or decrypting state is shown with the lock icon and a skeleton, not a sentence.
+- Empty states: one short line saying what's missing and the action that fixes it.
+- No filler words: seamless, secure, powerful, effortless, simply, just, easily, robust, magic. No exclamation marks, no emojis.
+- Labels are nouns or verbs (`Upload`, `Delete call`), not sentences. Errors say what happened and what to do next, in one line.
+- The marketing site explains the privacy model once, with proof (the diagram, the source, the leak test), not on every section.
+- The same rule applies to code: no comments restating the code, no placeholder text, no TODO stubs.
+
 ## Security rules (non-negotiable)
 
 1. Plaintext never persists server-side: no transcript text, words, names, numbers, tag names, notes or recordings stored unencrypted, logged, cached or sent to telemetry.
