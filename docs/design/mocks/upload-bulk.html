@@ -343,7 +343,8 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
 .nav a[aria-current=page] .i{color:var(--sidebar-accent-foreground)}
 .nav .count{margin-inline-start:auto;font-size:var(--text-xs);color:var(--muted-foreground)}
 .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:.75rem}
-.lockcard{padding:.75rem;border:1px solid var(--sidebar-border);border-radius:var(--radius-lg);background:var(--card);display:flex;flex-direction:column;gap:.5rem}
+.lockbtn{justify-content:flex-start;height:2.25rem;padding-inline:.625rem;color:var(--sidebar-foreground);font-weight:500}
+.lockbtn .i{color:var(--muted-foreground)}
 .main{min-width:0;display:flex;flex-direction:column}
 .topbar{height:var(--header-height);display:flex;align-items:center;gap:.75rem;padding-inline:1.5rem;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
 .content{padding:1.5rem;width:100%;max-width:70rem;margin-inline:auto}
@@ -354,10 +355,10 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
 @media (max-width:1023px){
   .app{grid-template-columns:var(--rail-width) 1fr}
   .sidebar{align-items:center;padding-inline:.5rem}
-  .sidebar .brand span,.sidebar .nav .lbl,.sidebar .nav .count,.sidebar .lockcard .lbl,.sidebar .hide-rail{display:none}
+  .sidebar .brand span,.sidebar .nav .lbl,.sidebar .nav .count,.sidebar .lockbtn .lbl,.sidebar .hide-rail{display:none}
   .sidebar .brand{padding-inline:0}
   .nav a{justify-content:center;width:2.75rem;padding:0}
-  .lockcard{padding:.375rem;border:0;background:none}
+  .lockbtn{width:2.75rem;justify-content:center;padding:0}
 }
 @media (max-width:767px){
   .app{display:block;padding-bottom:calc(var(--bottom-nav-height) + env(safe-area-inset-bottom))}
@@ -472,10 +473,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
       
     </nav>
     <div class="side-foot">
-      <div class="lockcard" data-component="LockStatus">
-        <div class="row lbl" style="gap:.375rem;font-size:var(--text-xs);color:var(--muted-foreground)"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg><span><span data-he="פתוח. יינעל אחרי 15 דקות ללא פעילות.">Unlocked. Locks after 15 min idle.</span></span></div>
-        <button class="btn btn-outline btn-sm" aria-label="Lock now" data-he-aria-label="נעילה עכשיו"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg><span class="lbl"><span data-he="נעילה עכשיו">Lock now</span></span><span class="kbd lbl" data-component="Kbd" style="margin-inline-start:auto">⇧L</span></button>
-      </div>
+      <button class="btn btn-ghost lockbtn" data-component="LockStatus" title="Locks after 15 min idle" data-he-title="ננעל אחרי 15 דקות ללא פעילות" aria-label="Lock now" data-he-aria-label="נעילה עכשיו"><svg class="i " width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg><span class="lbl"><span data-he="נעילה">Lock</span></span><span class="kbd lbl" data-component="Kbd" style="margin-inline-start:auto">⇧L</span></button>
       <div class="row hide-rail" style="padding-inline:.25rem">
         <span class="avatar">DL</span>
         <div class="grow" style="font-size:var(--text-sm);line-height:1.1rem"><div style="font-weight:500">Dana Levi</div><div class="muted" style="font-size:var(--text-xs)"><span data-he="בטא חינמית">Free beta</span> · <span class="tabular">212/500</span></div></div>
@@ -504,7 +502,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
     <div class="stack" style="gap:1rem;min-width:0">
       <section class="card card-pad stack" style="gap:1rem" aria-live="polite">
         <div class="stack" style="gap:.5rem" data-component="JobProgress"><div class="row between" style="font-size:var(--text-sm)"><span><span data-he="<strong>38 מתוך 138 קבצים הושלמו.</strong> 6 בתהליך, 2 נכשלו, 4 כפילויות דולגו. נותרו כ-35 דקות."><strong>38 of 138 files done.</strong> 6 in progress, 2 failed, 4 duplicates skipped. About 35 min left.</span></span><button class="btn btn-outline btn-sm"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="3" width="5" height="18" rx="1" /> <rect x="5" y="3" width="5" height="18" rx="1" /></svg><span data-he="השהיה">Pause</span></button></div><div class="meter" style="height:.5rem"><span style="width:31%"></span></div></div>
-        <p class="hint row" style="gap:.375rem"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /></svg><span data-he="ההתקדמות נשמרת במכשיר הזה. אם סוגרים את הלשונית, אפשר להמשיך כשחוזרים.">Progress is saved on this device. If you close the tab, resume when you come back.</span></p>
+        <p class="hint row" style="gap:.375rem"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /></svg><span data-he="אפשר לסגור את הלשונית ולהמשיך אחר כך.">You can close this tab and resume later.</span></p>
       </section>
       <section class="card" style="overflow:hidden">
   <div class="qhead">
@@ -582,8 +580,8 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
     </div>
     <div class="stack" style="gap:.375rem" data-component="UsageMeter"><div class="row between" style="font-size:var(--text-sm);gap:.75rem"><span><span data-he="תמלול החודש, אחרי הייבוא">Transcription this month, after this import</span></span><span class="muted tabular" style="white-space:nowrap"><bdi dir="ltr">255 / 300</bdi> <span data-he="דק׳">min</span></span></div><div class="meter" role="meter" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span style="width:85%;background:var(--warning)"></span></div></div>
     <p class="hint"><span data-he="כ-214 דקות שמע לתמלול. manifest.csv קבע שמות ותאריכים ל-41 קבצים.">About 214 minutes of audio to transcribe. manifest.csv set names and dates for 41 files.</span></p>
-    <div class="dataflow full" data-component="DataFlowNote" data-route="managed"><div class="df-path" aria-hidden="true"><span class="df-node "><svg class="i " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z" /> <path d="M20.054 15.987H3.946" /></svg><span data-he="המכשיר שלך">Your device</span></span><span class="df-hop"><span class="df-arrow"><svg class="i icon-directional " width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></svg></span><span class="df-node "><svg class="i " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /> <rect width="20" height="8" x="2" y="14" rx="2" ry="2" /> <line x1="6" x2="6.01" y1="6" y2="6" /> <line x1="6" x2="6.01" y1="18" y2="18" /></svg><span data-he="AskCalls">AskCalls</span></span></span><span class="df-hop"><span class="df-arrow"><svg class="i icon-directional " width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></svg></span><span class="df-node ext"><svg class="i " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg><span data-he="ElevenLabs">ElevenLabs</span></span></span></div><p><span data-he="השמע עובר דרך השרתים של AskCalls אל ElevenLabs Scribe v2, בזרימה ובלי שמירה. ElevenLabs עשויה לשמור יומני בקשות לפי המדיניות הרגילה שלה. התמלולים מאונדקסים ומוצפנים במכשיר הזה.">Audio passes through AskCalls servers to ElevenLabs Scribe v2, streamed and never stored. ElevenLabs may keep request logs under its standard policy. Transcripts are indexed and encrypted on this device.</span></p></div>
-    <label class="row" style="gap:.625rem;font-size:var(--text-sm)"><span class="switch on"></span><span data-he="גיבוי הקלטות (מוצפן, Opus)">Back up recordings (encrypted, Opus)</span></label>
+    <div class="dataflow full" data-component="DataFlowNote" data-route="managed"><div class="df-path" aria-hidden="true"><span class="df-node "><svg class="i " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z" /> <path d="M20.054 15.987H3.946" /></svg><span data-he="המכשיר שלך">Your device</span></span><span class="df-hop"><span class="df-arrow"><svg class="i icon-directional " width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></svg></span><span class="df-node "><svg class="i " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /> <rect width="20" height="8" x="2" y="14" rx="2" ry="2" /> <line x1="6" x2="6.01" y1="6" y2="6" /> <line x1="6" x2="6.01" y1="18" y2="18" /></svg><span data-he="AskCalls">AskCalls</span></span></span><span class="df-hop"><span class="df-arrow"><svg class="i icon-directional " width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></svg></span><span class="df-node ext"><svg class="i " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg><span data-he="ElevenLabs">ElevenLabs</span></span></span></div><p><span data-he="השמע עובר דרך AskCalls אל ElevenLabs Scribe v2, בזרימה ובלי שמירה. ElevenLabs עשויה לשמור יומני בקשות לפי המדיניות הרגילה שלה.">Audio passes through AskCalls to ElevenLabs Scribe v2, streamed and not stored. ElevenLabs may keep request logs under its standard policy.</span></p></div>
+    <label class="row" style="gap:.625rem;font-size:var(--text-sm)"><span class="switch on"></span><span data-he="גיבוי הקלטות">Back up recordings</span></label>
   </section>
 </aside>
   </div>
@@ -604,7 +602,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
     document.querySelectorAll('[data-he]').forEach(function(el){
       if(!el.hasAttribute('data-en'))el.setAttribute('data-en',el.innerHTML);
       el.innerHTML=(l==='he')?el.getAttribute('data-he'):el.getAttribute('data-en');});
-    ['placeholder','aria-label','title'].forEach(function(a){
+    ['placeholder','aria-label','title','value'].forEach(function(a){
       document.querySelectorAll('[data-he-'+a+']').forEach(function(el){
         if(!el.hasAttribute('data-en-'+a))el.setAttribute('data-en-'+a,el.getAttribute(a)||'');
         el.setAttribute(a,(l==='he')?el.getAttribute('data-he-'+a):el.getAttribute('data-en-'+a));});});

@@ -343,7 +343,8 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
 .nav a[aria-current=page] .i{color:var(--sidebar-accent-foreground)}
 .nav .count{margin-inline-start:auto;font-size:var(--text-xs);color:var(--muted-foreground)}
 .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:.75rem}
-.lockcard{padding:.75rem;border:1px solid var(--sidebar-border);border-radius:var(--radius-lg);background:var(--card);display:flex;flex-direction:column;gap:.5rem}
+.lockbtn{justify-content:flex-start;height:2.25rem;padding-inline:.625rem;color:var(--sidebar-foreground);font-weight:500}
+.lockbtn .i{color:var(--muted-foreground)}
 .main{min-width:0;display:flex;flex-direction:column}
 .topbar{height:var(--header-height);display:flex;align-items:center;gap:.75rem;padding-inline:1.5rem;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
 .content{padding:1.5rem;width:100%;max-width:70rem;margin-inline:auto}
@@ -354,10 +355,10 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
 @media (max-width:1023px){
   .app{grid-template-columns:var(--rail-width) 1fr}
   .sidebar{align-items:center;padding-inline:.5rem}
-  .sidebar .brand span,.sidebar .nav .lbl,.sidebar .nav .count,.sidebar .lockcard .lbl,.sidebar .hide-rail{display:none}
+  .sidebar .brand span,.sidebar .nav .lbl,.sidebar .nav .count,.sidebar .lockbtn .lbl,.sidebar .hide-rail{display:none}
   .sidebar .brand{padding-inline:0}
   .nav a{justify-content:center;width:2.75rem;padding:0}
-  .lockcard{padding:.375rem;border:0;background:none}
+  .lockbtn{width:2.75rem;justify-content:center;padding:0}
 }
 @media (max-width:767px){
   .app{display:block;padding-bottom:calc(var(--bottom-nav-height) + env(safe-area-inset-bottom))}
@@ -472,10 +473,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
       
     </nav>
     <div class="side-foot">
-      <div class="lockcard" data-component="LockStatus">
-        <div class="row lbl" style="gap:.375rem;font-size:var(--text-xs);color:var(--muted-foreground)"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg><span><span data-he="פתוח. יינעל אחרי 15 דקות ללא פעילות.">Unlocked. Locks after 15 min idle.</span></span></div>
-        <button class="btn btn-outline btn-sm" aria-label="Lock now" data-he-aria-label="נעילה עכשיו"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg><span class="lbl"><span data-he="נעילה עכשיו">Lock now</span></span><span class="kbd lbl" data-component="Kbd" style="margin-inline-start:auto">⇧L</span></button>
-      </div>
+      <button class="btn btn-ghost lockbtn" data-component="LockStatus" title="Locks after 15 min idle" data-he-title="ננעל אחרי 15 דקות ללא פעילות" aria-label="Lock now" data-he-aria-label="נעילה עכשיו"><svg class="i " width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg><span class="lbl"><span data-he="נעילה">Lock</span></span><span class="kbd lbl" data-component="Kbd" style="margin-inline-start:auto">⇧L</span></button>
       <div class="row hide-rail" style="padding-inline:.25rem">
         <span class="avatar">DL</span>
         <div class="grow" style="font-size:var(--text-sm);line-height:1.1rem"><div style="font-weight:500">Dana Levi</div><div class="muted" style="font-size:var(--text-xs)"><span data-he="בטא חינמית">Free beta</span> · <span class="tabular">212/500</span></div></div>
@@ -498,7 +496,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
     </header>
     
     <main class="content" style="max-width:80rem">
-  <div class="pagehead" data-component="PageHeader"><div><h1 class="h-page"><span data-he="תגיות וכללים">Tags and rules</span></h1><p class="muted" style="margin-top:.25rem"><span data-he="שמות, דוגמאות וכללים מוצפנים ורצים במכשירים שלך.">Names, examples and rules are encrypted and run on your devices.</span></p></div></div>
+  <div class="pagehead" data-component="PageHeader"><div><h1 class="h-page"><span data-he="תגיות וכללים">Tags and rules</span></h1></div></div>
   <div class="tabs" role="tablist" style="margin-bottom:1.25rem">
     <button class="tab" role="tab" aria-selected="false"><svg class="i " width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /> <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></svg><span data-he="תגיות">Tags</span></button>
     <button class="tab" role="tab" aria-selected="false"><svg class="i " width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></svg><span data-he="כוונות">Intents</span></button>
@@ -514,8 +512,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
   </ul>
 </section><section class="card" data-component="RuleBuilder">
   <div class="card-head"><div class="grow stack" style="gap:.25rem">
-    <input class="input" value="Hot leads" data-he-value="לידים חמים" style="font-weight:600;font-size:var(--text-md);height:2.5rem;max-width:24rem" aria-label="Rule name" data-he-aria-label="שם הכלל">
-    <span class="hint"><span data-he="רץ במכשיר הזה כשמייבאים שיחות. הגדרות הכללים מוצפנות.">Runs on this device when calls are imported. Rule definitions are encrypted.</span></span></div>
+    <input class="input" value="Hot leads" data-he-value="לידים חמים" style="font-weight:600;font-size:var(--text-md);height:2.5rem;max-width:24rem" aria-label="Rule name" data-he-aria-label="שם הכלל"></div>
     <label class="row" style="gap:.5rem;font-size:var(--text-sm)"><span class="switch on"></span><span data-he="פעיל">On</span></label></div>
   <div class="card-pad stack" style="gap:1.5rem">
     <div class="blk">
@@ -531,9 +528,9 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
       <div class="cond act" data-component="RuleAction"><button class="input select row" style="text-align:start"><span data-he="סימון בכוכב">Star the call</span></button><span></span><button class="btn btn-ghost btn-icon btn-sm" aria-label="Remove condition" data-he-aria-label="הסרת תנאי"><svg class="i " width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></svg></button></div>
       <div><button class="btn btn-ghost btn-sm"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /> <path d="M12 5v14" /></svg><span data-he="הוספת פעולה">Add action</span></button></div>
     </div>
-    <div class="preview"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></svg><span data-he="מתאים כרגע ל-23 מתוך 212 השיחות שלך.">Matches 23 of your 212 calls right now.</span> <a href="#"><span data-he="הצגה">Show them</span></a></div>
-    <div class="stack" style="gap:.5rem" data-component="JobProgress"><div class="row between" style="font-size:var(--text-sm)"><span><span data-he="מחיל על שיחות קיימות במכשיר הזה: 136 מתוך 212">Applying to existing calls on this device: 136 of 212</span></span><button class="btn btn-ghost btn-sm"><span data-he="עצירה">Stop</span></button></div><div class="meter" style="height:.5rem"><span style="width:64%"></span></div></div>
-    <div class="rfoot"><button class="btn btn-primary"><span data-he="שמירת הכלל">Save rule</span></button><button class="btn btn-outline"><span data-he="החלה על שיחות קיימות">Apply to existing calls</span></button><span class="grow"></span><span class="row muted" style="gap:.375rem;font-size:var(--text-xs)" data-component="SaveStatus" aria-live="polite"><svg class="i " width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg><span data-he="נשמר, מוצפן">Saved, encrypted</span></span><button class="btn btn-ghost" style="color:var(--destructive)"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg><span data-he="מחיקת הכלל">Delete rule</span></button></div>
+    <div class="preview"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></svg><span data-he="מתאים ל-23 שיחות.">Matches 23 calls.</span> <a href="#"><span data-he="הצגה">Show them</span></a></div>
+    <div class="stack" style="gap:.5rem" data-component="JobProgress"><div class="row between" style="font-size:var(--text-sm)"><span><span data-he="מחיל על שיחות קיימות: 136 מתוך 212">Applying to existing calls: 136 of 212</span></span><button class="btn btn-ghost btn-sm"><span data-he="עצירה">Stop</span></button></div><div class="meter" style="height:.5rem"><span style="width:64%"></span></div></div>
+    <div class="rfoot"><button class="btn btn-primary"><span data-he="שמירת הכלל">Save rule</span></button><button class="btn btn-outline"><span data-he="החלה על שיחות קיימות">Apply to existing calls</span></button><span class="grow"></span><span class="row muted" style="gap:.375rem;font-size:var(--text-xs)" data-component="SaveStatus" aria-live="polite"><svg class="i " width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg><span data-he="נשמר">Saved</span></span><button class="btn btn-ghost" style="color:var(--destructive)"><svg class="i " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg><span data-he="מחיקת הכלל">Delete rule</span></button></div>
   </div>
 </section></div>
 </main>
