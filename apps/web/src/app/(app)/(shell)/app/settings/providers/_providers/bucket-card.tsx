@@ -1,113 +1,52 @@
 'use client';
 
+import { activeStoreRef, switchRecordings } from '@askcalls/client-core/recording-stores/refs';
+import {
+  type BucketConfig,
+  corsRulesFor,
+} from '@askcalls/client-core/recording-stores/s3-compatible';
 import { type Providers, randomId } from '@askcalls/client-core/userdata';
 import { CopyableCode } from '@askcalls/ui/components/CopyableCode';
 import { DataFlowNote } from '@askcalls/ui/components/DataFlowNote';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { HealthBadge } from '@askcalls/ui/components/HealthBadge';
-import { JobProgress } from '@askcalls/ui/components/JobProgress';
 import { MaskedSecret } from '@askcalls/ui/components/MaskedSecret';
 import { ProviderCard, type ProviderChoice } from '@askcalls/ui/components/ProviderCard';
 import { TestConnectionResult } from '@askcalls/ui/components/TestConnectionResult';
 import { Alert } from '@askcalls/ui/primitives/alert';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Input } from '@askcalls/ui/primitives/input';
-import { FileAudio, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
-import { type BucketConfig, corsRulesFor } from '../../../../../../../client/adapters/own-bucket';
+import { type FormEvent, lazy, Suspense, useId, useState } from 'react';
 import { normalizeOrigin } from '../../../../../../../client/direct-origins';
-import { useNotify } from '../../../../../../../client/notices/notices';
-import { useAppSession, useUnlocked } from '../../../../../../../client/session/session';
+import { useUnlocked } from '../../../../../../../client/session/session';
 import { type TestOutcome, testBucket } from './connection-test';
 import { Field, testDetail } from './key-card';
-import { instanceRecordings, moveRecordings } from './move-recordings';
+import { MoveRecordings } from './move-section';
 import { maskParts, useSaveProviders } from './save';
+
+/** The Drive panel and its OAuth popup load only when someone picks or uses Drive. */
+const DrivePanel = lazy(() => import('./drive-panel').then((m) => ({ default: m.DrivePanel })));
 
 type Draft = Omit<BucketConfig, 'id'>;
 const EMPTY: Draft = { endpoint: '', bucket: '', region: '', accessKeyId: '', secretAccessKey: '' };
 
-/** Offers to move instance-bucket recordings to the user's bucket, on this device. */
-function MoveRecordings({ bucketRef }: { bucketRef: string }) {
-  const t = useTranslations('settings.prov.move');
-  const { ctx } = useUnlocked();
-  const { refreshMe } = useAppSession();
-  const notify = useNotify();
-  const [ids, setIds] = useState<string[] | null>(null);
-  const [done, setDone] = useState<number | null>(null);
-  const [failed, setFailed] = useState(0);
-  const abort = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    instanceRecordings(ctx).then(
-      (x) => !cancelled && setIds(x),
-      () => !cancelled && setIds([]),
-    );
-    return () => {
-      cancelled = true;
-      abort.current?.abort();
-    };
-  }, [ctx]);
-
-  if (!ids || ids.length === 0) return null;
-
-  const start = async () => {
-    abort.current = new AbortController();
-    setDone(0);
-    setFailed(0);
-    const r = await moveRecordings(ctx, bucketRef, ids, {
-      onProgress: setDone,
-      signal: abort.current.signal,
-    });
-    setDone(null);
-    setFailed(r.failed);
-    if (r.moved > 0)
-      notify({ kind: 'event', icon: FileAudio, title: t('done', { count: r.moved }) });
-    void refreshMe().catch(() => {});
-    setIds(await instanceRecordings(ctx).catch(() => []));
-  };
-
-  return (
-    <div className="flex flex-col gap-3 rounded-md border border-border p-4">
-      <p className="font-medium">{t('title')}</p>
-      <p className="text-muted-foreground text-sm">{t('body', { count: ids.length })}</p>
-      {done !== null ? (
-        <>
-          <JobProgress
-            done={done}
-            total={ids.length}
-            label={t('progress', { done, total: ids.length })}
-            onStop={() => abort.current?.abort()}
-            labels={{
-              pause: t('pause'),
-              resume: t('resume'),
-              stop: t('stop'),
-              progress: t('progressLabel'),
-            }}
-          />
-          <p className="text-muted-foreground text-sm">{t('keepOpen')}</p>
-        </>
-      ) : (
-        <div>
-          <Button variant="outline" onClick={start}>
-            {t('start')}
-          </Button>
-        </div>
-      )}
-      {failed > 0 ? <ErrorState scope="inline" title={t('failed', { count: failed })} /> : null}
-    </div>
-  );
-}
-
-/** Recording backups: the instance bucket, the user's own S3-compatible bucket, or off. */
+/**
+ * Recording backups: the instance bucket, the user's own S3-compatible bucket, their Google
+ * Drive, or off.
+ */
 export function BucketCard({
-  value,
+  doc,
+  googleDrive,
   onSaved,
 }: {
-  value: Providers['recordings'];
+  doc: Providers;
+  /** The instance has a Google OAuth client for Drive. */
+  googleDrive: boolean;
   onSaved: (doc: Providers) => void;
 }) {
+  const value = doc.recordings;
   const t = useTranslations('settings.prov');
   const tb = useTranslations('settings.prov.bucket');
   const ts = useTranslations('settings');
@@ -133,7 +72,7 @@ export function BucketCard({
     setSaving(true);
     setError(null);
     try {
-      const r = await save((p) => ({ ...p, recordings: next }));
+      const r = await save((p) => switchRecordings(p, next));
       if (r.reloading) return;
       onSaved(r.doc);
       setReplacing(false);
@@ -179,7 +118,10 @@ export function BucketCard({
   const runTest = async () => {
     if (!saved) return;
     setTest({ state: 'testing' });
-    setTest({ state: 'done', outcome: await testBucket((b) => client.ownBuckets.probe(b), saved) });
+    setTest({
+      state: 'done',
+      outcome: await testBucket((b) => client.ownStores.s3.probeBucket(b), saved),
+    });
   };
 
   const set = (k: keyof Draft) => (e: { target: { value: string } }) => {
@@ -194,8 +136,22 @@ export function BucketCard({
       (['endpoint', 'bucket', 'region', 'accessKeyId'] as const).some(
         (k) => draft[k] !== saved[k],
       ));
-  const status = value.mode === 'off' ? 'off' : choice === 'own' && dirty ? 'setup' : 'working';
-  const flow = choice === 'own' ? 'recOwn' : choice === 'off' ? 'recOff' : 'recManaged';
+  const status =
+    value.mode === 'off'
+      ? 'off'
+      : (choice === 'own' && dirty) || (choice === 'drive' && value.mode !== 'drive')
+        ? 'setup'
+        : 'working';
+  const flow = (
+    {
+      own: 'recOwn',
+      drive: 'recDrive',
+      off: 'recOff',
+      managed: 'recManaged',
+      local: 'recManaged',
+    } as const
+  )[choice];
+  const target = activeStoreRef(doc);
   const host = saved ? new URL(saved.endpoint).host : '';
 
   return (
@@ -215,13 +171,22 @@ export function BucketCard({
         options: [
           { value: 'managed', label: t('choice.managed'), disabled: saving },
           { value: 'own', label: t('choice.bucket'), disabled: saving },
+          ...(googleDrive || value.mode === 'drive'
+            ? [{ value: 'drive' as const, label: t('choice.drive'), disabled: saving }]
+            : []),
           { value: 'off', label: t('choice.off'), disabled: saving },
         ],
       }}
     >
       <DataFlowNote
-        route={choice === 'own' ? 'direct' : choice === 'off' ? 'off' : 'on-device'}
-        nodes={{ device: td('device'), server: td('server'), provider: tb('provider') }}
+        route={
+          choice === 'own' || choice === 'drive' ? 'direct' : choice === 'off' ? 'off' : 'on-device'
+        }
+        nodes={{
+          device: td('device'),
+          server: td('server'),
+          provider: choice === 'drive' ? t('choice.drive') : tb('provider'),
+        }}
       >
         {t(`flow.${flow}`)}
       </DataFlowNote>
@@ -332,8 +297,17 @@ export function BucketCard({
               />
             </div>
           ) : null}
-          <MoveRecordings bucketRef={saved.id} />
         </>
+      ) : null}
+
+      {choice === 'drive' ? (
+        <Suspense fallback={null}>
+          <DrivePanel doc={doc} onSaved={onSaved} />
+        </Suspense>
+      ) : null}
+
+      {target !== undefined && choice === value.mode && !dirty ? (
+        <MoveRecordings doc={doc} target={target} onSaved={onSaved} />
       ) : null}
     </ProviderCard>
   );

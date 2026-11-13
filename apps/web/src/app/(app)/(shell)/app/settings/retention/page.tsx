@@ -1,6 +1,7 @@
 'use client';
 
 import { getRetention, putRetention } from '@askcalls/api-contract/routes/settings';
+import { knownStores } from '@askcalls/client-core/recording-stores/refs';
 import { ChoiceCard } from '@askcalls/ui/components/ChoiceCard';
 import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
@@ -28,7 +29,7 @@ export default function RetentionSettingsPage() {
     () =>
       Promise.all([
         client.api.request(getRetention, {}),
-        ctx.userData.get('providers').then((p) => p.recordings.mode === 'own'),
+        ctx.userData.get('providers').then((p) => knownStores(p).length > 0),
       ]),
     [client, ctx],
   );

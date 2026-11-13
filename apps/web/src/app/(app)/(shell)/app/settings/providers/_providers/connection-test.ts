@@ -1,8 +1,11 @@
 import { type ApiClient, ApiError } from '@askcalls/api-contract';
 import { ask, transcribe } from '@askcalls/api-contract/routes/providers';
+import type {
+  BucketConfig,
+  BucketProbe,
+} from '@askcalls/client-core/recording-stores/s3-compatible';
 import type { Providers } from '@askcalls/client-core/userdata';
 import { isDomainError } from '@askcalls/domain';
-import type { BucketConfig, BucketProbe } from '../../../../../../../client/adapters/own-bucket';
 import { ownKeyProvider } from '../../../../../../../client/adapters/own-key-transcriber';
 
 export type OwnKey = Extract<Providers['transcription'], { mode: 'own' }>['key'];

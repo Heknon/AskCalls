@@ -9,20 +9,26 @@ import type {
   SecretStore,
   Translator,
 } from '@askcalls/client-core/ports/index';
+import { knownStores } from '@askcalls/client-core/recording-stores/refs';
+import { RecordingStores } from '@askcalls/client-core/recording-stores/router';
+import { bucketOrigin } from '@askcalls/client-core/recording-stores/s3-compatible';
 import { KeySession } from '@askcalls/client-core/session';
 import { managedTranscriber } from '@askcalls/client-core/transcription';
 import type { Providers } from '@askcalls/client-core/userdata';
-import { DomainError } from '@askcalls/domain';
 import { BrowserAudioCodec } from './adapters/audio/codec';
 import { BrowserBulkFiles } from './adapters/bulk-files';
 import { type EmbedderStatus, WorkerEmbedder } from './adapters/embedder/embedder';
 import { DeviceDb } from './adapters/idb';
-import { bucketOrigin, SigV4BucketStore } from './adapters/own-bucket';
 import { SettingsTranscriber } from './adapters/own-key-transcriber';
 import { WebAuthnPasskeyAuthenticator } from './adapters/passkey';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from './adapters/stores';
 import { FetchBlobFetcher, FetchRecordingUploader } from './adapters/transfer';
-import { type DirectAccess, normalizeOrigin, PROVIDER_ORIGINS } from './direct-origins';
+import {
+  type DirectAccess,
+  GOOGLE_DRIVE_PROVIDER,
+  normalizeOrigin,
+  PROVIDER_ORIGINS,
+} from './direct-origins';
 import { BlobUrls, installLockRules } from './lock';
 import { readEmbeddingModelUrl } from './runtime-config';
 
@@ -44,7 +50,8 @@ export interface BrowserClient {
   embedderStatus(): EmbedderStatus | null;
   onEmbedderStatus(listener: (s: EmbedderStatus) => void): () => void;
   audio: BrowserAudioCodec;
-  ownBuckets: SigV4BucketStore;
+  /** The user's own recording stores (S3-compatible buckets, Google Drive). */
+  ownStores: RecordingStores;
   /** Object URLs for decrypted media; revoked on lock. */
   blobUrls: BlobUrls;
   /**
@@ -86,8 +93,30 @@ export function directAccessFor(p: Providers): DirectAccess {
       if (o) origins.push(o);
     }
   }
-  if (p.recordings.mode === 'own') origins.push(bucketOrigin(p.recordings.bucket));
+  if (p.recordings.mode === 'drive' || p.previousStores.drives.length > 0) {
+    providers.push(GOOGLE_DRIVE_PROVIDER);
+  }
+  const buckets = [
+    ...(p.recordings.mode === 'own' ? [p.recordings.bucket] : []),
+    ...p.previousStores.buckets,
+  ];
+  for (const b of buckets) origins.push(bucketOrigin(b));
   return { providers, origins };
+}
+
+const SWEEP_MARK = 'recording-sweep-after';
+
+/**
+ * After unlock: deletes recordings the server queued for the user's own stores (retention,
+ * deleted calls), which it can't reach itself. Loads only when an own store is configured.
+ */
+async function sweepOwnStores(ctx: ClientContext, secrets: SecretStore): Promise<void> {
+  if (knownStores(await ctx.userData.get('providers')).length === 0) return;
+  const { sweepOrphanedRecordings } = await import('@askcalls/client-core/recording-stores/move');
+  const mark = await secrets.get(SWEEP_MARK);
+  const after = mark ? new TextDecoder().decode(mark) : null;
+  const next = await sweepOrphanedRecordings(ctx, after);
+  if (next && next !== after) await secrets.set(SWEEP_MARK, new TextEncoder().encode(next));
 }
 
 /** Translation code loads on the first upload that needs it, not with every page. */
@@ -128,12 +157,11 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
   let ctx: ClientContext | null = null;
   const context = () => ctx!;
 
-  const ownBuckets = new SigV4BucketStore(async (bucketRef) => {
-    const p = await context().userData.get('providers');
-    if (p.recordings.mode !== 'own' || p.recordings.bucket.id !== bucketRef) {
-      throw new DomainError('not_found', 'this bucket is not configured');
-    }
-    return p.recordings.bucket;
+  const ownStores = new RecordingStores({
+    api,
+    providers: () => context().userData.get('providers'),
+    updateProviders: (mutate) => context().userData.update('providers', mutate),
+    ...(opts.fetch && { fetch: opts.fetch }),
   });
   ctx = createClientContext({
     api,
@@ -156,23 +184,26 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     ),
     uploader: new FetchRecordingUploader(),
     fetcher: new FetchBlobFetcher(),
-    ownBuckets,
+    ownStores,
   });
 
   const putDirect = (access: DirectAccess) => api.request(putDirectAccess, { body: access });
   const syncDirectAccess = async () =>
     putDirect(directAccessFor(await context().userData.get('providers')));
 
+  const secrets = new IdbSecretStore(db);
   const unsubscribe = session.subscribe((e) => {
     if (e.type === 'unlocked') {
       void syncDirectAccess().then(
         (r) => r.changed && opts.onDirectAccessChange?.(),
         () => {},
       );
+      void sweepOwnStores(context(), secrets).catch(() => {});
     }
   });
   const unwipe = session.onWipe(() => {
     blobUrls.revokeAll();
+    ownStores.clear();
     audio.dispose();
     if (!opts.keepEmbedderOnLock) worker?.dispose();
   });
@@ -182,7 +213,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     ctx,
     api,
     session,
-    secrets: new IdbSecretStore(db),
+    secrets,
     deviceKeys: new IdbDeviceKeyStore(db),
     passkeys: new WebAuthnPasskeyAuthenticator(),
     bulkState: new IdbBulkStateStore(db, session),
@@ -191,7 +222,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     embedderStatus: () => worker?.status ?? null,
     onEmbedderStatus: (listener) => worker?.onStatus(listener) ?? (() => {}),
     audio,
-    ownBuckets,
+    ownStores,
     blobUrls,
     syncDirectAccess,
     clearDirectAccess: async () => {
