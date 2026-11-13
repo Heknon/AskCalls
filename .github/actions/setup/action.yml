@@ -1,8 +1,14 @@
 name: Setup
 description: >-
   Bun at the version in package.json (packageManager), a cached package store, and a frozen
-  install. The install also brings the pinned Vercel and Neon CLIs (root devDependencies), so
-  every workflow runs `bunx vercel` / `bunx neonctl` at the versions in bun.lock.
+  install of the app and of infra/ (the CDK app, a separate install so aws-cdk-lib stays out of
+  the app's). The install also brings the pinned Vercel and Neon CLIs (root devDependencies), so
+  every workflow runs `bunx vercel` / `bunx neonctl` at the versions in bun.lock, and `bunx cdk`
+  in infra/ at the version in infra/bun.lock.
+inputs:
+  infra:
+    description: Also install infra/ (needed by the fast checks and the CDK deploy).
+    default: "true"
 runs:
   using: composite
   steps:
@@ -12,7 +18,11 @@ runs:
     - uses: actions/cache@v4
       with:
         path: ~/.bun/install/cache
-        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'infra/bun.lock') }}
         restore-keys: bun-${{ runner.os }}-
     - shell: bash
+      run: bun install --frozen-lockfile
+    - if: inputs.infra == 'true'
+      shell: bash
+      working-directory: infra
       run: bun install --frozen-lockfile
