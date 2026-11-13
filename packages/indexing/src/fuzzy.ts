@@ -66,14 +66,22 @@ export interface ExpandOptions {
 }
 
 export function compareVariants(a: Variant, b: Variant): number {
-  return a.distance - b.distance || b.frequency - a.frequency || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0);
+  return (
+    a.distance - b.distance ||
+    b.frequency - a.frequency ||
+    (a.form < b.form ? -1 : a.form > b.form ? 1 : 0)
+  );
 }
 
 /**
  * Vocabulary forms that match one normalized term, ranked by distance then frequency, at most
  * `maxVariants`. The term itself is not included unless it is in the vocabulary.
  */
-export function expandTerm(term: string, vocabulary: ReadonlyVocabulary, opts: ExpandOptions = {}): Variant[] {
+export function expandTerm(
+  term: string,
+  vocabulary: ReadonlyVocabulary,
+  opts: ExpandOptions = {},
+): Variant[] {
   const maxVariants = opts.maxVariants ?? MAX_VARIANTS_PER_TERM;
   const prefix = opts.explicitPrefix || (opts.includePrefixes === true && letterCount(term) >= 3);
   const maxDist = opts.fuzzy === false ? 0 : maxEditDistance(term);

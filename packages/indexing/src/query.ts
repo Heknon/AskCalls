@@ -64,7 +64,10 @@ export function prepareQuery(query: string, opts: PrepareQueryOptions = {}): Pre
         ignored.push(word);
         return;
       }
-      const forms = own.sort((a, b) => a.rank - b.rank).map((f) => f.form).slice(0, max);
+      const forms = own
+        .sort((a, b) => a.rank - b.rank)
+        .map((f) => f.form)
+        .slice(0, max);
       const variants: Variant[] = [];
       if (opts.vocabulary) {
         const found = new Map<string, Variant>();
@@ -83,13 +86,20 @@ export function prepareQuery(query: string, opts: PrepareQueryOptions = {}): Pre
         }
         variants.push(...[...found.values()].sort(compareVariants).slice(0, max - forms.length));
       }
-      terms.push({ term: word, prefix, forms: [...forms, ...variants.map((v) => v.form)], variants });
+      terms.push({
+        term: word,
+        prefix,
+        forms: [...forms, ...variants.map((v) => v.form)],
+        variants,
+      });
     });
   }
 
   const also = new Map<string, Variant>();
   for (const t of terms) for (const v of t.variants) if (!also.has(v.form)) also.set(v.form, v);
-  const redacted = createRedactor(opts.redaction).redact(query.replace(/\*+(?=\s|$)/g, '').trim()).text;
+  const redacted = createRedactor(opts.redaction).redact(
+    query.replace(/\*+(?=\s|$)/g, '').trim(),
+  ).text;
   return {
     terms,
     keywordGroups: terms.map((t) => t.forms),

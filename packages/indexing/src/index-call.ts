@@ -115,7 +115,9 @@ export function contentText(text: string): string {
 
 function lookupOf(synonyms: AnalyzeCallInput['synonyms']): SynonymLookup | undefined {
   if (!synonyms) return undefined;
-  return synonyms instanceof Map ? synonyms : buildSynonymLookup(synonyms as readonly SynonymEntry[]);
+  return synonyms instanceof Map
+    ? synonyms
+    : buildSynonymLookup(synonyms as readonly SynonymEntry[]);
 }
 
 /** E.164 numbers of a contact list. */
@@ -158,10 +160,9 @@ export function analyzeCall(input: AnalyzeCallInput): AnalyzedCall {
         ? lastEnd
         : null;
 
-  const names = [
-    ...contacts.map((c) => c.name ?? ''),
-    meta.contactName ?? '',
-  ].filter((n) => n.trim() !== '');
+  const names = [...contacts.map((c) => c.name ?? ''), meta.contactName ?? ''].filter(
+    (n) => n.trim() !== '',
+  );
   const redactor = createRedactor({ names, region, stopwords: input.stopwords });
   const redactionCounts = Object.fromEntries(REDACTION_KINDS.map((k) => [k, 0])) as Record<
     RedactionKind,
@@ -210,7 +211,9 @@ export async function indexCall(input: IndexCallInput): Promise<IndexedCall> {
   const analyzed = analyzeCall({ ...input, synonyms });
   const region = input.region ?? DEFAULT_PHONE_REGION;
 
-  const vectors = analyzed.chunks.length ? await input.embed(analyzed.chunks.map((c) => c.embedText)) : [];
+  const vectors = analyzed.chunks.length
+    ? await input.embed(analyzed.chunks.map((c) => c.embedText))
+    : [];
   if (vectors.length !== analyzed.chunks.length) {
     throw new DomainError('provider_error', 'Embedder returned a different number of vectors', {
       expected: analyzed.chunks.length,

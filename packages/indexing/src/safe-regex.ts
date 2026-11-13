@@ -71,6 +71,13 @@ export function checkRegex(pattern: string, flags = 'u'): RegexCheck {
         if (kind.startsWith('=') || kind.startsWith('!') || kind === '<=' || kind === '<!') {
           return { ok: false, reason: 'lookaround' };
         }
+        // Skip the group specifier: `?:`, `?<name>`, `?i:`.
+        const end = pattern[i + 2] === '<' ? pattern.indexOf('>', i) : pattern.indexOf(':', i);
+        if (end < 0) return { ok: false, reason: 'syntax' };
+        stack.push({ hasQuantifier: false, hasAlternation: false });
+        lastAtom = null;
+        i = end;
+        continue;
       }
       stack.push({ hasQuantifier: false, hasAlternation: false });
       lastAtom = null;
@@ -99,7 +106,8 @@ export function checkRegex(pattern: string, flags = 'u'): RegexCheck {
       const m = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(i));
       if (m) {
         const min = Number(m[1]);
-        const max = m[2] === undefined ? min : m[3] === '' ? Number.POSITIVE_INFINITY : Number(m[3]);
+        const max =
+          m[2] === undefined ? min : m[3] === '' ? Number.POSITIVE_INFINITY : Number(m[3]);
         if (min > MAX_REPEAT || (Number.isFinite(max) && max > MAX_REPEAT)) {
           return { ok: false, reason: 'repeat_too_large' };
         }

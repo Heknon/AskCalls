@@ -33,7 +33,12 @@ interface Word {
   n: number;
 }
 
-function closest(candidates: readonly number[], lo: number, hi: number, ideal: number): number | null {
+function closest(
+  candidates: readonly number[],
+  lo: number,
+  hi: number,
+  ideal: number,
+): number | null {
   let best: number | null = null;
   for (const b of candidates) {
     if (b < lo || b > hi) continue;
@@ -61,7 +66,9 @@ export function chunkSegments(
     const parts = s.text.split(/\s+/).filter(Boolean);
     if (parts.length === 0) return;
     boundaries.push(words.length);
-    parts.forEach((text, i) => words.push({ text, seg, i, n: parts.length }));
+    parts.forEach((text, i) => {
+      words.push({ text, seg, i, n: parts.length });
+    });
   });
   const n = words.length;
   if (n === 0) return [];
@@ -95,11 +102,19 @@ export function chunkSegments(
       break;
     }
     const ideal = start + target;
-    const end = closest(boundaries, Math.max(start + overlap + 1, ideal - snap), ideal + snap, ideal) ?? ideal;
+    const end =
+      closest(boundaries, Math.max(start + overlap + 1, ideal - snap), ideal + snap, ideal) ??
+      ideal;
     emit(start, end);
     const idealStart = end - overlap;
     const half = Math.ceil(snap / 3);
-    let next = closest(boundaries, Math.max(start + 1, idealStart - half), Math.min(end, idealStart + half), idealStart) ?? idealStart;
+    let next =
+      closest(
+        boundaries,
+        Math.max(start + 1, idealStart - half),
+        Math.min(end, idealStart + half),
+        idealStart,
+      ) ?? idealStart;
     if (next <= start) next = start + 1;
     start = next;
   }

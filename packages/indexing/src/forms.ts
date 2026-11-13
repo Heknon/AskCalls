@@ -49,7 +49,9 @@ export function wordForms(word: string, opts: FormOptions = {}): RankedForm[] {
   if (bare !== word) bases.push(bare);
   bases.forEach((base, i) => {
     add(base, i);
-    hebrewPrefixForms(base).forEach((f, k) => add(f, 2 + k));
+    hebrewPrefixForms(base).forEach((f, k) => {
+      add(f, 2 + k);
+    });
   });
 
   return [...ranked].map(([form, rank]) => ({ form, rank }));

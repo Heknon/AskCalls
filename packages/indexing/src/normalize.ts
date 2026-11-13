@@ -37,7 +37,7 @@ const CHAR_MAP: Record<string, string> = {
   // Apostrophes and geresh → '
   '’': "'",
   '‘': "'",
-  'ʼ': "'",
+  ʼ: "'",
   '׳': "'",
   '`': "'",
   '´': "'",
@@ -45,7 +45,12 @@ const CHAR_MAP: Record<string, string> = {
   '“': '"',
   '”': '"',
 };
-const CHAR_MAP_RE = new RegExp(`[${Object.keys(CHAR_MAP).join('').replace(/[\]\\^-]/g, '\\$&')}]`, 'g');
+const CHAR_MAP_RE = new RegExp(
+  `[${Object.keys(CHAR_MAP)
+    .join('')
+    .replace(/[\]\\^-]/g, '\\$&')}]`,
+  'g',
+);
 
 const HEBREW_LETTER = /[א-ת]/;
 /** ASCII `"` (or ״) between Hebrew letters is gershayim: צה"ל → צה״ל. */
@@ -99,8 +104,7 @@ export function normalizeText(text: string): string {
  * A token: letters, marks and digits, joined by inner apostrophes, gershayim, or `.`/`,` between
  * digits. Everything else separates tokens.
  */
-const TOKEN =
-  /[\p{L}\p{M}\p{N}]+(?:(?:['״]|(?<=\p{N})[.,](?=\p{N}))[\p{L}\p{M}\p{N}]+)*/gu;
+const TOKEN = /[\p{L}\p{M}\p{N}]+(?:(?:['״]|(?<=\p{N})[.,](?=\p{N}))[\p{L}\p{M}\p{N}]+)*/gu;
 
 /** Splits normalized text into tokens. */
 function tokensOf(normalized: string): string[] {

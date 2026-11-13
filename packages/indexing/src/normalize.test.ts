@@ -214,7 +214,15 @@ describe('tokenize', () => {
 describe('digits', () => {
   it('folds every Unicode decimal digit block', () => {
     // Arabic-Indic, Extended Arabic-Indic, Devanagari, Bengali, Thai, Tibetan, Myanmar, Fullwidth, Mathematical
-    const samples = ['٠١٢٣٤٥٦٧٨٩', '۰۱۲۳۴۵۶۷۸۹', '०१२३४५६७८९', '০১২৩৪৫৬৭৮৯', '๐๑๒๓๔๕๖๗๘๙', '༠༡༢༣༤༥༦༧༨༩', '၀၁၂၃၄၅၆၇၈၉'];
+    const samples = [
+      '٠١٢٣٤٥٦٧٨٩',
+      '۰۱۲۳۴۵۶۷۸۹',
+      '०१२३४५६७८९',
+      '০১২৩৪৫৬৭৮৯',
+      '๐๑๒๓๔๕๖๗๘๙',
+      '༠༡༢༣༤༥༦༧༨༩',
+      '၀၁၂၃၄၅၆၇၈၉',
+    ];
     for (const s of samples) expect(foldDigits(s)).toBe('0123456789');
     expect(normalizeWord('０１２')).toBe('012');
     expect(normalizeWord('𝟎𝟏𝟐')).toBe('012');
@@ -254,7 +262,9 @@ describe('wordForms', () => {
       'אייפונ',
       'iphone',
     ]);
-    expect(wordForms(normalizeWord('לאייפון'), { synonyms }).map((f) => f.form)).toContain('iphone');
+    expect(wordForms(normalizeWord('לאייפון'), { synonyms }).map((f) => f.form)).toContain(
+      'iphone',
+    );
     expect(wordForms('aifon', { synonyms }).map((f) => f.form)).toEqual(['aifon', 'iphone']);
   });
   it('custom stopwords', () => {
@@ -267,8 +277,12 @@ describe('wordForms', () => {
 
 describe('synonyms', () => {
   it('rejects multi-word entries in the schema and skips them in the lookup', () => {
-    expect(SynonymMapSchema.safeParse([{ canonical: 'tel aviv', variants: ['תא'] }]).success).toBe(false);
-    expect(SynonymMapSchema.safeParse([{ canonical: 'tlv', variants: ['ת"א'] }]).success).toBe(true);
+    expect(SynonymMapSchema.safeParse([{ canonical: 'tel aviv', variants: ['תא'] }]).success).toBe(
+      false,
+    );
+    expect(SynonymMapSchema.safeParse([{ canonical: 'tlv', variants: ['ת"א'] }]).success).toBe(
+      true,
+    );
     const lookup = buildSynonymLookup([
       { canonical: 'tel aviv', variants: ['tlv'] },
       { canonical: 'tlv', variants: ['ת"א', 'tlv', 'תל אביב'] },

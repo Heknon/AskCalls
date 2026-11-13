@@ -5,7 +5,7 @@ import { type FormOptions, wordForms } from './forms';
 import { expandTerm } from './fuzzy';
 import { tokenize } from './normalize';
 import { type CountryCode, DEFAULT_PHONE_REGION, parsePhone } from './phone';
-import { compileSafeRegex, checkRegex, MAX_REGEX_LENGTH } from './safe-regex';
+import { checkRegex, compileSafeRegex, MAX_REGEX_LENGTH } from './safe-regex';
 
 /**
  * Rules (spec 7.11) are data: the JSON below is what `UserData:rules` holds once decrypted. They
@@ -55,7 +55,8 @@ const RegexCondition = z
   })
   .superRefine((c, ctx) => {
     const check = checkRegex(c.pattern, c.caseSensitive ? 'u' : 'iu');
-    if (!check.ok) ctx.addIssue({ code: 'custom', path: ['pattern'], message: `unsafe_regex:${check.reason}` });
+    if (!check.ok)
+      ctx.addIssue({ code: 'custom', path: ['pattern'], message: `unsafe_regex:${check.reason}` });
   });
 
 export const RuleConditionSchema = z.discriminatedUnion('type', [
@@ -95,7 +96,9 @@ export type RuleInput = z.input<typeof RuleSchema>;
 export function parseRules(input: unknown): Rule[] {
   const result = RuleSetSchema.safeParse(input);
   if (!result.success) {
-    throw new DomainError('invalid', 'Rules failed validation', { issues: result.error.issues.length });
+    throw new DomainError('invalid', 'Rules failed validation', {
+      issues: result.error.issues.length,
+    });
   }
   return result.data;
 }
@@ -140,7 +143,8 @@ function termMatches(
     meaningful++;
     const hit =
       forms.some((f) => facts.keywordCounts.has(f.form)) ||
-      (fuzzy && forms.some((f) => expandTerm(f.form, facts.keywordCounts, { fuzzy: true }).length > 0));
+      (fuzzy &&
+        forms.some((f) => expandTerm(f.form, facts.keywordCounts, { fuzzy: true }).length > 0));
     if (!hit) return false;
   }
   return meaningful > 0 ? true : null;
@@ -149,7 +153,9 @@ function termMatches(
 function conditionMatches(c: RuleCondition, facts: RuleFacts, opts: RuleEvalOptions): boolean {
   switch (c.type) {
     case 'keyword': {
-      const results = c.terms.map((t) => termMatches(t, facts, c.fuzzy, opts)).filter((r) => r !== null);
+      const results = c.terms
+        .map((t) => termMatches(t, facts, c.fuzzy, opts))
+        .filter((r) => r !== null);
       if (results.length === 0) return false;
       return c.match === 'all' ? results.every(Boolean) : results.some(Boolean);
     }
@@ -164,7 +170,9 @@ function conditionMatches(c: RuleCondition, facts: RuleFacts, opts: RuleEvalOpti
       return c.op === 'in' ? inList : !inList;
     }
     case 'duration':
-      return facts.durationBucket !== null && (c.buckets as number[]).includes(facts.durationBucket);
+      return (
+        facts.durationBucket !== null && (c.buckets as number[]).includes(facts.durationBucket)
+      );
     case 'direction':
       return facts.direction === c.direction;
     case 'regex': {

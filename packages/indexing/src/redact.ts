@@ -1,5 +1,11 @@
 import { matchWithPrefix } from './hebrew';
-import { foldDigitsInPlace, letterCount, normalizeWord, tokenize, withoutInnerMarks } from './normalize';
+import {
+  foldDigitsInPlace,
+  letterCount,
+  normalizeWord,
+  tokenize,
+  withoutInnerMarks,
+} from './normalize';
 import { type CountryCode, DEFAULT_PHONE_REGION, findPhones } from './phone';
 import { DEFAULT_STOPWORDS, type StopwordSet } from './stopwords';
 
@@ -10,7 +16,14 @@ import { DEFAULT_STOPWORDS, type StopwordSet } from './stopwords';
  */
 export type RedactionKind = 'EMAIL' | 'IBAN' | 'CARD' | 'ID' | 'PHONE' | 'NAME';
 
-export const REDACTION_KINDS: readonly RedactionKind[] = ['EMAIL', 'IBAN', 'CARD', 'ID', 'PHONE', 'NAME'];
+export const REDACTION_KINDS: readonly RedactionKind[] = [
+  'EMAIL',
+  'IBAN',
+  'CARD',
+  'ID',
+  'PHONE',
+  'NAME',
+];
 
 export interface RedactionResult {
   text: string;
@@ -166,7 +179,8 @@ export function createRedactor(opts: RedactorOptions = {}): Redactor {
         }
       }
       for (const m of folded.matchAll(ID_CANDIDATE)) {
-        if (isIsraeliIdValid(m[1]!)) hits.push({ start: m.index, end: m.index + m[0].length, kind: 'ID' });
+        if (isIsraeliIdValid(m[1]!))
+          hits.push({ start: m.index, end: m.index + m[0].length, kind: 'ID' });
       }
       for (const p of findPhones(folded, region)) {
         hits.push({ start: p.start, end: p.end, kind: 'PHONE' });
@@ -187,7 +201,9 @@ export function createRedactor(opts: RedactorOptions = {}): Redactor {
 
       // Earlier kinds win overlaps (an email's digits are not a phone); then longer spans.
       const priority = (k: RedactionKind) => REDACTION_KINDS.indexOf(k);
-      hits.sort((a, b) => priority(a.kind) - priority(b.kind) || b.end - b.start - (a.end - a.start));
+      hits.sort(
+        (a, b) => priority(a.kind) - priority(b.kind) || b.end - b.start - (a.end - a.start),
+      );
       const accepted: Hit[] = [];
       for (const h of hits) {
         if (accepted.every((a) => h.end <= a.start || h.start >= a.end)) accepted.push(h);

@@ -245,7 +245,8 @@ export function classifyIntents(
         ord = i;
       }
     });
-    if (ord >= 0 && best >= (p.threshold ?? threshold)) out.push({ id: p.id, score: best, chunkOrd: ord });
+    if (ord >= 0 && best >= (p.threshold ?? threshold))
+      out.push({ id: p.id, score: best, chunkOrd: ord });
   }
   return out.sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : 1));
 }
