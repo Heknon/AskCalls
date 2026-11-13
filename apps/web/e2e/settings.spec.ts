@@ -205,7 +205,9 @@ test('API tokens and retention', async ({ page, context }) => {
   await dialog.getByLabel('Name').fill('e2e-agent');
   await dialog.getByRole('button', { name: 'Create token' }).click();
   await expect(dialog.getByText("Copy it now. You won't see it again.")).toBeVisible();
-  const token = (await dialog.locator('[data-component="CopyableCode"] pre').innerText()).trim();
+  const token = (
+    (await dialog.locator('[data-component="CopyableCode"] pre').textContent()) ?? ''
+  ).trim();
   expect(token).toMatch(/^ac_[A-Za-z0-9_-]{43}$/);
   await dialog.getByRole('button', { name: 'Done' }).click();
 
