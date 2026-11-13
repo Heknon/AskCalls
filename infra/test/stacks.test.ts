@@ -39,7 +39,12 @@ describe('config (cdk.json)', () => {
   });
 
   it('pairs the models domain with a us-east-1 certificate', () => {
-    expect(() => synth({ 'askcalls:modelsDomain': 'models.askcalls.com' })).toThrow(/together/);
+    expect(() =>
+      synth({
+        'askcalls:modelsDomain': 'models.askcalls.com',
+        'askcalls:modelsCertificateArn': '',
+      }),
+    ).toThrow(/together/);
     expect(() =>
       synth({
         'askcalls:modelsDomain': 'models.askcalls.com',
@@ -256,8 +261,17 @@ describe('AskCallsModels', () => {
           CachePolicyId: { Ref: Match.stringLikeRegexp('^CachePolicy') },
           ResponseHeadersPolicyId: { Ref: Match.stringLikeRegexp('^ResponseHeaders') },
         }),
-        Aliases: Match.absent(),
+        Aliases: ['models.askcalls.com'],
       },
+    });
+  });
+
+  it('serves from the CloudFront domain without a custom domain', () => {
+    const plain = template(
+      synth({ 'askcalls:modelsDomain': '', 'askcalls:modelsCertificateArn': '' }).models,
+    );
+    plain.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: Match.objectLike({ Aliases: Match.absent() }),
     });
   });
 
