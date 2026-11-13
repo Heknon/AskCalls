@@ -16,7 +16,7 @@
 
 - Auth.js v5 with open sign-up: Google (with One Tap on `/` and `/login`), GitHub and email magic links; JWT sessions over the `UserRepository` port.
 - `packages/adapters/db-postgres`: every repository port and `SearchIndex` on Drizzle (Prisma was dropped for PGlite support, see its README), one schema and SQL for `pg` and PGlite, row-level security through the `askcalls_app` role and a transaction-local `app.user_id`.
-- Per-PR Neon branches and Vercel previews (`preview.yml`), `deploy.yml` (dev on push, production by hand after the full suite), `ci.yml` (integration and E2E on demand), `docs/deployment.md`.
+- Per-PR Neon branches and Vercel previews (`preview.yml`), `deploy.yml` (dev on push, production on merge to master after the full suite), `ci.yml` (integration and E2E on demand), `docs/deployment.md`.
 - Cross-user authorization tests on every API route.
 
 ## M2: Crypto and keys

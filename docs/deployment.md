@@ -14,7 +14,7 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
    dev   ──push──▶ dev        fast checks → CDK AskCallsStorage-dev → publish the model (if new) → migrate the dev
     │                         branch → Vercel (DEV_DOMAIN follows the dev branch)
     ▼ merge (PR dev → master)
- master  ─manual─▶ production Actions → Deploy → Run workflow on master → full tests (fast checks + integration ∥ E2E)
+ master  ──push──▶ production full tests (fast checks + integration ∥ E2E)
                               → CDK AskCallsStorage-prod + AskCallsModels → publish the model (if new) → migrate main
                               → Vercel --prod
  v*.*.*  ──tag───▶ release    fast checks → client asset hashes → npm (agent) → Docker image (GHCR, amd64 + arm64)
@@ -25,7 +25,7 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
 |---|---|---|
 | `ci.yml` (Full tests) | before production (called by `deploy.yml`); the `full-tests` label on a pull request; Run workflow by hand | two parallel jobs: fast checks + integration tests (pgvector Postgres service, MinIO), and Playwright E2E on Chromium |
 | `preview.yml` | pull request opened / synchronized / reopened / closed (not for docs-only changes) | one job: per-PR database branch + migrations + preview deploy + PR comment, then the fast checks; cleanup on close |
-| `deploy.yml` | push to `dev`; production only via Run workflow on `master` (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → `cdk deploy` (`AskCallsStorage-<env>`, plus `AskCallsModels` on production) through the OIDC deploy role → `models:publish` (a few HEAD requests when the pinned build is already there) → migrations → Vercel |
+| `deploy.yml` | push to `dev` or `master` (docs-only changes skip it); Run workflow to re-deploy (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → `cdk deploy` (`AskCallsStorage-<env>`, plus `AskCallsModels` on production) through the OIDC deploy role → `models:publish` (a few HEAD requests when the pinned build is already there) → migrations → Vercel |
 | `release.yml` | a `v<major>.<minor>.<patch>` tag | one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
 | `codeql.yml` | weekly, pushes to `master`, by hand | CodeQL (JavaScript and TypeScript, security-extended) |
 
@@ -323,9 +323,8 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    repository's Packages settings after the first release.
 5. Labels: `full-tests` (runs `ci.yml` on the PR) and `real-providers` (previews use the
    non-prod provider keys).
-6. Production approval: merging into `master` deploys nothing; production deploys when someone
-   runs **Actions → Deploy → Run workflow** on `master` (required reviewers and branch protection
-   need a paid plan for private repos; with them, add reviewers to `production`).
+6. Production: every merge into `master` deploys once the full suite passes. To gate it, add
+   required reviewers to the `production` environment (free on public repositories).
 7. Security: turn on secret scanning and push protection (Settings → Code security), and
    private vulnerability reporting, which [SECURITY.md](../SECURITY.md) points reporters to.
 
