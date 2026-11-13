@@ -153,6 +153,34 @@
     {
       "text": "complaint",
       "related": ["delivery_en", "internet_en"]
+    },
+    {
+      "text": "wants to buy a used motorbike",
+      "related": ["moto_en"]
+    },
+    {
+      "text": "customer unhappy about a late package",
+      "related": ["delivery_en"]
+    },
+    {
+      "text": "הלקוחה רוצה הצעת מחיר למטבח",
+      "related": ["kitchen_he", "kitchen_en"]
+    },
+    {
+      "text": "moving the dentist appointment",
+      "related": ["dentist_en"]
+    },
+    {
+      "text": "lawyer wants changes to the contract",
+      "related": ["lawyer_he"]
+    },
+    {
+      "text": "planning a trip to the beach",
+      "related": []
+    },
+    {
+      "text": "מתכון לעוגת שוקולד",
+      "related": []
     }
   ]
 }

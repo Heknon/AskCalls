@@ -140,7 +140,7 @@ Vercel builds for an instance with `EMBEDDING_MODEL_URL` should set
    and `apps/agent/src/adapters/model-files.ts` (tests check they agree).
 4. `bun run models:calibrate` and set `minSimilarity` in both files. The model scores every
    pair between about 0.7 and 0.9, so meaning search drops calls under this floor; at 0.78 it
-   keeps 82% of related pairs and shows 32% of unrelated ones.
+   keeps 84% of related pairs and shows 36% of unrelated ones.
 5. Deploy. `deploy.yml` runs `bun run models:publish` before the app goes live, on dev and on
    production, so the CDN has the new build before any page pins it. Old builds stay in the
    bucket, so pages still running the previous version keep working.
