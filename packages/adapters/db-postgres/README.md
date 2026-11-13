@@ -72,7 +72,7 @@ round-trip exactly.
 | `Account` | Auth.js `userId, type, provider, providerAccountId`; OAuth tokens are not stored | PK `(provider, providerAccountId)`, `(userId)` |
 | `VerificationToken` | `identifier, token, expires` | PK `(identifier, token)` |
 | `Keyring`, `UserKeys`, `DeviceKey` | as spec | `(userId)` |
-| `DeviceLinkSession` | `secretHash, state, devicePublicKey, deviceLabel, deviceSigningPublicKey` (column ready for the coming port field; not mapped yet), `encryptedRootKey, expiresAt` | `(userId)`, `(expiresAt)` |
+| `DeviceLinkSession` | `secretHash, state, devicePublicKey, deviceLabel, deviceSigningPublicKey`, `encryptedRootKey, expiresAt` | `(userId)`, `(expiresAt)` |
 | `Call` | recording ref as `recordingBucketRef, recordingKey, recordingBytes`; `totalRecordingBytes` sums the instance bucket (`recordingBucketRef IS NULL`) only; a call id taken by any user is a `conflict`, never overwritten | GIN `keywordToks`, GIN `tagToks`, `(userId, day DESC, id DESC)`, `(userId, contactTok)`, unique `(userId, audioTok)`, unique `(userId, contentTok)`, unique `(id, userId)` |
 | `CallChunk` | PK `(callId, ord)` instead of a surrogate id | HNSW `embedding halfvec_cosine_ops`, `(userId)`; FK `(callId, userId)` → `Call(id, userId)` so a chunk can't belong to another user than its call |
 | `VocabDelta` | as spec | unique `(userId, seq)` |
@@ -80,7 +80,7 @@ round-trip exactly.
 | `InboxItem` | as spec | `(userId, createdAt)`, `(expiresAt)`; check payload or blob key present |
 | `ApiToken` | `fetchesThisHour`, `hourWindowStart` | unique `tokenHash`, `(userId)` |
 | `AuditEvent` | `actor`, `action` as text (no enum, so new actions need no migration); `callId` without a foreign key (the trail outlives the call) | `(userId, at DESC, id DESC)`, `(userId, action, at DESC, id DESC)` |
-| `RateBucket` | `key, windowStart, count` | PK `(key, windowStart)`, ready for an atomic `consume`/`usage` API |
+| `RateBucket` | `key, windowStart, count`: sliding-window `hit` buckets and fixed-window quota counters (`consume` is one atomic upsert, `usage` one read) | PK `(key, windowStart)` |
 
 Every user-owned table references `User` with `ON DELETE CASCADE`, so `deleteHard` is one
 `DELETE` (blob cleanup is the use case's job). Check constraints mirror the domain enums.
@@ -170,9 +170,14 @@ to see the timings.
 - `migrate()` runs all pending migrations in **one transaction** under
   `pg_advisory_xact_lock`, records each in `"_Migration"` with a SHA-256 checksum, and refuses
   to run when an applied migration was edited or the database has one the build doesn't know.
-- Who runs it: local mode (`pglite`) on boot, from `apps/web/src/server/adapters/database.ts`;
-  CI, deploy pipelines and Docker boot with
-  `DATABASE_URL=… bun run --cwd packages/adapters/db-postgres migrate`.
+- Who runs it (`apps/web/src/server/adapters/database.ts`):
+  - local mode (`pglite`): always, on boot;
+  - Docker self-host (`postgres`): on boot, because `docker/docker-compose.yml` sets the config
+    flag `DB_MIGRATE_ON_BOOT=true` (`db.migrateOnBoot`, default false). The runtime image has
+    no Bun or sources, so the app migrates itself rather than an entrypoint script; the
+    advisory lock makes several containers starting at once safe;
+  - hosted (Vercel + Neon) and CI: before the new code goes live, with
+    `DATABASE_URL=… bun run --cwd packages/adapters/db-postgres migrate` (flag left off).
 - Policy (CLAUDE.md, spec 14.1): never edit a migration that reached `dev`; add a new one.
   Every migration must work with the release still serving: add columns nullable or with
   defaults, rename or drop across two releases, no `CREATE INDEX CONCURRENTLY` (the runner is

@@ -10,6 +10,9 @@ import { healthCheck } from './health';
  * two-bucket approximation of a true sliding window. Denied hits are not counted. Keys are not
  * user-owned (they may be IPs or token ids), so this runs on the system path; the row lock on
  * the current bucket serializes concurrent hits on one key.
+ *
+ * `consume` / `usage` are fixed-window quota counters (transcription seconds per month, asks
+ * per day) on the same table: the caller passes the window start, so the row is the counter.
  */
 export function createRateLimiter(d: Driver, now: () => Date = () => new Date()): RateLimiter {
   return {
@@ -54,6 +57,48 @@ export function createRateLimiter(d: Driver, now: () => Date = () => new Date())
         const remaining = Math.max(0, Math.floor(limit - used - (allowed ? 1 : 0)));
         return { allowed, remaining, resetAt };
       });
+    },
+
+    consume: async (key, windowStart, amount, limit) => {
+      if (
+        !key ||
+        !Number.isSafeInteger(amount) ||
+        (limit !== null && !Number.isSafeInteger(limit))
+      ) {
+        throw new DomainError('invalid', 'invalid usage amount');
+      }
+      const ws = windowStart.toISOString();
+      return d.asSystemTx(async (tx) => {
+        // One atomic upsert: a new row only when `amount` fits, an existing one only when the
+        // total fits. Nothing returned means refused.
+        const [added] = await rows<{ count: unknown }>(
+          tx,
+          sql`INSERT INTO "RateBucket" ("key", "windowStart", "count")
+              SELECT ${key}, ${ws}::timestamptz, ${amount}::int
+              WHERE ${limit}::int IS NULL OR ${amount}::int <= ${limit}::int
+              ON CONFLICT ("key", "windowStart") DO UPDATE
+                SET "count" = "RateBucket"."count" + EXCLUDED."count"
+                WHERE ${limit}::int IS NULL OR "RateBucket"."count" + EXCLUDED."count" <= ${limit}::int
+              RETURNING "count"`,
+        );
+        if (added) return { allowed: true, used: toNumber(added.count) };
+        const [current] = await rows<{ count: unknown }>(
+          tx,
+          sql`SELECT "count" FROM "RateBucket" WHERE "key" = ${key} AND "windowStart" = ${ws}::timestamptz`,
+        );
+        return { allowed: false, used: current ? toNumber(current.count) : 0 };
+      });
+    },
+
+    usage: async (key, windowStart) => {
+      const [r] = await d.asSystem((db) =>
+        rows<{ count: unknown }>(
+          db,
+          sql`SELECT "count" FROM "RateBucket"
+              WHERE "key" = ${key} AND "windowStart" = ${windowStart.toISOString()}::timestamptz`,
+        ),
+      );
+      return r ? toNumber(r.count) : 0;
     },
   };
 }

@@ -32,6 +32,7 @@ const toLinkSession = (r: typeof deviceLinkSessions.$inferSelect): DeviceLinkSes
   state: r.state,
   devicePublicKey: r.devicePublicKey,
   deviceLabel: r.deviceLabel,
+  deviceSigningPublicKey: r.deviceSigningPublicKey,
   encryptedRootKey: r.encryptedRootKey,
   createdAt: r.createdAt,
   expiresAt: r.expiresAt,
@@ -183,6 +184,7 @@ export function createKeyringRepository(d: Driver): KeyringRepository {
           state: s.state,
           devicePublicKey: s.devicePublicKey,
           deviceLabel: s.deviceLabel,
+          deviceSigningPublicKey: s.deviceSigningPublicKey ?? null,
           encryptedRootKey: s.encryptedRootKey,
           createdAt: s.createdAt,
           expiresAt: s.expiresAt,
@@ -202,6 +204,9 @@ export function createKeyringRepository(d: Driver): KeyringRepository {
       if (patch.state !== undefined) set.state = patch.state;
       if (patch.devicePublicKey !== undefined) set.devicePublicKey = patch.devicePublicKey;
       if (patch.deviceLabel !== undefined) set.deviceLabel = patch.deviceLabel;
+      if (patch.deviceSigningPublicKey !== undefined) {
+        set.deviceSigningPublicKey = patch.deviceSigningPublicKey;
+      }
       if (patch.encryptedRootKey !== undefined) set.encryptedRootKey = patch.encryptedRootKey;
       const rs = await d.asSystem((db) =>
         Object.keys(set).length

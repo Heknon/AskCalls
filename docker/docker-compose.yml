@@ -56,6 +56,8 @@ services:
       APP_URL: ${APP_URL:-http://localhost:3000}
       DB_DRIVER: postgres
       DATABASE_URL: postgres://askcalls:${POSTGRES_PASSWORD:-askcalls}@postgres:5432/askcalls
+      # Apply pending migrations on start; an advisory lock makes concurrent starts safe.
+      DB_MIGRATE_ON_BOOT: "true"
       BLOB_DRIVER: s3
       # Browsers upload encrypted recordings straight to this endpoint, so it must be reachable from them.
       S3_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
