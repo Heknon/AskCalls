@@ -8,6 +8,8 @@
       "dev": "askcalls-dev"
     },
     "askcalls:modelsBucket": "askcalls-models",
+    "askcalls:modelsDomain": "models.askcalls.com",
+    "askcalls:modelsCertificateArn": "arn:aws:acm:us-east-1:519046119107:certificate/bef0a34f-3a81-46be-a683-75d8a16fe62e",
     "askcalls:appOrigins": {
       "prod": ["https://askcalls.com"],
       "dev": ["https://dev.askcalls.com", "https://askcalls-*.vercel.app", "http://localhost:3000"]
