@@ -1,0 +1,15 @@
+{
+  "login": {
+    "title": "Sign in",
+    "google": "Continue with Google",
+    "github": "Continue with GitHub",
+    "emailLabel": "Email",
+    "emailSubmit": "Email me a sign-in link",
+    "testLabel": "Test account email",
+    "testSubmit": "Sign in (test)",
+    "checkEmail": "Check your email for a sign-in link.",
+    "error": "Sign-in failed. Try again or use another method.",
+    "accountNotLinked": "This email is linked to another sign-in method. Use that method.",
+    "noProviders": "No sign-in method is configured. Ask the instance admin."
+  }
+}
