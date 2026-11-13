@@ -1,7 +1,18 @@
-import { promoteToAdmin } from '@askcalls/api-contract/routes/admin';
+import { listAccounts, promoteToAdmin } from '@askcalls/api-contract/routes/admin';
 import { DomainError } from '@askcalls/domain';
-import { promoteUser } from '@askcalls/domain/use-cases/admin';
+import { listAccounts as list, promoteUser } from '@askcalls/domain/use-cases/admin';
 import { route } from '../../../../server/http/handler';
+
+export const GET = route(
+  listAccounts,
+  ({ ports, actor, query }) =>
+    list(ports, actor, {
+      ...(query.email !== undefined && { email: query.email }),
+      ...(query.cursor !== undefined && { cursor: query.cursor }),
+      ...(query.limit !== undefined && { limit: query.limit }),
+    }),
+  { rateLimit: { name: 'admin-accounts', limit: 60, windowMs: 60_000 } },
+);
 
 export const POST = route(
   promoteToAdmin,

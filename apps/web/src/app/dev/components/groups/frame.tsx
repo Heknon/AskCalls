@@ -33,6 +33,7 @@ const copy = {
       contacts: 'Contacts',
       settings: 'Settings',
       admin: 'Admin',
+      accounts: 'Accounts',
       main: 'Main',
       instance: 'Instance',
       shortcuts: 'Keyboard shortcuts',
@@ -130,6 +131,7 @@ const copy = {
       contacts: 'אנשי קשר',
       settings: 'הגדרות',
       admin: 'ניהול',
+      accounts: 'חשבונות',
       main: 'ראשי',
       instance: 'מופע',
       shortcuts: 'קיצורי מקלדת',
@@ -221,7 +223,15 @@ const copy = {
   },
 };
 
-const hrefs = { calls: '#', upload: '#', tags: '#', contacts: '#', settings: '#', admin: '#' };
+const hrefs = {
+  calls: '#',
+  upload: '#',
+  tags: '#',
+  contacts: '#',
+  settings: '#',
+  admin: '#',
+  accounts: '#',
+};
 const noop = () => {};
 
 export function FrameGroup() {

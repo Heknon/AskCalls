@@ -30,6 +30,13 @@ describe('ADMIN_EMAILS', () => {
         json: { email: 'first@example.test' },
       });
       expect(promote.status).toBe(403);
+      const list = (await (await app.req('GET', '/api/admin/users', { as: asBoss })).json()) as {
+        items: Array<{ id: string; role: string }>;
+      };
+      expect(Object.fromEntries(list.items.map((u) => [u.id, u.role]))).toEqual({
+        [first.id]: 'user',
+        [boss.id]: 'admin',
+      });
     } finally {
       app.close();
     }

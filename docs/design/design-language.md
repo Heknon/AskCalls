@@ -123,6 +123,7 @@ One icon per concept; one concept per icon. If a new concept needs an icon, add 
 | `download` | Download transcript, export | |
 | `inbox` | Inbox items (server-side encrypted uploads) | Notifications |
 | `server` | The instance, admin pages, a value set by the server environment, and the AskCalls server in data-flow diagrams | Third-party providers (use `cloud`) |
+| `users` | The admin Accounts page (every account on the instance) | One contact (use `user`), the account menu (use avatar) |
 | `cloud` | A third-party provider in a data-flow diagram | The AskCalls server |
 | `laptop` / `smartphone` / `terminal` | Device kind (browser on desktop, browser on phone, agent CLI) | |
 | `database`, `hard-drive` | Database, local file storage | |
@@ -233,7 +234,7 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 #### AppSidebar
 - **Purpose:** primary navigation and the always-visible lock status on large screens.
 - **Use:** app routes at `lg` and above (collapses to a rail at `md`). **Don't use:** marketing, onboarding, unlock gate, wizard (they are focused flows without navigation).
-- **Props:** `active` (route key), `isAdmin` (shows the Instance group), `callCount`.
+- **Props:** `active` (route key), `isAdmin` (shows the Instance group: Admin and Accounts), `callCount`.
 - **Composes:** `Sidebar`, `Tooltip` (rail labels), `Button`, `Avatar`.
 - **Screens:** all `/app/**` and `/admin/**`.
 - **States:** expanded, rail; current item.
@@ -353,10 +354,10 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### SearchBox
 - **Purpose:** the one text input for finding calls. Plain text is a keyword search (fuzzy, with synonyms); while typing it suggests filter values and calls.
-- **Use:** above any filterable list (calls; contacts later). **Don't use:** for finding text inside one transcript (`TranscriptFind`), or as a second search on the same page.
+- **Use:** above any filterable list (calls; contacts later; accounts on A3, by email, without suggestions). **Don't use:** for finding text inside one transcript (`TranscriptFind`), or as a second search on the same page.
 - **Props:** `value`, `onChange` (results debounce 250 ms in the screen hook), `placeholder`, `suggestions` (built by the screen from the decrypted local catalogs), `records` (calls found by the text).
 - **Composes:** `Input` with `role="combobox"`, a listbox of `SearchSuggestion`s, `Button` (clear).
-- **Screens:** C1, C2, O5. **States:** empty (placeholder "Search names, numbers, tags or words"), typing with suggestions, typing with no suggestions (Enter runs the word search), searching (results dim after 400 ms; the box never spins).
+- **Screens:** C1, C2, O5, A3. **States:** empty (placeholder "Search names, numbers, tags or words"), typing with suggestions, typing with no suggestions (Enter runs the word search), searching (results dim after 400 ms; the box never spins).
 - **Behaviour:** at most 6 suggestions; filter values first, then up to 2 calls (4 when no values match); identifier-looking text (any digit, or 6+ characters) puts calls first. Typing a group name ("intent", "כוונה", "tag") suggests opening that picker. Choosing a suggestion applies it and clears the text.
 - **A11y:** `role="combobox"`, `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant`; ↑ ↓ move, Enter applies the highlighted suggestion (or runs the word search when none is highlighted), Esc closes the list, a second Esc clears the text. `/` focuses the box.
 - **RTL:** search icon at the start, clear at the end; the input is `dir="auto"` and aligns to the UI direction.
@@ -637,7 +638,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### SettingsSection
 - **Purpose:** a titled block of related settings with a description.
-- **Composes:** `Card`, `Separator`. **Screens:** S1–S8, A1.
+- **Composes:** `Card`, `Separator`. **Screens:** S1–S8, A1, A4.
 
 #### ProviderCard
 - **Purpose:** one capability (transcription, ask, recording backups, or an instance port) and which provider serves it.
@@ -665,7 +666,17 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### UsageMeter
 - **Purpose:** use of a limited resource against its limit.
-- **Props:** `used`, `limit`, `unit`. Turns warning at 80 %, destructive at 100 %. **Composes:** `Progress`. **Screens:** S2, S4, S5, U2, P1.
+- **Props:** `used`, `limit`, `unit`. Turns warning at 80 %, destructive at 100 %. **Composes:** `Progress`. **Screens:** S2, S4, S5, U2, P1, A4.
+- **Not to be confused with:** `LimitOverrideField`, which sets a limit; the meter only shows use against it.
+
+#### LimitOverrideField
+- **Purpose:** one limit an admin sets for a single account, falling back to the instance limit when empty.
+- **Props:** `label`, `unit`, `value` (as typed; empty means the instance limit), `instance` (the instance limit, shown as the placeholder), `instanceLabel` ("Instance limit: 500 calls"), `invalid`, `disabled`, `onChange`.
+- **Composes:** `Label`, `Input` (numeric, LTR), `Button` (clear, `x` icon). **Screens:** A4.
+- **States:** instance limit (empty), overridden, invalid (`aria-invalid`), disabled while saving.
+- **A11y:** the caption is the input's description; the clear button is named "Clear: {label}".
+- **RTL:** the number stays LTR; unit and clear button follow the UI direction.
+- **Not to be confused with:** `UsageMeter` (shows use), `EnvLockedField` (a value fixed by the server environment).
 
 #### EnvLockedField
 - **Purpose:** a setting whose value is fixed by a server environment variable.
@@ -693,6 +704,15 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### AuditEventRow
 - **Purpose:** one audit log entry (actor, action, call id prefix, time).
 - **Composes:** `Table` row. **Screens:** S7.
+
+#### AccountRow
+- **Purpose:** one account in the admin list: email and name, plan and role, created date and usage counts. Never content.
+- **Props:** `href` (A4), `email`, `name`, `plan`, `admin` (badge label for admins), `custom` (badge label when any limit is overridden), `created`, `usage` (formatted cells in header order), `linkAs`.
+- **Composes:** `Table` row, `Badge`. **Screens:** A3.
+- **States:** member, admin, custom limits, no name, hover; the whole row is the link's hit area.
+- **A11y:** the email is the link; the row has no extra role.
+- **RTL:** email and numbers are LTR islands; the name is `dir="auto"`; numeric cells align to the end.
+- **Not to be confused with:** `AuditEventRow` (one event on the user's own account), `ContactRow` (a person in the user's calls).
 
 #### CopyableCode
 - **Purpose:** a command or config snippet the user copies.
@@ -802,6 +822,8 @@ Screen codes are used in the catalog above and in `screens.md`.
 | S8 | Settings: data | SettingsSection, JobProgress, ConfirmDialog |
 | A1 | Admin instance | PageHeader, ProviderCard, HealthBadge, EnvLockedField, MaskedSecret, TestConnectionResult, OfflineBlockerList, UsageMeter |
 | A2 | Offline mode (card on A1) | OfflineBlockerList, ConfirmDialog |
+| A3 | Admin accounts | PageHeader, SearchBox, AccountRow, EmptyState, ErrorState |
+| A4 | Admin account | PageHeader, SettingsSection, UsageMeter, LimitOverrideField, ErrorState |
 | W1 | First-run wizard | Stepper, ChoiceCard, ProviderCard, TestConnectionResult, MaskedSecret, OfflineBlockerList |
 | X1 | Keyboard shortcuts dialog | ShortcutsDialog, Kbd |
 | X2 | Toasts | Notice |

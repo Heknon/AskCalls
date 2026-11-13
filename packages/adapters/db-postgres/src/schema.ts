@@ -39,6 +39,7 @@ export const users = pgTable('User', {
     .$type<{ productEvents: boolean; errorReports: boolean }>()
     .notNull(),
   retentionDays: integer('retentionDays'),
+  limitOverrides: jsonb('limitOverrides').$type<Record<string, unknown>>().notNull(),
   createdAt: ts('createdAt').notNull(),
   deletedAt: ts('deletedAt'),
 });

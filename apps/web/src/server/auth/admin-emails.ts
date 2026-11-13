@@ -18,6 +18,10 @@ export function withAdminEmails(users: UserRepository, emails: readonly string[]
     findByEmail: async (email) => withRole(await users.findByEmail(email)),
     findByAccount: async (provider, id) => withRole(await users.findByAccount(provider, id)),
     update: async (id, patch) => withRole(await users.update(id, patch)),
+    list: async (opts) => {
+      const page = await users.list(opts);
+      return { ...page, items: page.items.map(withRole) };
+    },
     setRole: async () => {},
   };
   return new Proxy(users, {

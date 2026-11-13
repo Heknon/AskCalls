@@ -248,5 +248,65 @@
       "finishing": "מגדיר…",
       "failed": "ההגדרה לא הסתיימה: {reason}"
     }
+  },
+  "accounts": {
+    "title": "חשבונות",
+    "search": "חיפוש לפי אימייל",
+    "searchLabel": "חיפוש חשבונות",
+    "clear": "ניקוי",
+    "col": {
+      "account": "חשבון",
+      "plan": "תוכנית",
+      "created": "נוצר",
+      "calls": "שיחות",
+      "recordings": "הקלטות",
+      "transcription": "תמלול",
+      "asks": "שאלות היום",
+      "translation": "תרגום",
+      "tokens": "טוקנים"
+    },
+    "plan": {
+      "free": "חינם",
+      "pro": "Pro"
+    },
+    "admin": "מנהל",
+    "custom": "מגבלות מותאמות",
+    "noEmail": "אין אימייל",
+    "empty": "אין חשבונות תואמים.",
+    "clearSearch": "ניקוי החיפוש",
+    "loadMore": "טעינת עוד",
+    "loadFailed": "לא הצלחנו לטעון את החשבונות.",
+    "notFound": "אין חשבון עם המזהה הזה.",
+    "joined": "{plan} · הצטרפות {date}",
+    "usage": "שימוש בתקופה הנוכחית",
+    "limits": "מגבלות",
+    "instanceLimit": "מגבלת המופע: {value}",
+    "field": {
+      "maxCalls": "שיחות שמורות",
+      "transcriptionMinutesPerMonth": "תמלול מנוהל בחודש",
+      "recordingBytes": "אחסון הקלטות",
+      "maxApiTokens": "טוקני API",
+      "mcpFetchesPerTokenPerHour": "שליפות לטוקן בשעה",
+      "asksPerDay": "שאלות ביום",
+      "translationCharsPerMonth": "תווי תרגום בחודש"
+    },
+    "unit": {
+      "calls": "שיחות",
+      "min": "דק׳",
+      "gb": "GB",
+      "tokens": "טוקנים",
+      "fetches": "שליפות",
+      "asks": "שאלות",
+      "chars": "תווים"
+    },
+    "cell": {
+      "gb": "{n} GB",
+      "min": "{n} דק׳"
+    },
+    "save": "שמירת המגבלות",
+    "saved": "נשמר",
+    "discard": "ביטול",
+    "saveFailed": "לא הצלחנו לשמור את המגבלות. נסו שוב.",
+    "invalid": "הזינו מספר שלם מ-0, או השאירו ריק כדי להשתמש במגבלת המופע."
   }
 }

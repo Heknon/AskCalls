@@ -5,6 +5,8 @@ import * as account from '../../app/api/account/route';
 import * as adminInstanceOffline from '../../app/api/admin/instance/offline/route';
 import * as adminInstance from '../../app/api/admin/instance/route';
 import * as adminInstanceTest from '../../app/api/admin/instance/test/route';
+import * as adminUserLimits from '../../app/api/admin/users/[id]/limits/route';
+import * as adminUser from '../../app/api/admin/users/[id]/route';
 import * as adminUsers from '../../app/api/admin/users/route';
 import * as ask from '../../app/api/ask/route';
 import * as audit from '../../app/api/audit/route';
@@ -82,6 +84,8 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/admin/instance/test', adminInstanceTest],
   ['/api/admin/instance/offline', adminInstanceOffline],
   ['/api/admin/users', adminUsers],
+  ['/api/admin/users/[id]', adminUser],
+  ['/api/admin/users/[id]/limits', adminUserLimits],
   ['/api/setup', setup],
   ['/api/setup/test', setupTest],
   ['/api/setup/passkey', setupPasskey],

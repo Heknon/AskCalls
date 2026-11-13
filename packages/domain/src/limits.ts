@@ -24,3 +24,30 @@ export const DEFAULT_LIMITS: Limits = {
   asksPerDay: 50,
   translationCharsPerMonth: 2_000_000,
 };
+
+export const LIMIT_FIELDS = [
+  'maxCalls',
+  'transcriptionMinutesPerMonth',
+  'recordingBytes',
+  'maxApiTokens',
+  'mcpFetchesPerTokenPerHour',
+  'asksPerDay',
+  'translationCharsPerMonth',
+] as const satisfies readonly (keyof Limits)[];
+
+export type LimitField = (typeof LIMIT_FIELDS)[number];
+
+/** Per-account limits an admin set (spec 12). A missing field falls back to the instance limit. */
+export type LimitOverrides = Partial<Limits>;
+
+/** Largest value an override may hold: 1 PB in bytes, and a safe integer everywhere. */
+export const MAX_LIMIT_VALUE = 1024 ** 5;
+
+export function effectiveLimits(instance: Limits, overrides: LimitOverrides): Limits {
+  const out = { ...instance };
+  for (const f of LIMIT_FIELDS) {
+    const v = overrides[f];
+    if (v !== undefined) out[f] = v;
+  }
+  return out;
+}
