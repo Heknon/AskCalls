@@ -2,7 +2,6 @@ import { RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../lib/cn';
 import { Button } from '../primitives/button';
-import { Checkbox } from '../primitives/checkbox';
 import { ContactLabel, type ContactLabelProps } from './ContactLabel';
 import { QueueItemStatus, type QueueItemStatusProps } from './QueueItemStatus';
 
@@ -16,8 +15,11 @@ export type QueueRowProps = {
   /** Duplicates: a link to the existing call. */
   duplicateOf?: ReactNode;
   retry?: { label: string; onRetry: () => void };
-  /** Before an import starts: whether this call is in it. Left-out rows are dimmed. */
-  select?: { checked: boolean; onCheckedChange: (checked: boolean) => void; label: string };
+  /**
+   * Before an import starts: whether this call is in it, and the `Checkbox` that changes it
+   * (passed in, so the queue view doesn't load it). Left-out rows are dimmed.
+   */
+  select?: { checked: boolean; control: ReactNode };
 };
 
 /** One file, or audio and transcript pair, in the import queue. A table row; a card on phones. */
@@ -59,12 +61,7 @@ export function QueueRow({
       <td className="min-w-0 md:max-w-88 md:px-3 md:py-2.5">
         {select ? (
           <span className="flex items-start gap-3">
-            <Checkbox
-              checked={select.checked}
-              onCheckedChange={(v) => select.onCheckedChange(v === true)}
-              aria-label={select.label}
-              className="mt-0.5"
-            />
+            <span className="mt-0.5 flex">{select.control}</span>
             <span className="min-w-0">{name}</span>
           </span>
         ) : (

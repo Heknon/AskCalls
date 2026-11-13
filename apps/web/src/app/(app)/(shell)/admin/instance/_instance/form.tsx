@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@askcalls/ui/primitives/select';
-import { Switch } from '@askcalls/ui/primitives/switch';
 import { useTranslations } from 'next-intl';
 import { createContext, type ReactNode, useCallback, useContext, useId, useState } from 'react';
 
@@ -384,31 +383,6 @@ export function SelectSetting({
         </SelectContent>
       </Select>
     </Field>
-  );
-}
-
-export function SwitchRow({
-  label,
-  hint,
-  checked,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex flex-col">
-        <label htmlFor={id}>{label}</label>
-        {hint ? <span className="text-muted-foreground text-sm">{hint}</span> : null}
-      </div>
-      <Switch id={id} checked={checked} disabled={disabled} onCheckedChange={onChange} />
-    </div>
   );
 }
 

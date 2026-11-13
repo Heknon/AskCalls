@@ -1,9 +1,11 @@
 import { DomainError, isDomainError } from '../entities/errors';
 import { isTranslationLanguage, type TranslationLanguage } from '../entities/transcript';
+import type { Limits } from '../limits';
 import type { ClientToken, TranscribeResult } from '../ports/providers';
 import type { Ports } from '../ports-bundle';
 import { supportsDirectTokens } from './account';
 import { type Actor, audit, dayWindow, monthWindow, nextMonthStart, usageKeys } from './context';
+import { limitsFor } from './limits';
 
 /**
  * Plaintext pass-through use cases (spec 2.2): audio to the transcription provider, one call to
@@ -29,13 +31,9 @@ export interface TranscribeUsage {
   limitSeconds: number;
 }
 
-function transcriptionLimitSeconds(ports: Ports): number {
-  return ports.limits.transcriptionMinutesPerMonth * 60;
-}
-
-function quotaExceeded(ports: Ports, now: Date): DomainError {
+function quotaExceeded(limits: Limits, now: Date): DomainError {
   return new DomainError('quota_exceeded', 'monthly transcription minutes are used up', {
-    limit: ports.limits.transcriptionMinutesPerMonth,
+    limit: limits.transcriptionMinutesPerMonth,
     quota: 'transcription_minutes',
     resetAt: nextMonthStart(now).toISOString(),
   });
@@ -68,9 +66,10 @@ export async function transcribeChunk(
   const now = ports.clock.now();
   const key = usageKeys.transcriptionSeconds(actor.userId);
   const window = monthWindow(now);
-  const limitSeconds = transcriptionLimitSeconds(ports);
+  const limits = await limitsFor(ports, actor.userId);
+  const limitSeconds = limits.transcriptionMinutesPerMonth * 60;
   if ((await ports.rateLimiter.usage(key, window.start)) >= limitSeconds)
-    throw quotaExceeded(ports, now);
+    throw quotaExceeded(limits, now);
 
   let result: TranscribeResult;
   try {
@@ -113,9 +112,10 @@ export async function mintTranscriptionToken(
   const now = ports.clock.now();
   const key = usageKeys.transcriptionSeconds(actor.userId);
   const window = monthWindow(now);
-  const limitSeconds = transcriptionLimitSeconds(ports);
+  const limits = await limitsFor(ports, actor.userId);
+  const limitSeconds = limits.transcriptionMinutesPerMonth * 60;
   const consumed = await ports.rateLimiter.consume(key, window, seconds, limitSeconds);
-  if (!consumed.allowed) throw quotaExceeded(ports, now);
+  if (!consumed.allowed) throw quotaExceeded(limits, now);
   let token: ClientToken;
   try {
     token = await provider.mintClientToken();
@@ -167,16 +167,12 @@ export async function askAboutCall(
   }
   const now = ports.clock.now();
   const window = dayWindow(now);
-  const used = await ports.rateLimiter.consume(
-    usageKeys.asks(actor.userId),
-    window,
-    1,
-    ports.limits.asksPerDay,
-  );
+  const { asksPerDay } = await limitsFor(ports, actor.userId);
+  const used = await ports.rateLimiter.consume(usageKeys.asks(actor.userId), window, 1, asksPerDay);
   if (!used.allowed) {
     const retryAfterSec = Math.ceil((window.end.getTime() - now.getTime()) / 1000);
     throw new DomainError('rate_limited', 'daily ask limit reached', {
-      limit: ports.limits.asksPerDay,
+      limit: asksPerDay,
       quota: 'asks',
       retryAfterSec,
     });
@@ -241,7 +237,7 @@ export async function translateSegments(
   const now = ports.clock.now();
   const key = usageKeys.translationChars(actor.userId);
   const window = monthWindow(now);
-  const limitChars = ports.limits.translationCharsPerMonth;
+  const limitChars = (await limitsFor(ports, actor.userId)).translationCharsPerMonth;
   const consumed = await ports.rateLimiter.consume(key, window, chars, limitChars);
   if (!consumed.allowed) {
     throw new DomainError('quota_exceeded', 'monthly translation characters are used up', {

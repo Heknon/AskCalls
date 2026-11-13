@@ -339,7 +339,7 @@ Mocks: [`calls.html`](mocks/calls.html) (text and two filters set), [`calls-sugg
 
 English, nothing set:
 
-> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[exact words]**
+> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[meaning]**
 
 English, filters set:
 
@@ -363,7 +363,7 @@ Blanks and their pickers (`FilterPicker`):
 | about | Which intent? / איזו כוונה? | built-in and custom intents | several |
 | from | When? / מתי? | Today · Last 7 days · Last 30 days · This year · Custom range (calendar) | one |
 | direction | Which direction? / איזה כיוון? | In and out · Incoming only · Outgoing only | one |
-| matching | Match by / התאמה לפי | Exact words · Meaning | one |
+| matching | Match by / התאמה לפי | Exact words · Meaning (default) | one |
 
 "Matching [meaning]" is the semantic search: the text is embedded on the device and results sort by best match. The first time it is chosen, the blank shows a spinner and the result line says "Loading the meaning model (34 MB, once)"; keyword results stay until it is ready. With no text typed, the blank has no effect and reads in muted style.
 
@@ -949,6 +949,37 @@ Mock: [`admin-instance.html`](mocks/admin-instance.html).
 | `offline.fix.off` | Turn off | כיבוי |
 | `offline.fix.google` | Turn off Google sign-in | כיבוי כניסה עם Google |
 | `offline.confirm` | Turn on offline mode? AskCalls will block every request to hosts outside your network. | להפעיל מצב לא מקוון? AskCalls תחסום כל בקשה לשרתים מחוץ לרשת שלך. |
+
+### A3 Admin accounts `/admin/accounts`
+
+**Purpose:** find an account and see how much of its limits it uses. Admin role only; counts, sizes, emails, names, dates, plan and role, never call data or tag names.
+
+**Layout:** title "Accounts"; `SearchBox` (email substring, debounced 250 ms, no suggestions); a table of `AccountRow`s, newest first, 50 per page with "Load more". Columns: Account (email, name below), Plan (plan, Admin and Custom limits badges), Created, Calls, Recordings, Transcription (this month), Asks today, Translation (characters this month), Tokens. A row opens A4. Mobile: the table scrolls sideways.
+
+**States:** loading (panel skeleton), error (`ErrorState` panel with Try again), no match (`EmptyState` "No accounts match." + Clear search).
+
+| Key | English | Hebrew |
+| --- | --- | --- |
+| `admin.accounts.title` | Accounts | חשבונות |
+| `admin.accounts.search` | Search by email | חיפוש לפי אימייל |
+| `admin.accounts.custom` | Custom limits | מגבלות מותאמות |
+| `admin.accounts.empty` | No accounts match. | אין חשבונות תואמים. |
+| `admin.accounts.loadMore` | Load more | טעינת עוד |
+
+### A4 Admin account `/admin/accounts/[id]`
+
+**Purpose:** see one account's usage against its effective limits and give it higher or lower limits.
+
+**Layout:** the account's email as the title, back to A3 on phones; one line with plan and join date (Admin badge, name). `SettingsSection` "Usage this period" with a `UsageMeter` per limited resource against the account's effective limit. `SettingsSection` "Limits" with a `LimitOverrideField` per field of `Limits`: empty uses the instance limit (shown as the placeholder and "Instance limit: …"), a number overrides it, the clear button removes the override. Save limits sends only the changed fields; Discard restores the saved values. Changes are audited on both accounts with field names only.
+
+**States:** loading, not found ("No account with this id."), invalid value (inline, Save disabled), saving, saved ("Saved"), save failed.
+
+| Key | English | Hebrew |
+| --- | --- | --- |
+| `admin.accounts.limits` | Limits | מגבלות |
+| `admin.accounts.instanceLimit` | Instance limit: {value} | מגבלת המופע: {value} |
+| `admin.accounts.invalid` | Enter a whole number from 0, or leave empty for the instance limit. | הזינו מספר שלם מ-0, או השאירו ריק כדי להשתמש במגבלת המופע. |
+| `admin.accounts.save` | Save limits | שמירת המגבלות |
 
 ### W1 First-run wizard `/setup`
 

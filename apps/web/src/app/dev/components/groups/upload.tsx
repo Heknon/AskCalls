@@ -12,6 +12,7 @@ import { QueueRow } from '@askcalls/ui/components/QueueRow';
 import { UsageMeter } from '@askcalls/ui/components/UsageMeter';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Card } from '@askcalls/ui/primitives/card';
+import { Checkbox } from '@askcalls/ui/primitives/checkbox';
 import { TableHead } from '@askcalls/ui/primitives/table';
 import { useState } from 'react';
 import {
@@ -327,8 +328,13 @@ export function UploadGroup() {
                   }}
                   select={{
                     checked: !left.has(r),
-                    onCheckedChange: (v) => flip([r], v),
-                    label: `${c.review.include} ${r}`,
+                    control: (
+                      <Checkbox
+                        checked={!left.has(r)}
+                        onCheckedChange={(v) => flip([r], v === true)}
+                        aria-label={`${c.review.include} ${r}`}
+                      />
+                    ),
                   }}
                 />
               ))}

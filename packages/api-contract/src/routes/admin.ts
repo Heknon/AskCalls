@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { defineRoute } from '../route';
+import { DateCodec, QInt } from '../wire';
 
 /**
  * Instance administration (spec 11.2b), admin role only. The config travels as the redacted
@@ -102,4 +103,75 @@ export const promoteToAdmin = defineRoute({
   auth: 'session',
   body: z.object({ email: z.string().trim().email().max(254) }),
   response: z.object({ userId: z.string(), role: z.literal('admin'), alreadyAdmin: z.boolean() }),
+});
+
+const Count = z.number().int().nonnegative();
+
+export const LimitsSchema = z.object({
+  maxCalls: Count,
+  transcriptionMinutesPerMonth: Count,
+  recordingBytes: Count,
+  maxApiTokens: Count,
+  mcpFetchesPerTokenPerHour: Count,
+  asksPerDay: Count,
+  translationCharsPerMonth: Count,
+});
+
+export const LimitFieldSchema = LimitsSchema.keyof();
+
+export const AccountSummarySchema = z.object({
+  id: z.string(),
+  email: z.string().nullable(),
+  name: z.string().nullable(),
+  plan: z.enum(['free', 'pro']),
+  role: z.enum(['user', 'admin']),
+  createdAt: DateCodec,
+  overridden: z.array(LimitFieldSchema),
+  usage: z.object({
+    calls: Count,
+    recordingBytes: Count,
+    transcriptionSecondsThisMonth: z.number().nonnegative(),
+    asksToday: Count,
+    translationCharsThisMonth: Count,
+    apiTokens: Count,
+  }),
+});
+
+export const AccountDetailSchema = AccountSummarySchema.extend({
+  limits: LimitsSchema,
+  instanceLimits: LimitsSchema,
+  overrides: LimitsSchema.partial(),
+});
+
+/** Accounts newest first with their usage; `email` filters by a substring of the email. */
+export const listAccounts = defineRoute({
+  method: 'GET',
+  path: '/api/admin/users',
+  auth: 'session',
+  query: z.object({
+    email: z.string().max(254).optional(),
+    cursor: z.string().max(512).optional(),
+    limit: QInt.pipe(z.number().int().min(1).max(100)).optional(),
+  }),
+  response: z.object({ items: z.array(AccountSummarySchema), nextCursor: z.string().nullable() }),
+});
+
+const AccountParams = z.object({ id: z.string().min(1).max(64) });
+
+export const getAccount = defineRoute({
+  method: 'GET',
+  path: '/api/admin/users/:id',
+  auth: 'session',
+  params: AccountParams,
+  response: AccountDetailSchema,
+});
+
+/** A whole number overrides the instance limit; `null` clears the override. */
+export const updateAccountLimits = defineRoute({
+  method: 'PATCH',
+  path: '/api/admin/users/:id/limits',
+  auth: 'session',
+  params: AccountParams,
+  body: z.object({ limits: z.partialRecord(LimitFieldSchema, Count.nullable()) }),
+  response: AccountDetailSchema,
 });

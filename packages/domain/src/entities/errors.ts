@@ -12,8 +12,9 @@ export type DomainErrorCode =
   | 'provider_error';
 
 /**
- * Marks every DomainError, so one created by another copy of this module (a bundler can load an
- * adapter's import of the domain separately from the route's) is still recognised.
+ * Shared across copies of this module. Next.js bundles route handlers, pages and middleware
+ * separately, and the container (built once, on `globalThis`) holds adapters from whichever
+ * bundle built it, so a plain `instanceof` misses errors thrown by another bundle's copy.
  */
 const BRAND = Symbol.for('askcalls.DomainError');
 
@@ -29,8 +30,17 @@ export class DomainError extends Error {
     super(message);
     this.name = 'DomainError';
   }
+
+  /** Matches any copy of DomainError; subclasses keep the ordinary prototype check. */
+  static override [Symbol.hasInstance](value: unknown): boolean {
+    // biome-ignore lint/complexity/noThisInStatic: `this` is the subclass being checked.
+    if (this !== DomainError) return Function.prototype[Symbol.hasInstance].call(this, value);
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      (value as { [BRAND]?: unknown })[BRAND] === true
+    );
+  }
 }
 
-export const isDomainError = (e: unknown): e is DomainError =>
-  e instanceof DomainError ||
-  (typeof e === 'object' && e !== null && (e as { [BRAND]?: unknown })[BRAND] === true);
+export const isDomainError = (e: unknown): e is DomainError => e instanceof DomainError;

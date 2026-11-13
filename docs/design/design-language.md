@@ -123,6 +123,7 @@ One icon per concept; one concept per icon. If a new concept needs an icon, add 
 | `download` | Download transcript, export | |
 | `inbox` | Inbox items (server-side encrypted uploads) | Notifications |
 | `server` | The instance, admin pages, a value set by the server environment, and the AskCalls server in data-flow diagrams | Third-party providers (use `cloud`) |
+| `users` | The admin Accounts page (every account on the instance) | One contact (use `user`), the account menu (use avatar) |
 | `cloud` | A third-party provider in a data-flow diagram | The AskCalls server |
 | `laptop` / `smartphone` / `terminal` | Device kind (browser on desktop, browser on phone, agent CLI) | |
 | `database`, `hard-drive` | Database, local file storage | |
@@ -233,7 +234,7 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 #### AppSidebar
 - **Purpose:** primary navigation and the always-visible lock status on large screens.
 - **Use:** app routes at `lg` and above (collapses to a rail at `md`). **Don't use:** marketing, onboarding, unlock gate, wizard (they are focused flows without navigation).
-- **Props:** `active` (route key), `isAdmin` (shows the Instance group), `callCount`.
+- **Props:** `active` (route key), `isAdmin` (shows the Instance group: Admin and Accounts), `callCount`.
 - **Composes:** `Sidebar`, `Tooltip` (rail labels), `Button`, `Avatar`.
 - **Screens:** all `/app/**` and `/admin/**`.
 - **States:** expanded, rail; current item.
@@ -347,16 +348,16 @@ The calls list uses one search pattern, shared with the owner's other product (`
 
 ```
 [ 🔍  מחיר                                            × ]          SearchBox (suggestions drop below while typing)
-Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase interest] · from [the last 30 days] · [in and out] · matching [exact words]   Clear
+Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase interest] · from [the last 30 days] · [in and out] · matching [meaning]   Clear
 18 calls   also matched  מחירים ×  המחיר ×  price ×                                  Newest first ▾                                                     ResultLine
 ```
 
 #### SearchBox
 - **Purpose:** the one text input for finding calls. Plain text is a keyword search (fuzzy, with synonyms); while typing it suggests filter values and calls.
-- **Use:** above any filterable list (calls; contacts later). **Don't use:** for finding text inside one transcript (`TranscriptFind`), or as a second search on the same page.
+- **Use:** above any filterable list (calls; contacts later; accounts on A3, by email, without suggestions). **Don't use:** for finding text inside one transcript (`TranscriptFind`), or as a second search on the same page.
 - **Props:** `value`, `onChange` (results debounce 250 ms in the screen hook), `placeholder`, `suggestions` (built by the screen from the decrypted local catalogs), `records` (calls found by the text).
 - **Composes:** `Input` with `role="combobox"`, a listbox of `SearchSuggestion`s, `Button` (clear).
-- **Screens:** C1, C2, O5. **States:** empty (placeholder "Search names, numbers, tags or words"), typing with suggestions, typing with no suggestions (Enter runs the word search), searching (results dim after 400 ms; the box never spins).
+- **Screens:** C1, C2, O5, A3. **States:** empty (placeholder "Search names, numbers, tags or words"), typing with suggestions, typing with no suggestions (Enter runs the word search), searching (results dim after 400 ms; the box never spins).
 - **Behaviour:** at most 6 suggestions; filter values first, then up to 2 calls (4 when no values match); identifier-looking text (any digit, or 6+ characters) puts calls first. Typing a group name ("intent", "כוונה", "tag") suggests opening that picker. Choosing a suggestion applies it and clears the text.
 - **A11y:** `role="combobox"`, `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant`; ↑ ↓ move, Enter applies the highlighted suggestion (or runs the word search when none is highlighted), Esc closes the list, a second Esc clears the text. `/` focuses the box.
 - **RTL:** search icon at the start, clear at the end; the input is `dir="auto"` and aligns to the UI direction.
@@ -371,7 +372,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **RTL:** labels `dir="auto"`; phone numbers are LTR islands; the ↵ hint sits at the end edge.
 
 #### FilterSentence
-- **Purpose:** shows every filter at once, as a sentence the user can read and edit: "Showing [all calls] · with [anyone] · tagged [any tag] · about [any intent] · from [any time] · [in and out] · matching [exact words]".
+- **Purpose:** shows every filter at once, as a sentence the user can read and edit: "Showing [all calls] · with [anyone] · tagged [any tag] · about [any intent] · from [any time] · [in and out] · matching [meaning]".
 - **Props:** `blanks: FilterBlank[]`, `onClear` (the "Clear" link appears when any blank is set).
 - **Composes:** text + `FilterBlank`s. **Screens:** C1, C2; M1 (read-only fragments in use-case samples).
 - **Copy:** each blank is a message with its value interpolated, so each language places its own prepositions. Hebrew folds some prepositions into the value ("[בכל זמן]", "[ב-30 הימים האחרונים]") instead of a separate word. Full sentences in both languages are in `screens.md` C2.
@@ -382,7 +383,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Purpose:** one filter inside the sentence: its current value, and the button that changes it.
 - **Props:** `facet` (`starred`, `contact`, `tag`, `intent`, `date`, `direction`, `match`), `empty` text ("anyone"), `value` ("Hot lead", or `<bdi>דנה לוי</bdi> + 1` for several: user text is a bidi island so the "+ 1" stays in the sentence's direction), `readOnly` (marketing samples), `inactive` (no effect right now), `busy` (loading the meaning model). The open state comes from the picker (`data-state="open"`).
 - **Looks:** empty = bold text with a dashed underline; set = accent tint with a solid accent underline. Never a pill or a chip.
-- **Match blank:** "matching [exact words | meaning]" is the semantic search switch. It is a single-choice blank because it is one concept: how the text is matched. Choosing "meaning" sorts by best match and loads the meaning model once.
+- **Match blank:** "matching [meaning | exact words]" is the semantic search switch. It is a single-choice blank because it is one concept: how the text is matched. Meaning is the default and sorts by best match; its snippet marks the phrase closest to the query, found on the device by embedding the decrypted phrases. "Exact words" runs the keyword search (typos, synonyms, Hebrew prefixes) and marks the matched words.
 - **Composes:** `Button`. Opens `FilterPicker`. **Screens:** C1, C2, M1.
 - **A11y:** `aria-haspopup="dialog"`, `aria-expanded`. **RTL:** none beyond the sentence.
 
@@ -495,7 +496,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### AskMessage
 - **Purpose:** one question or answer in the ask conversation.
-- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. **Composes:** `TimestampLink`. **Screens:** C3.
+- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. Answers render a Markdown subset (headings, lists, bold, italic, code, quotes, line breaks) as React elements, never HTML; links stay text. Questions keep their line breaks. **Composes:** `TimestampLink`. **Screens:** C3. **RTL:** each answer block is `dir="auto"`.
 
 #### ConsentSheet
 - **Purpose:** asks for consent before a call's plaintext is sent to an LLM provider, naming who receives it.
@@ -583,7 +584,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### QueueRow
 - **Purpose:** one file (or audio + transcript pair) in the import queue.
-- **Props:** `select` (before the import starts: a checkbox that puts the call in or leaves it out; a left-out row is dimmed).
+- **Props:** `select` (before the import starts: `checked` and the `Checkbox` that puts the call in or leaves it out, passed in so the queue view doesn't load it; a left-out row is dimmed).
 - **Composes:** `QueueItemStatus`, `ContactLabel`, `Button` (retry), `Checkbox`, `CallRow` link for duplicates. **Screens:** U2.
 
 #### ImportGroup
@@ -649,7 +650,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### SettingsSection
 - **Purpose:** a titled block of related settings with a description.
-- **Composes:** `Card`, `Separator`. **Screens:** S1–S8, A1.
+- **Composes:** `Card`, `Separator`. **Screens:** S1–S8, A1, A4.
 
 #### ProviderCard
 - **Purpose:** one capability (transcription, ask, recording backups, or an instance port) and which provider serves it.
@@ -662,6 +663,10 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Purpose:** shows that a secret is saved without revealing it.
 - **Props:** `prefix`, `last4`, `onReplace`, `onRemove`. **Composes:** `Input` (read-only), `Button`. **Screens:** S4, S5, A1, W1.
 
+#### SettingSwitch
+- **Purpose:** a yes/no setting with a one-line hint on what it changes.
+- **Props:** `label`, `hint`, `checked`, `disabled`, `onChange`. **Composes:** `Switch`, `Label`. **Screens:** S5 (zero retention on an own key), A1.
+
 #### TestConnectionResult
 - **Purpose:** the outcome of a provider or port health check.
 - **Props:** `state="idle" | "testing" | "ok" | "failed"`, `detail`. **Composes:** `Button`, text with icon. **Screens:** S5, A1, W1.
@@ -673,7 +678,17 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### UsageMeter
 - **Purpose:** use of a limited resource against its limit.
-- **Props:** `used`, `limit`, `unit`. Turns warning at 80 %, destructive at 100 %. **Composes:** `Progress`. **Screens:** S2, S4, S5, U2, P1.
+- **Props:** `used`, `limit`, `unit`. Turns warning at 80 %, destructive at 100 %. **Composes:** `Progress`. **Screens:** S2, S4, S5, U2, P1, A4.
+- **Not to be confused with:** `LimitOverrideField`, which sets a limit; the meter only shows use against it.
+
+#### LimitOverrideField
+- **Purpose:** one limit an admin sets for a single account, falling back to the instance limit when empty.
+- **Props:** `label`, `unit`, `value` (as typed; empty means the instance limit), `instance` (the instance limit, shown as the placeholder), `instanceLabel` ("Instance limit: 500 calls"), `invalid`, `disabled`, `onChange`.
+- **Composes:** `Label`, `Input` (numeric, LTR), `Button` (clear, `x` icon). **Screens:** A4.
+- **States:** instance limit (empty), overridden, invalid (`aria-invalid`), disabled while saving.
+- **A11y:** the caption is the input's description; the clear button is named "Clear: {label}".
+- **RTL:** the number stays LTR; unit and clear button follow the UI direction.
+- **Not to be confused with:** `UsageMeter` (shows use), `EnvLockedField` (a value fixed by the server environment).
 
 #### EnvLockedField
 - **Purpose:** a setting whose value is fixed by a server environment variable.
@@ -701,6 +716,15 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### AuditEventRow
 - **Purpose:** one audit log entry (actor, action, call id prefix, time).
 - **Composes:** `Table` row. **Screens:** S7.
+
+#### AccountRow
+- **Purpose:** one account in the admin list: email and name, plan and role, created date and usage counts. Never content.
+- **Props:** `href` (A4), `email`, `name`, `plan`, `admin` (badge label for admins), `custom` (badge label when any limit is overridden), `created`, `usage` (formatted cells in header order), `linkAs`.
+- **Composes:** `Table` row, `Badge`. **Screens:** A3.
+- **States:** member, admin, custom limits, no name, hover; the whole row is the link's hit area.
+- **A11y:** the email is the link; the row has no extra role.
+- **RTL:** email and numbers are LTR islands; the name is `dir="auto"`; numeric cells align to the end.
+- **Not to be confused with:** `AuditEventRow` (one event on the user's own account), `ContactRow` (a person in the user's calls).
 
 #### CopyableCode
 - **Purpose:** a command or config snippet the user copies.
@@ -810,6 +834,8 @@ Screen codes are used in the catalog above and in `screens.md`.
 | S8 | Settings: data | SettingsSection, JobProgress, ConfirmDialog |
 | A1 | Admin instance | PageHeader, ProviderCard, HealthBadge, EnvLockedField, MaskedSecret, TestConnectionResult, OfflineBlockerList, UsageMeter |
 | A2 | Offline mode (card on A1) | OfflineBlockerList, ConfirmDialog |
+| A3 | Admin accounts | PageHeader, SearchBox, AccountRow, EmptyState, ErrorState |
+| A4 | Admin account | PageHeader, SettingsSection, UsageMeter, LimitOverrideField, ErrorState |
 | W1 | First-run wizard | Stepper, ChoiceCard, ProviderCard, TestConnectionResult, MaskedSecret, OfflineBlockerList |
 | X1 | Keyboard shortcuts dialog | ShortcutsDialog, Kbd |
 | X2 | Toasts | Notice |
