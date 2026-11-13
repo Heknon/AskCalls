@@ -37,6 +37,59 @@ export function fromB64(s: string): Uint8Array {
 export const toTok = (t: bigint): string => t.toString(10);
 export const fromTok = (s: string): bigint => BigInt.asIntN(64, BigInt(s));
 
+/*
+ * Codecs: each decodes the wire form (input) to the domain form (output) on `parse`, and
+ * encodes back with `z.encode`. The server parses requests and encodes responses; the client
+ * encodes requests and parses responses. One schema, both directions.
+ */
+const U8 = z.custom<Uint8Array>((v) => v instanceof Uint8Array, 'bytes');
+const F32 = z.custom<Float32Array>((v) => v instanceof Float32Array, 'float32 vector');
+
+export const BytesCodec = z.codec(B64, U8, {
+  decode: fromB64,
+  encode: toB64,
+});
+export const TokCodec = z.codec(Tok, z.bigint(), { decode: fromTok, encode: toTok });
+export const EmbeddingCodec = z.codec(Vector384, F32, {
+  decode: (a) => Float32Array.from(a),
+  encode: (v) => Array.from(v),
+});
+export const DateCodec = z.codec(z.iso.datetime({ offset: true }), z.date(), {
+  decode: (s) => new Date(s),
+  encode: (d) => d.toISOString(),
+});
+
+/** Base64 encoded size of `n` bytes, for wire-level size limits. */
+export const b64Len = (n: number) => Math.ceil(n / 3) * 4;
+export const BytesMax = (maxBytes: number) =>
+  z.codec(B64.max(b64Len(maxBytes)), U8, {
+    decode: fromB64,
+    encode: toB64,
+  });
+
+/** Query-string codecs: every query value arrives as a string. */
+export const QInt = z.codec(z.string().regex(/^\d{1,9}$/), z.number().int(), {
+  decode: (s) => Number.parseInt(s, 10),
+  encode: (n) => String(n),
+});
+export const QDay = z.codec(z.string().regex(/^\d{1,6}$/), DayInt, {
+  decode: (s) => Number.parseInt(s, 10),
+  encode: (n) => String(n),
+});
+export const QBool = z.codec(z.enum(['true', 'false', '1', '0']), z.boolean(), {
+  decode: (s) => s === 'true' || s === '1',
+  encode: (b) => (b ? 'true' : 'false'),
+});
+/** Comma-separated int64 tokens, e.g. `tag=1,-2` (at most 64). */
+export const QTokList = z.codec(
+  z.string().regex(/^-?\d{1,19}(,-?\d{1,19}){0,63}$/),
+  z.array(z.bigint()),
+  {
+    decode: (s) => s.split(',').map(fromTok),
+    encode: (a) => a.map(toTok).join(','),
+  },
+);
+
 export const ErrorBody = z.object({
   error: z.object({
     code: z.string(),

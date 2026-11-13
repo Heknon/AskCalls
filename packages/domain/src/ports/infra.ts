@@ -10,6 +10,26 @@ export interface RateLimitResult {
 export interface RateLimiter extends HealthCheckable {
   /** Sliding window: records one hit for `key` and reports whether it is within `limit`. */
   hit(key: string, limit: number, windowMs: number): Promise<RateLimitResult>;
+  /**
+   * Fixed-window usage counter for quotas (transcription seconds per month, asks per day).
+   * Atomically adds `amount` to the counter for (`key`, `windowStart`) unless the total would
+   * exceed `limit`; `limit: null` always adds. A negative `amount` refunds. Returns whether it
+   * was added and the total after.
+   */
+  consume(
+    key: string,
+    windowStart: Date,
+    amount: number,
+    limit: number | null,
+  ): Promise<UsageResult>;
+  /** Current total of a fixed-window counter; 0 when it has never been used. */
+  usage(key: string, windowStart: Date): Promise<number>;
+}
+
+export interface UsageResult {
+  allowed: boolean;
+  /** Counter total after the call (unchanged when not allowed). */
+  used: number;
 }
 
 /** Allowed telemetry fields: ids, counts, durations, route names, error codes. Nothing else. */

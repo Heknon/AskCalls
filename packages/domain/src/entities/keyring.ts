@@ -55,6 +55,11 @@ export interface DeviceLinkSession {
   /** Joiner's ephemeral ECDH P-256 public key (SPKI). */
   devicePublicKey: Bytes | null;
   deviceLabel: string | null;
+  /**
+   * Joiner's ECDSA P-256 signing public key (SPKI), registered as its DeviceKey when the
+   * trusted device confirms. Optional for compatibility; absent until the joiner posts.
+   */
+  deviceSigningPublicKey?: Bytes | null;
   /** ECIES(devicePublicKey, RK), written by the trusted device after fingerprint confirmation. */
   encryptedRootKey: Bytes | null;
   createdAt: Date;

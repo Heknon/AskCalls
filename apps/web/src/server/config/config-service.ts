@@ -72,6 +72,8 @@ export interface ResolvedConfig {
   incomplete: string[];
   /** Monotonic version, bumped on every successful update. */
   version: number;
+  /** NODE_ENV of the running server. Production fails closed where a secret is missing. */
+  environment: 'production' | 'development' | 'test';
 }
 
 type Listener = (next: ResolvedConfig) => void;
@@ -104,6 +106,11 @@ export class ConfigService {
     return { layer, locked, problems };
   }
 
+  get environment(): ResolvedConfig['environment'] {
+    const env = this.env.NODE_ENV;
+    return env === 'development' || env === 'test' ? env : 'production';
+  }
+
   get configFilePath(): string {
     const dataDir =
       this.env.ASKCALLS_DATA_DIR ?? (this.env.APP_MODE === 'local' ? '~/.askcalls' : './data');
@@ -131,7 +138,13 @@ export class ConfigService {
       else incomplete.push(p.message);
     }
     if (problems.length) throw new ConfigError(problems);
-    return { config, locked, incomplete, version: (this.current?.version ?? 0) + 1 };
+    return {
+      config,
+      locked,
+      incomplete,
+      version: (this.current?.version ?? 0) + 1,
+      environment: this.environment,
+    };
   }
 
   /** Loads env and the config file. Invalid env values fail fast with every problem listed. */

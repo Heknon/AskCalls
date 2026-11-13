@@ -57,8 +57,8 @@ export interface ApiToken {
 
 export type NewApiToken = Omit<ApiToken, 'createdAt' | 'lastUsedAt' | 'revokedAt'>;
 
-/** `session`, `token:<id>` or `agent:<deviceId>`. */
-export type AuditActor = 'session' | `token:${string}` | `agent:${string}`;
+/** `session`, `token:<id>`, `agent:<deviceId>`, or `system` for scheduled jobs. */
+export type AuditActor = 'session' | 'system' | `token:${string}` | `agent:${string}`;
 
 export type AuditAction =
   | 'call.create'
@@ -69,15 +69,19 @@ export type AuditAction =
   | 'call.search'
   | 'recording.upload'
   | 'recording.read'
+  | 'recording.orphaned'
   | 'keyring.add'
   | 'keyring.revoke'
   | 'keyring.read'
+  | 'device.link_start'
   | 'device.link'
   | 'device.revoke'
   | 'token.create'
   | 'token.revoke'
   | 'inbox.upload'
   | 'inbox.process'
+  | 'inbox.delete'
+  | 'keyring.setup'
   | 'ask'
   | 'transcribe'
   | 'export'

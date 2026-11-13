@@ -83,6 +83,15 @@ export function describeKeyringRepositoryContract(name: string, harness: Harness
         deviceLabel: 'laptop',
       });
       expect((await s.keyring.getLinkSession(id))?.devicePublicKey).toEqual(pub);
+      const signing = rand(91);
+      await s.keyring.updateLinkSession(id, { deviceSigningPublicKey: signing });
+      expect((await s.keyring.getLinkSession(id))?.deviceSigningPublicKey).toEqual(signing);
+      const payload = rand(150);
+      await s.keyring.updateLinkSession(id, { state: 'completed', encryptedRootKey: payload });
+      expect((await s.keyring.getLinkSession(id))?.encryptedRootKey).toEqual(payload);
+      await s.keyring.updateLinkSession(id, { encryptedRootKey: null });
+      const done = await s.keyring.getLinkSession(id);
+      expect(done).toMatchObject({ state: 'completed', encryptedRootKey: null });
       expect(await s.keyring.deleteExpiredLinkSessions(new Date(now.getTime() + 601_000))).toBe(1);
       expect(await s.keyring.getLinkSession(id)).toBeNull();
     });
