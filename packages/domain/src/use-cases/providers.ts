@@ -1,4 +1,5 @@
 import { DomainError, isDomainError } from '../entities/errors';
+import { isTranslationLanguage, type TranslationLanguage } from '../entities/transcript';
 import type { ClientToken, TranscribeResult } from '../ports/providers';
 import type { Ports } from '../ports-bundle';
 import { supportsDirectTokens } from './account';
@@ -17,6 +18,10 @@ export const PROVIDER_LIMITS = {
   transcriptChars: 1_000_000,
   historyTurns: 20,
   historyChars: 40_000,
+  /** One /api/translate request: a batch of a call's segments, not the whole call. */
+  translateSegments: 200,
+  translateSegmentChars: 4_000,
+  translateChars: 24_000,
 } as const;
 
 export interface TranscribeUsage {
@@ -182,4 +187,96 @@ export async function askAboutCall(
     history,
     ...(input.signal && { signal: input.signal }),
   });
+}
+
+export interface TranslateInput {
+  segments: string[];
+  /** ISO 639-1 of the original, or null when unknown. */
+  source: string | null;
+  target: TranslationLanguage;
+  signal?: AbortSignal;
+}
+
+export interface TranslateUsage {
+  usedChars: number;
+  limitChars: number;
+}
+
+/**
+ * Translation at ingest (translation milestone): one batch of a call's segments goes to the LLM,
+ * in transit only, and comes back aligned segment for segment. Consent is given once, in
+ * Settings → Providers and on the upload screen, not per request. Counted in characters per
+ * UTC month: charged before the provider call and refunded when it fails.
+ */
+export async function translateSegments(
+  ports: Ports,
+  actor: Actor,
+  input: TranslateInput,
+): Promise<{ segments: string[]; provider: string; model: string; usage: TranslateUsage }> {
+  const llm = ports.llm;
+  if (!llm || !ports.translationEnabled) {
+    throw new DomainError('unsupported', 'translation is turned off');
+  }
+  const { segments } = input;
+  if (!isTranslationLanguage(input.target)) throw new DomainError('invalid', 'unknown target');
+  if (input.source !== null && !/^[a-z]{2}$/.test(input.source)) {
+    throw new DomainError('invalid', 'source must be an ISO 639-1 code');
+  }
+  if (input.source === input.target) {
+    throw new DomainError('invalid', 'source and target are the same language');
+  }
+  if (segments.length === 0 || segments.length > PROVIDER_LIMITS.translateSegments) {
+    throw new DomainError('invalid', 'segments must be 1..200');
+  }
+  const chars = segments.reduce((n, s) => n + s.length, 0);
+  if (
+    chars === 0 ||
+    chars > PROVIDER_LIMITS.translateChars ||
+    segments.some((s) => s.length > PROVIDER_LIMITS.translateSegmentChars)
+  ) {
+    throw new DomainError('invalid', 'segments are empty or too long');
+  }
+
+  const now = ports.clock.now();
+  const key = usageKeys.translationChars(actor.userId);
+  const window = monthStart(now);
+  const limitChars = ports.limits.translationCharsPerMonth;
+  const consumed = await ports.rateLimiter.consume(key, window, chars, limitChars);
+  if (!consumed.allowed) {
+    throw new DomainError('quota_exceeded', 'monthly translation characters are used up', {
+      limit: limitChars,
+      quota: 'translation_chars',
+      resetAt: nextMonthStart(now).toISOString(),
+    });
+  }
+  let translated: string[];
+  try {
+    translated = await llm.translate({
+      segments,
+      source: input.source,
+      target: input.target,
+      ...(input.signal && { signal: input.signal }),
+    });
+    if (translated.length !== segments.length) {
+      throw new DomainError('provider_error', 'translation reply did not match the segments', {
+        provider: llm.id,
+      });
+    }
+  } catch (e) {
+    await ports.rateLimiter.consume(key, window, -chars, null);
+    if (isDomainError(e)) throw e;
+    throw new DomainError('provider_error', 'LLM provider failed', { provider: llm.id });
+  }
+  await audit(ports, actor, actor.userId, 'translate', null, {
+    provider: llm.id,
+    segments: segments.length,
+    chars,
+    target: input.target,
+  });
+  return {
+    segments: translated,
+    provider: llm.id,
+    model: llm.model,
+    usage: { usedChars: consumed.used, limitChars },
+  };
 }

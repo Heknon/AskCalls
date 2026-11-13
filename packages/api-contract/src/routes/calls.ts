@@ -17,7 +17,14 @@ import {
 const CallIdParam = z.object({ id: z.string().min(1).max(64) });
 
 export const ChunkIn = z.object({
+  /** Unique across languages: the original's chunks, then each translation's. */
   ord: z.number().int().min(0).max(100_000),
+  /** ISO 639-1 of the chunk's text. Optional for clients that predate translations. */
+  lang: z
+    .string()
+    .regex(/^[a-z]{2}$/)
+    .nullable()
+    .optional(),
   embedding: EmbeddingCodec,
   snippetCt: BytesMax(4_096),
 });
@@ -32,7 +39,7 @@ export const CreateCallBody = z.object({
   transcriptCt: BytesMax(3 * 1024 * 1024),
   metaCt: BytesMax(64 * 1024),
   contactTok: TokCodec.nullable(),
-  keywordToks: z.array(TokCodec).max(5_000),
+  keywordToks: z.array(TokCodec).max(15_000),
   tagToks: z.array(TokCodec).max(256),
   audioTok: TokCodec.nullable(),
   contentTok: TokCodec,
@@ -132,6 +139,27 @@ export const updateCall = defineRoute({
       'nothing to update',
     ),
   response: CallFull,
+});
+
+/**
+ * Re-index one call: the device replaces everything it derives from the transcript (the
+ * transcript and metadata ciphertext with a new signature, keyword tokens, chunks) in one
+ * step. The content token, tags and recording stay. `expectedUpdatedAt` is the call's
+ * `updatedAt` as the device read it: 409 `version_conflict` when it changed since.
+ */
+export const replaceCallContent = defineRoute({
+  method: 'PUT',
+  path: '/api/calls/:id/content',
+  auth: 'write',
+  params: CallIdParam,
+  body: z.object({
+    transcriptCt: BytesMax(3 * 1024 * 1024),
+    metaCt: BytesMax(64 * 1024),
+    keywordToks: z.array(TokCodec).max(15_000),
+    chunks: z.array(ChunkIn).max(2_000),
+    expectedUpdatedAt: DateCodec,
+  }),
+  response: z.object({ id: z.string(), updatedAt: DateCodec }),
 });
 
 export const deleteCall = defineRoute({

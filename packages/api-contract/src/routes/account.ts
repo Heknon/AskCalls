@@ -23,12 +23,14 @@ export const MeSchema = z.object({
     maxApiTokens: z.number().int(),
     mcpFetchesPerTokenPerHour: z.number().int(),
     asksPerDay: z.number().int(),
+    translationCharsPerMonth: z.number().int(),
   }),
   usage: z.object({
     calls: z.number().int(),
     recordingBytes: z.number().int(),
     transcriptionSecondsThisMonth: z.number(),
     asksToday: z.number().int(),
+    translationCharsThisMonth: z.number().int(),
     apiTokens: z.number().int(),
     inboxPending: z.number().int(),
   }),
@@ -49,6 +51,7 @@ export const MeSchema = z.object({
       provider: z.string().nullable(),
       model: z.string().nullable(),
     }),
+    translation: z.object({ enabled: z.boolean() }),
   }),
 });
 

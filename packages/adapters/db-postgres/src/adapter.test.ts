@@ -96,12 +96,12 @@ describe('postgres adapter specifics (pglite)', () => {
     await t.db.calls.create(c);
     await expect(
       t.db.search.upsertChunks(userA, c.id, [
-        { ord: 0, embedding: new Float32Array(3), snippetCt: new Uint8Array(1) },
+        { ord: 0, lang: null, embedding: new Float32Array(3), snippetCt: new Uint8Array(1) },
       ]),
     ).rejects.toMatchObject({ code: 'invalid' });
     await expect(
       t.db.search.upsertChunks(userB, c.id, [
-        { ord: 0, embedding: new Float32Array(384), snippetCt: new Uint8Array(1) },
+        { ord: 0, lang: null, embedding: new Float32Array(384), snippetCt: new Uint8Array(1) },
       ]),
     ).rejects.toMatchObject({ code: 'not_found' });
   });

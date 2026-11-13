@@ -84,3 +84,28 @@ export const ask = defineRoute({
   }),
   stream: true,
 });
+
+/**
+ * Translation at ingest: one batch of a call's segments (≤ 200, ≤ 24,000 characters) to English
+ * or Hebrew, aligned segment for segment. In transit only, like `ask`. 404 `unsupported` when
+ * translation or the LLM is off; 403 `quota_exceeded` when the month's characters are used up.
+ */
+export const translate = defineRoute({
+  method: 'POST',
+  path: '/api/translate',
+  auth: 'write',
+  body: z.object({
+    segments: z.array(z.string().max(4_000)).min(1).max(200),
+    source: z
+      .string()
+      .regex(/^[a-z]{2}$/)
+      .nullable(),
+    target: z.enum(['en', 'he']),
+  }),
+  response: z.object({
+    segments: z.array(z.string()),
+    provider: z.string(),
+    model: z.string(),
+    usage: z.object({ usedChars: z.number(), limitChars: z.number() }),
+  }),
+});

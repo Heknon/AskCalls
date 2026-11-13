@@ -6,6 +6,13 @@ export interface Limits {
   maxApiTokens: number;
   mcpFetchesPerTokenPerHour: number;
   asksPerDay: number;
+  /**
+   * Characters of transcript sent for translation through the managed LLM per UTC month. About
+   * 900 characters are spoken per minute, so the default covers a translation of every managed
+   * minute into both languages several times over, plus imported transcripts and the one-time
+   * backfill of existing calls.
+   */
+  translationCharsPerMonth: number;
 }
 
 export const DEFAULT_LIMITS: Limits = {
@@ -15,4 +22,5 @@ export const DEFAULT_LIMITS: Limits = {
   maxApiTokens: 5,
   mcpFetchesPerTokenPerHour: 60,
   asksPerDay: 50,
+  translationCharsPerMonth: 2_000_000,
 };

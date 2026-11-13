@@ -93,8 +93,10 @@ export const InstanceConfigSchema = z.object({
       model: z.string().optional(),
       apiKey: secret,
       baseUrl: z.string().url().optional(),
+      /** Translation at ingest (`/api/translate`) through this LLM; false turns it off. */
+      translation: z.boolean().default(true),
     })
-    .default({ provider: 'anthropic' }),
+    .default({ provider: 'anthropic', translation: true }),
 
   embeddingModel: z.string().default('Xenova/multilingual-e5-small'),
   /**
@@ -217,6 +219,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['LLM_MODEL', 'llm.model', str],
   ['ANTHROPIC_API_KEY', 'llm.apiKey', str],
   ['LLM_BASE_URL', 'llm.baseUrl', str],
+  ['LLM_TRANSLATION', 'llm.translation', bool],
   ['EMBEDDING_MODEL', 'embeddingModel', str],
   ['EMBEDDING_MODEL_URL', 'embeddingModelUrl', str],
   ['FREE_TIER_MAX_CALLS', 'limits.freeTierMaxCalls', int],

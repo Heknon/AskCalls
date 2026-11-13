@@ -323,6 +323,23 @@ export class MemoryDb {
       c.updatedAt = new Date();
       return { ...c };
     },
+    replaceContent: async (userId, id, content, expectedUpdatedAt) => {
+      const c = this.ownCall(userId, id);
+      if (!c) throw new DomainError('not_found', 'call not found');
+      if (c.updatedAt.getTime() !== expectedUpdatedAt.getTime()) {
+        throw new DomainError('version_conflict', 'call changed since it was read');
+      }
+      c.transcriptCt = content.transcriptCt;
+      c.metaCt = content.metaCt;
+      c.keywordToks = [...content.keywordToks];
+      // Strictly later, so a read taken before this write never matches again.
+      c.updatedAt = new Date(Math.max(Date.now(), c.updatedAt.getTime() + 1));
+      this.chunks.set(
+        id,
+        content.chunks.map((ch) => ({ ...ch, userId, callId: id })),
+      );
+      return { ...c };
+    },
     delete: async (userId, id) => {
       const c = this.ownCall(userId, id);
       if (!c) return null;
@@ -397,15 +414,20 @@ export class MemoryDb {
                 ...summary(c),
                 bestSnippetCt: best.snippetCt,
                 bestChunkOrd: best.ord,
+                bestChunkLang: best.lang ?? null,
                 score: bestScore,
               },
             ];
           })
           .sort((a, b) => b.score! - a.score! || (a.id < b.id ? 1 : -1));
       } else {
-        hits = matches
-          .sort(byDayDesc)
-          .map((c) => ({ ...summary(c), bestSnippetCt: null, bestChunkOrd: null, score: null }));
+        hits = matches.sort(byDayDesc).map((c) => ({
+          ...summary(c),
+          bestSnippetCt: null,
+          bestChunkOrd: null,
+          bestChunkLang: null,
+          score: null,
+        }));
       }
       return paginate(hits, q.limit, q.cursor);
     },

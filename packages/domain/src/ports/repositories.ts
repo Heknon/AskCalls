@@ -1,4 +1,11 @@
-import type { Call, CallListFilter, CallPatch, CallSummary, NewCall } from '../entities/call';
+import type {
+  Call,
+  CallContentReplacement,
+  CallListFilter,
+  CallPatch,
+  CallSummary,
+  NewCall,
+} from '../entities/call';
 import type { Bytes, CallId, Day, Page, PageRequest, Token, UserId } from '../entities/common';
 import type {
   DeviceKey,
@@ -104,6 +111,18 @@ export interface CallRepository extends HealthCheckable {
   /** Newest day first, then id descending. */
   list(userId: UserId, filter: CallListFilter, page: PageRequest): Promise<Page<CallSummary>>;
   update(userId: UserId, id: CallId, patch: CallPatch): Promise<Call>;
+  /**
+   * Replaces the transcript and metadata ciphertext, the keyword tokens and every chunk in one
+   * transaction, so search never sees a half re-indexed call. `expectedUpdatedAt` is the
+   * `updatedAt` the device read: DomainError('version_conflict') when the row changed since.
+   * not_found for a missing call or one of another user.
+   */
+  replaceContent(
+    userId: UserId,
+    id: CallId,
+    content: CallContentReplacement,
+    expectedUpdatedAt: Date,
+  ): Promise<Call>;
   /** Deletes the row and its chunks. Returns the deleted call (for blob cleanup) or null. */
   delete(userId: UserId, id: CallId): Promise<Call | null>;
   findIdByAudioTok(userId: UserId, tok: Token): Promise<CallId | null>;
