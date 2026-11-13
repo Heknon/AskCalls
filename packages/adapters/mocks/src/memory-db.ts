@@ -175,9 +175,14 @@ export class MemoryDb {
       }
       this.accounts.push({ ...account });
     },
-    unlinkAccount: async (provider, providerAccountId) => {
+    unlinkAccount: async (userId, provider, providerAccountId) => {
       this.accounts = this.accounts.filter(
-        (x) => !(x.provider === provider && x.providerAccountId === providerAccountId),
+        (x) =>
+          !(
+            x.userId === userId &&
+            x.provider === provider &&
+            x.providerAccountId === providerAccountId
+          ),
       );
     },
     listAccounts: async (userId) =>
@@ -558,17 +563,17 @@ export class MemoryDb {
       const t = this.tokens.get(id);
       if (t && t.userId === userId) t.revokedAt = at;
     },
-    touch: async (id, at) => {
+    touch: async (userId, id, at) => {
       const t = this.tokens.get(id);
-      if (t) t.lastUsedAt = at;
+      if (t && t.userId === userId) t.lastUsedAt = at;
     },
     countActive: async (userId, now) =>
       [...this.tokens.values()].filter(
         (t) => t.userId === userId && !t.revokedAt && (!t.expiresAt || t.expiresAt > now),
       ).length,
-    incrementFetches: async (id, now) => {
+    incrementFetches: async (userId, id, now) => {
       const t = this.tokens.get(id);
-      if (!t) throw new DomainError('not_found', 'token not found');
+      if (!t || t.userId !== userId) throw new DomainError('not_found', 'token not found');
       if (!t.windowStart || now.getTime() - t.windowStart.getTime() >= 3_600_000) {
         t.windowStart = now;
         t.fetches = 0;

@@ -44,7 +44,7 @@ export const EMBEDDING_MODEL = {
 
 export const EMBEDDING_MODEL_ID = `${EMBEDDING_MODEL.id}@pruned-${EMBEDDING_MODEL.build}`;
 
-/** Where builds are published (`bun run models:publish`); ASKCALLS_MODEL_URL overrides it. */
+/** Where builds are published (`bun run models:publish`): the host when none is given. */
 export const DEFAULT_MODEL_URL = 'https://models.askcalls.com';
 
 type PinnedFile = (typeof EMBEDDING_MODEL.files)[number];

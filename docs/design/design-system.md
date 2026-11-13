@@ -399,7 +399,7 @@ Rules:
 5. Errors: what happened, then what to do. "Couldn't reach the server. Check your connection and try again." Never blame the user, never show stack traces or content.
 6. Numbers: digits, with units: "8 min", "300 minutes a month", "2 GB". Dates via `Intl`.
 7. "Call" not "recording" unless the audio file is meant. "Transcript" not "transcription" for the text. "Passkey" lowercase in running text.
-8. Hebrew: gender-neutral where natural (infinitive buttons: "ביטול נעילה", "העלאת שיחות"), plural forms for instructions ("שמרו את הקוד") avoided in favour of infinitive or impersonal forms ("יש לשמור את הקוד"). Formal but warm; no slang.
+8. Hebrew: gender-neutral where natural (infinitive or noun buttons: "פתיחה", "העלאת שיחות"; "ביטול" means cancel, so never "ביטול נעילה" for unlock), plural forms for instructions ("שמרו את הקוד") avoided in favour of infinitive or impersonal forms ("יש לשמור את הקוד"). Formal but warm; no slang.
 
 Glossary (English → Hebrew):
 
@@ -408,7 +408,7 @@ Glossary (English → Hebrew):
 | Call / calls | שיחה / שיחות |
 | Transcript | תמלול |
 | Recording | הקלטה |
-| Unlock / Lock | ביטול נעילה / נעילה |
+| Unlock / Lock | פתיחה (פתיחת הנעילה) / נעילה |
 | Passkey | מפתח גישה (passkey) |
 | Recovery code | קוד שחזור |
 | Passphrase | משפט סיסמה |

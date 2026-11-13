@@ -89,7 +89,8 @@ export function createAuthAdapter(
       }
     },
     async unlinkAccount({ provider, providerAccountId }) {
-      await users.unlinkAccount(provider, providerAccountId);
+      const owner = await users.findByAccount(provider, providerAccountId);
+      if (owner) await users.unlinkAccount(owner.id, provider, providerAccountId);
     },
     async createVerificationToken(t) {
       await users.createVerificationToken({

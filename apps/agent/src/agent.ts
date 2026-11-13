@@ -1,4 +1,5 @@
 import { type ApiClient, createApiClient } from '@askcalls/api-contract';
+import { getClientConfig } from '@askcalls/api-contract/routes/account';
 import {
   type AudioCodec,
   type BlobFetcher,
@@ -21,7 +22,6 @@ import { fetchBlobTransport } from './adapters/http';
 import { openSecretStore, type SecretStoreKind } from './adapters/secret-store';
 import { transcriberFor } from './adapters/transcriber';
 import { type AgentConfig, dataDir, loadConfig, paths } from './config';
-import { isLoopbackOrigin } from './local/layout';
 
 /** The personal access token, next to the device secrets of `DEVICE_SECRETS`. */
 export const API_TOKEN_SECRET = 'api-token';
@@ -111,19 +111,22 @@ export async function isLinked(secrets: SecretStore): Promise<boolean> {
   return (await secrets.get(DEVICE_SECRETS.wrappedRootKey)) !== null;
 }
 
+/**
+ * Where the agent downloads the embedding model: ASKCALLS_MODEL_URL when set, else the linked
+ * instance's EMBEDDING_MODEL_URL, else the instance's own `/models/` (also when it cannot say).
+ */
+export async function modelHost(
+  account: Pick<AgentAccount, 'api' | 'origin'>,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<string> {
+  if (env.ASKCALLS_MODEL_URL) return env.ASKCALLS_MODEL_URL;
+  const config = await account.api.request(getClientConfig, {}).catch(() => null);
+  return config?.embeddingModelUrl ?? `${account.origin}/models`;
+}
+
 export interface UnlockedAgent extends AgentAccount {
   session: KeySession;
   ctx: ClientContext;
-}
-
-/**
- * Where the embedding model files come from: ASKCALLS_MODEL_URL, else, for the local instance,
- * the files it serves itself (so local mode never downloads them), else the default host.
- */
-function modelSource(origin: string, deps: AgentDeps): { modelUrl?: string } {
-  const env = deps.env ?? process.env;
-  if (env.ASKCALLS_MODEL_URL) return { modelUrl: env.ASKCALLS_MODEL_URL };
-  return isLoopbackOrigin(origin) ? { modelUrl: `${origin}/models` } : {};
 }
 
 /**
@@ -149,7 +152,9 @@ export async function unlockAgent(
   const base = createClientContext({
     api: account.api,
     session,
-    embedder: deps.embedder ?? new TransformersEmbedder(dirs, modelSource(account.origin, deps)),
+    embedder:
+      deps.embedder ??
+      new TransformersEmbedder(dirs, { modelUrl: () => modelHost(account, deps.env) }),
     ...(audio && { audio }),
     ...(deps.clock && { clock: deps.clock }),
     uploader: blobs,

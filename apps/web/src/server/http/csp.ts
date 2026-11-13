@@ -1,18 +1,5 @@
 import type { InstanceConfig } from '../config/schema';
 
-/**
- * Own-key provider origins the browser may call directly (spec 11.2a). Custom OpenAI-compatible
- * base URLs are user data (encrypted), so they can't be listed; those go through the agent.
- */
-export const DIRECT_PROVIDER_ORIGINS = [
-  'https://api.elevenlabs.io',
-  'https://api.openai.com',
-  'https://api.deepgram.com',
-  'https://api.soniox.com',
-  'https://api.anthropic.com',
-  'https://generativelanguage.googleapis.com',
-];
-
 /** Origins presigned recording URLs point at (path-style and virtual-hosted S3). */
 export function blobOrigins(config: InstanceConfig): string[] {
   if (config.blob.driver !== 's3') return [];
@@ -54,11 +41,14 @@ export function newNonce(): string {
 /**
  * Strict CSP for /app/** and /admin/** (spec 2.4): no third-party scripts, inline scripts only
  * with this request's nonce (Next.js bootstrap), `strict-dynamic` for the chunks it loads.
+ * `direct` are the own-key origins this user enabled (client/direct-origins.ts); offline mode
+ * ignores them.
  */
 export function appCsp(
   config: InstanceConfig,
   nonce: string,
   environment: 'production' | 'development' | 'test',
+  direct: readonly string[] = [],
 ): string {
   const agentLink = localAgentLinkUrl(config);
   const connect = [
@@ -67,7 +57,7 @@ export function appCsp(
     ...embeddingModelOrigins(config),
     ...(agentLink ? [new URL(agentLink).origin] : []),
   ];
-  if (!config.offlineMode) connect.push(...DIRECT_PROVIDER_ORIGINS);
+  if (!config.offlineMode) connect.push(...direct);
   const script = ["'self'", `'nonce-${nonce}'`, "'wasm-unsafe-eval'", "'strict-dynamic'"];
   // React Refresh in `next dev` needs eval; never in production.
   if (environment === 'development') script.push("'unsafe-eval'");

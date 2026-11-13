@@ -12,18 +12,28 @@ export interface RateLimiter extends HealthCheckable {
   hit(key: string, limit: number, windowMs: number): Promise<RateLimitResult>;
   /**
    * Fixed-window usage counter for quotas (transcription seconds per month, asks per day).
-   * Atomically adds `amount` to the counter for (`key`, `windowStart`) unless the total would
+   * Atomically adds `amount` to the counter for (`key`, `window.start`) unless the total would
    * exceed `limit`; `limit: null` always adds. A negative `amount` refunds. Returns whether it
-   * was added and the total after.
+   * was added and the total after. The counter may be deleted once `window.end` has passed.
    */
   consume(
     key: string,
-    windowStart: Date,
+    window: UsageWindow,
     amount: number,
     limit: number | null,
   ): Promise<UsageResult>;
   /** Current total of a fixed-window counter; 0 when it has never been used. */
   usage(key: string, windowStart: Date): Promise<number>;
+  /**
+   * Deletes sliding windows no longer weighed by `hit` and counters whose window ended at or
+   * before `now`. Returns how many were deleted.
+   */
+  deleteExpired(now: Date): Promise<number>;
+}
+
+export interface UsageWindow {
+  start: Date;
+  end: Date;
 }
 
 export interface UsageResult {

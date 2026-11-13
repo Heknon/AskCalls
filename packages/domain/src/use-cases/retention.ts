@@ -40,11 +40,13 @@ export interface PurgeResult {
   callsDeleted: number;
   inboxExpired: number;
   linkSessionsExpired: number;
+  rateBucketsExpired: number;
 }
 
 /**
  * Daily job (spec 9, /api/cron/retention): deletes calls with `day < today − retentionDays`,
- * expired inbox items with their blobs, and expired device-link sessions. Recordings in a
+ * expired inbox items with their blobs, expired device-link sessions, and rate-limit windows
+ * and quota counters whose period has ended. Recordings in a
  * user's own bucket are queued for the device as `recording.orphaned` audit events.
  */
 export async function runRetentionPurge(ports: Ports): Promise<PurgeResult> {
@@ -78,10 +80,12 @@ export async function runRetentionPurge(ports: Ports): Promise<PurgeResult> {
     if (item.blobKey) await ports.blobs.delete(item.blobKey);
   }
   const linkSessionsExpired = await ports.keyring.deleteExpiredLinkSessions(now);
+  const rateBucketsExpired = await ports.rateLimiter.deleteExpired(now);
   return {
     usersProcessed: users.length,
     callsDeleted,
     inboxExpired: expired.length,
     linkSessionsExpired,
+    rateBucketsExpired,
   };
 }

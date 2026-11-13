@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { listKeyring } from '@askcalls/api-contract/routes/keyring';
+import { getClientConfig } from '@askcalls/api-contract/routes/account';
 import { fromUtf8 } from '@askcalls/crypto';
 import type { Command } from 'commander';
 import { KeychainUnavailableError } from '../adapters/secret-store';
@@ -40,7 +40,7 @@ async function agentLinked(origin: string, deps: AgentDeps): Promise<boolean> {
   const token = await store.get(API_TOKEN_SECRET);
   if (!token || !(await isLinked(store))) return false;
   try {
-    await apiClient(origin, fromUtf8(token), deps).request(listKeyring, {});
+    await apiClient(origin, fromUtf8(token), deps).request(getClientConfig, {});
     return true;
   } catch {
     return false;

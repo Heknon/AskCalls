@@ -123,7 +123,7 @@ const copy = {
     revoke: 'ביטול קישור',
     regenerate: 'יצירה מחדש',
     setPassphrase: 'הגדרת משפט סיסמה',
-    lastOne: 'זה מפתח הגישה היחיד שלך. לפני הסרה יש להוסיף דרך נוספת לביטול נעילה.',
+    lastOne: 'זה מפתח הגישה היחיד שלך. לפני הסרה יש להוסיף דרך נוספת לפתיחת הנעילה.',
     confirmRemove: {
       title: 'להסיר את מפתח הגישה?',
       body: 'MacBook Air · iCloud Keychain כבר לא יבטל את הנעילה של AskCalls.',

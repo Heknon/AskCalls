@@ -53,5 +53,5 @@ test('the account setting wins over the cookie and survives an unlock', async ({
   await context.clearCookies({ name: 'locale' });
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  await expect(page.getByRole('heading', { name: 'ביטול נעילה של השיחות' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'פתיחת הנעילה של השיחות' })).toBeVisible();
 });

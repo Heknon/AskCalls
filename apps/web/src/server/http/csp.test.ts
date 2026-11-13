@@ -3,7 +3,6 @@ import { ConfigService } from '../config/config-service';
 import {
   appCsp,
   blobOrigins,
-  DIRECT_PROVIDER_ORIGINS,
   embeddingModelUrl,
   GOOGLE_ONE_TAP_ORIGIN,
   localAgentLinkUrl,
@@ -72,11 +71,17 @@ describe('app CSP', () => {
     LLM_PROVIDER: 'none',
   };
 
-  it('drops provider origins in offline mode', () => {
-    const online = appCsp(config({ BLOB_DRIVER: 'memory' }), 'n', 'production');
-    expect(online).toContain(DIRECT_PROVIDER_ORIGINS[0]);
-    const offline = appCsp(config({ BLOB_DRIVER: 'memory', ...LOCAL_ONLY }), 'n', 'production');
-    expect(directive(offline, 'connect-src')).toBe("connect-src 'self'");
+  it('adds only the given direct origins, and none in offline mode', () => {
+    const direct = ['https://api.openai.com', 'https://my-calls.s3.eu-central-1.amazonaws.com'];
+    const online = config({ BLOB_DRIVER: 'memory' });
+    expect(directive(appCsp(online, 'n', 'production'), 'connect-src')).toBe("connect-src 'self'");
+    expect(directive(appCsp(online, 'n', 'production', direct), 'connect-src')).toBe(
+      `connect-src 'self' ${direct.join(' ')}`,
+    );
+    const offline = config({ BLOB_DRIVER: 'memory', ...LOCAL_ONLY });
+    expect(directive(appCsp(offline, 'n', 'production', direct), 'connect-src')).toBe(
+      "connect-src 'self'",
+    );
   });
 
   it('adds the embedding model host to connect-src only when one is configured', () => {

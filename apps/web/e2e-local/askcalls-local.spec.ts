@@ -1,7 +1,7 @@
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { request } from 'node:http';
-import { createServer, connect } from 'node:net';
+import { connect, createServer } from 'node:net';
 import { networkInterfaces, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -138,7 +138,9 @@ test('askcalls local: loopback only, onboarding, sample, agent, backup, wipe, re
 
   // Without the key the app sends you to the terminal; the printed link signs you in.
   await page.goto(`http://localhost:${port}/app`);
-  await expect(page.getByRole('heading', { name: 'Open AskCalls from your terminal' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Open AskCalls from your terminal' }),
+  ).toBeVisible();
   await page.goto(local.signInUrl);
   await expect(page).toHaveURL(/\/app\/welcome$/);
   expect(page.url()).not.toContain('key=');

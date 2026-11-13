@@ -192,6 +192,53 @@ test('device link: the joiner shows the same fingerprint, links, then is revoked
   await expect(page.getByRole('cell', { name: 'Revoke device' }).first()).toBeVisible();
 });
 
+test('device link: a second browser joins from the QR link and protects RK with a passkey', async ({
+  page,
+  context,
+  browser,
+}) => {
+  const { email } = await onboard(page, context, 'join');
+  await openSection(page, 'Security');
+  const me = (await (await page.request.get('/api/me')).json()) as { user: { id: string } };
+  const started = page.waitForResponse(
+    (r) => r.url().endsWith('/api/devices/link') && r.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Link a device' }).click();
+  const link = (await (await started).json()) as { sessionId: string; secret: string };
+  const dialog = page.getByRole('dialog', { name: 'Link a device' });
+  await expect(dialog.getByText(/In another browser, open .*\/app\/link/)).toBeVisible();
+
+  const other = await browser.newContext();
+  const joiner = await other.newPage();
+  await addAuthenticator(other, joiner, true);
+  await signIn(joiner, email);
+  await expect(joiner.getByRole('heading', { name: 'Unlock your calls' })).toBeVisible();
+  await joiner.getByRole('link', { name: 'Link this browser from another device' }).click();
+  await expect(joiner.getByRole('heading', { name: 'Link this browser' })).toBeVisible();
+
+  // What the QR code opens: the code in the fragment, which never reaches the server.
+  const code = encodeLinkCode({ ...link, userId: me.user.id });
+  await joiner.goto(`/app/link#${code}`);
+  await expect(joiner.getByRole('heading', { name: 'Compare the code' })).toBeVisible();
+  expect(new URL(joiner.url()).hash).toBe('');
+  const digits = await joiner.locator('[data-component="FingerprintCode"]').textContent();
+  expect(digits).toMatch(/^\d{6}$/);
+  await expect(dialog.locator('[data-component="FingerprintCode"]')).toHaveText(digits!);
+  await dialog.getByRole('button', { name: 'They match, link this device' }).click();
+  await expect(dialog.getByText(/is linked\.$/)).toBeVisible();
+
+  await expect(joiner.getByRole('heading', { name: 'Protect this browser' })).toBeVisible({
+    timeout: 15_000,
+  });
+  await joiner.getByRole('button', { name: 'Create passkey' }).click();
+  await expect(joiner.getByRole('heading', { name: 'Calls', level: 1 })).toBeVisible();
+
+  await lockFromSidebar(joiner);
+  await joiner.getByRole('button', { name: 'Unlock with passkey' }).click();
+  await expect(joiner.getByRole('heading', { name: 'Calls', level: 1 })).toBeVisible();
+  await other.close();
+});
+
 test('API tokens and retention', async ({ page, context }) => {
   await onboard(page, context, 'tokens');
   await openSection(page, 'API and MCP');
