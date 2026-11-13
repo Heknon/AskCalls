@@ -1,22 +1,18 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { isMarketingPath } from './app/(marketing)/_data/routes';
-import { directOrigins, readDirectCookie, rewriteConnectSrc } from './client/direct-origins';
+import { directOrigins, readDirectCookie } from './client/direct-origins';
 import { enabledProviders } from './server/auth/config';
-import { readSessionUserId } from './server/auth/secret';
+import { authSecret, readSessionUserId } from './server/auth/secret';
 import { getConfigService, getContainer, getSetupToken } from './server/container';
-import {
-  appCsp,
-  DIRECT_PROVIDER_ORIGINS,
-  MARKETING_HEADER,
-  newNonce,
-  publicCsp,
-} from './server/http/csp';
+import { appCsp, MARKETING_HEADER, newNonce, publicCsp } from './server/http/csp';
+import { verifyDirectCookie } from './server/http/direct-access';
 
 /**
  * - /app/** and /admin/**: require a session (redirect to /login), /admin/** also the admin role;
  *   a per-request CSP nonce replaces the static header (spec 2.4). `connect-src` lists provider
  *   and own-bucket origins only when the user enabled own-key mode (the `askcalls-direct`
- *   cookie, see client/direct-origins.ts), and none in offline mode.
+ *   cookie, signed for this user by the server: server/http/direct-access.ts), and none in
+ *   offline mode.
  * - / and /login: a per-request nonce CSP that allows accounts.google.com, the only pages
  *   where the Google One Tap script may load. The other marketing pages get the same CSP
  *   without Google and a cookieless page view (Telemetry port; a no-op without a backend).
@@ -92,16 +88,13 @@ export async function middleware(req: NextRequest) {
   }
 
   const nonce = newNonce();
-  const direct = container.config.config.offlineMode
-    ? []
-    : directOrigins(
-        readDirectCookie((n) => req.cookies.get(n)?.value, req.nextUrl.protocol === 'https:'),
-      );
-  const csp = rewriteConnectSrc(
-    appCsp(container.config.config, nonce, container.config.environment),
-    DIRECT_PROVIDER_ORIGINS,
-    direct,
+  const secret = authSecret(container.config);
+  const cookie = readDirectCookie(
+    (n) => req.cookies.get(n)?.value,
+    req.nextUrl.protocol === 'https:',
   );
+  const direct = secret ? directOrigins(await verifyDirectCookie(secret, user.id, cookie)) : [];
+  const csp = appCsp(container.config.config, nonce, container.config.environment, direct);
   const res = withCsp(req, nonce, csp);
   res.headers.set('Cache-Control', 'no-store');
   return res;

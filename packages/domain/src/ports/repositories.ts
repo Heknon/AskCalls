@@ -62,7 +62,7 @@ export interface UserRepository extends HealthCheckable {
   /** Auth.js account linking. */
   findByAccount(provider: string, providerAccountId: string): Promise<User | null>;
   linkAccount(account: LinkedAccount): Promise<void>;
-  unlinkAccount(provider: string, providerAccountId: string): Promise<void>;
+  unlinkAccount(userId: UserId, provider: string, providerAccountId: string): Promise<void>;
   listAccounts(userId: UserId): Promise<LinkedAccount[]>;
   createVerificationToken(token: VerificationToken): Promise<void>;
   /** Returns and deletes the token (single use), or null when missing. */
@@ -167,13 +167,13 @@ export interface ApiTokenRepository extends HealthCheckable {
   findByHash(tokenHash: Bytes): Promise<ApiToken | null>;
   list(userId: UserId): Promise<ListedApiToken[]>;
   revoke(userId: UserId, id: string, at: Date): Promise<void>;
-  touch(id: string, at: Date): Promise<void>;
+  touch(userId: UserId, id: string, at: Date): Promise<void>;
   countActive(userId: UserId, now: Date): Promise<number>;
   /**
    * Increments the hourly ciphertext-fetch counter (spec 12), resetting it when the window
    * started more than an hour before `now`. Returns the count after incrementing.
    */
-  incrementFetches(id: string, now: Date): Promise<number>;
+  incrementFetches(userId: UserId, id: string, now: Date): Promise<number>;
 }
 
 export interface AuditLog extends HealthCheckable {

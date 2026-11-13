@@ -52,7 +52,7 @@ function left(at: Date, now: number): string {
 /** "eyJ2IjoxLC…Q4fQ": the code is long; the QR and the copy button carry all of it. */
 const shortened = (code: string) => `${code.slice(0, 8)}…${code.slice(-4)}`;
 
-/** D1: link an agent or another browser (spec 6.5). */
+/** D1: link an agent or another browser (spec 6.5); the browser joins at /app/link. */
 export function LinkDialog({
   open,
   onOpenChange,
@@ -120,7 +120,12 @@ export function LinkDialog({
     };
   }, [state, client]);
 
-  const qr = useMemo(() => (link ? encodeQr(link.code).modules : []), [link]);
+  const joinUrl = `${location.origin}/app/link`;
+  // A phone camera opens the link page with the code; the fragment never reaches the server.
+  const qr = useMemo(
+    () => (link ? encodeQr(`${joinUrl}#${link.code}`).modules : []),
+    [link, joinUrl],
+  );
 
   const close = () => onOpenChange(false);
   const mismatch = () => {
@@ -185,6 +190,9 @@ export function LinkDialog({
                 onRenew={() => setAttempt((a) => a + 1)}
                 labels={codeLabels}
               />
+              <p className="text-sm">
+                {t.rich('browser', { url: () => <bdi dir="ltr">{joinUrl}</bdi> })}
+              </p>
               <p className="text-sm">
                 {t.rich('agent', { code: (c) => <code dir="ltr">{c}</code> })}
               </p>

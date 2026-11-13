@@ -57,6 +57,13 @@ export function nextMonthStart(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 }
 
+export const monthWindow = (now: Date) => ({ start: monthStart(now), end: nextMonthStart(now) });
+
+export function dayWindow(now: Date) {
+  const start = dayStart(now);
+  return { start, end: new Date(start.getTime() + 86_400_000) };
+}
+
 /** Usage-counter keys (RateLimiter.consume). Ids only. */
 export const usageKeys = {
   transcriptionSeconds: (userId: UserId) => `usage:transcribe-sec:${userId}`,

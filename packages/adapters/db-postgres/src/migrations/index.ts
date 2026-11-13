@@ -1,6 +1,7 @@
 import { sql as m0001 } from './0001_init';
 import { sql as m0002 } from './0002_local_credentials';
-import { sql as m0003 } from './0003_chunk_lang';
+import { sql as m0003 } from './0003_rate_bucket_expiry';
+import { sql as m0004 } from './0004_chunk_lang';
 
 export interface Migration {
   /** Sortable, unique, never renamed. */
@@ -16,5 +17,6 @@ export interface Migration {
 export const MIGRATIONS: readonly Migration[] = [
   { id: '0001_init', sql: m0001 },
   { id: '0002_local_credentials', sql: m0002 },
-  { id: '0003_chunk_lang', sql: m0003 },
+  { id: '0003_rate_bucket_expiry', sql: m0003 },
+  { id: '0004_chunk_lang', sql: m0004 },
 ];

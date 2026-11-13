@@ -76,3 +76,14 @@ export const deleteAccount = defineRoute({
     ownBucketRecordings: z.array(z.object({ bucketRef: z.string(), objectKey: z.string() })),
   }),
 });
+
+/**
+ * Instance settings clients outside the web app need (the agent): the embedding model host,
+ * null when the instance serves the model at `/models/` itself.
+ */
+export const getClientConfig = defineRoute({
+  method: 'GET',
+  path: '/api/client-config',
+  auth: 'read',
+  response: z.object({ embeddingModelUrl: z.string().nullable() }),
+});

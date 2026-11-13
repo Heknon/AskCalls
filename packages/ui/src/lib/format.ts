@@ -1,5 +1,7 @@
 /** Formatting shared by the call components. Everything goes through `Intl` in the UI locale. */
 
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+
 const DAY_MS = 86_400_000;
 
 function startOfDay(d: Date) {
@@ -67,21 +69,17 @@ export function formatSpokenClock(totalSeconds: number, uiLocale: string) {
 }
 
 /**
- * Phone numbers for reading: Israeli numbers in their usual grouping ("+972 52-555-0134",
- * national "052-555-0134"), anything else as the country code plus groups of digits.
+ * Phone numbers for reading, grouped by the number's own country ("+44 20 7946 0958"). Israeli
+ * numbers keep their hyphenated national grouping after the country code ("+972 52-555-0134",
+ * national "052-555-0134"; design-system 8.5). Input that does not parse is returned as given.
  */
 export function formatPhone(e164: string, format: 'international' | 'national' = 'international') {
-  const digits = e164.replace(/[^\d]/g, '');
-  if (digits.startsWith('972')) {
-    const rest = digits.slice(3);
-    const mobile = rest.startsWith('5') || rest.startsWith('7');
-    const area = mobile ? rest.slice(0, 2) : rest.slice(0, 1);
-    const local = rest.slice(area.length);
-    const grouped = `${local.slice(0, 3)}-${local.slice(3)}`;
-    return format === 'national' ? `0${area}-${grouped}` : `+972 ${area}-${grouped}`;
-  }
-  const groups = digits.slice(1).match(/.{1,3}/g) ?? [];
-  return `+${digits.slice(0, 1)} ${groups.join(' ')}`.trim();
+  const parsed = parsePhoneNumberFromString(e164);
+  if (!parsed) return e164;
+  if (format === 'national') return parsed.formatNational();
+  if (parsed.countryCallingCode === '972')
+    return `+972 ${parsed.formatNational().replace(/^0/, '')}`;
+  return parsed.formatInternational();
 }
 
 /** "8 min 12 sec": the call header's exact length. */

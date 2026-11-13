@@ -7,6 +7,7 @@ admin role for `/admin`), sets the per-request nonce CSP, and `no-store`.
 (app)/layout.tsx              NoticesProvider → AppSessionProvider → SessionGate
 (app)/_gate/                  SessionGate (loading / onboarding / unlock gate / route), UnlockGate
 (app)/(gate)/app/welcome/     onboarding (no app navigation)
+(app)/(gate)/app/link/        joining with a link code (G2), shown while locked
 (app)/(shell)/layout.tsx      AppShell: sidebar or rail, phone tab bar, shortcuts, offline banner
 (app)/(shell)/_shell/         Screen, states (useAsync, AsyncView, PanelSkeleton), shell context
 (app)/(shell)/app/…           one folder per screen (stubs today)

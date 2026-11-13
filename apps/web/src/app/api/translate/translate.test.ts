@@ -137,7 +137,7 @@ describe('POST /api/translate', () => {
       { segments: Array(201).fill('a'), source: 'en', target: 'he' },
       { segments: ['a'.repeat(4_001)], source: 'en', target: 'he' },
       { segments: Array(7).fill('a'.repeat(3_500)), source: 'en', target: 'he' },
-      { segments: ['a'], source: 'en', target: 'fr' },
+      { segments: ['a'], source: 'en', target: 'french' },
       { segments: ['a'], source: 'he', target: 'he' },
       { segments: ['a'], source: 'eng', target: 'he' },
     ];

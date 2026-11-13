@@ -3,7 +3,7 @@ import { isTranslationLanguage, type TranslationLanguage } from '../entities/tra
 import type { ClientToken, TranscribeResult } from '../ports/providers';
 import type { Ports } from '../ports-bundle';
 import { supportsDirectTokens } from './account';
-import { type Actor, audit, dayStart, monthStart, nextMonthStart, usageKeys } from './context';
+import { type Actor, audit, dayWindow, monthWindow, nextMonthStart, usageKeys } from './context';
 
 /**
  * Plaintext pass-through use cases (spec 2.2): audio to the transcription provider, one call to
@@ -67,9 +67,10 @@ export async function transcribeChunk(
   }
   const now = ports.clock.now();
   const key = usageKeys.transcriptionSeconds(actor.userId);
-  const window = monthStart(now);
+  const window = monthWindow(now);
   const limitSeconds = transcriptionLimitSeconds(ports);
-  if ((await ports.rateLimiter.usage(key, window)) >= limitSeconds) throw quotaExceeded(ports, now);
+  if ((await ports.rateLimiter.usage(key, window.start)) >= limitSeconds)
+    throw quotaExceeded(ports, now);
 
   let result: TranscribeResult;
   try {
@@ -111,7 +112,7 @@ export async function mintTranscriptionToken(
   }
   const now = ports.clock.now();
   const key = usageKeys.transcriptionSeconds(actor.userId);
-  const window = monthStart(now);
+  const window = monthWindow(now);
   const limitSeconds = transcriptionLimitSeconds(ports);
   const consumed = await ports.rateLimiter.consume(key, window, seconds, limitSeconds);
   if (!consumed.allowed) throw quotaExceeded(ports, now);
@@ -165,7 +166,7 @@ export async function askAboutCall(
     throw new DomainError('invalid', 'conversation history is too long');
   }
   const now = ports.clock.now();
-  const window = dayStart(now);
+  const window = dayWindow(now);
   const used = await ports.rateLimiter.consume(
     usageKeys.asks(actor.userId),
     window,
@@ -173,7 +174,7 @@ export async function askAboutCall(
     ports.limits.asksPerDay,
   );
   if (!used.allowed) {
-    const retryAfterSec = Math.ceil((window.getTime() + 86_400_000 - now.getTime()) / 1000);
+    const retryAfterSec = Math.ceil((window.end.getTime() - now.getTime()) / 1000);
     throw new DomainError('rate_limited', 'daily ask limit reached', {
       limit: ports.limits.asksPerDay,
       quota: 'asks',
@@ -239,7 +240,7 @@ export async function translateSegments(
 
   const now = ports.clock.now();
   const key = usageKeys.translationChars(actor.userId);
-  const window = monthStart(now);
+  const window = monthWindow(now);
   const limitChars = ports.limits.translationCharsPerMonth;
   const consumed = await ports.rateLimiter.consume(key, window, chars, limitChars);
   if (!consumed.allowed) {

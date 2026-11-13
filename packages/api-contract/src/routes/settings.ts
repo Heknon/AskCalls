@@ -29,3 +29,20 @@ export const setTelemetryConsent = defineRoute({
   body: Consent,
   response: Consent,
 });
+
+/**
+ * Own-key origins for this browser's CSP (spec 2.4, 11.2a): provider ids and custom origins
+ * (own bucket, OpenAI-compatible base URL). The server answers with an HttpOnly cookie signed
+ * for this user, which the middleware trusts for `connect-src`; empty lists clear it.
+ * `changed` says whether the current page's CSP is now stale.
+ */
+export const putDirectAccess = defineRoute({
+  method: 'PUT',
+  path: '/api/settings/direct-access',
+  auth: 'session',
+  body: z.object({
+    providers: z.array(z.string().max(32)).max(8),
+    origins: z.array(z.string().max(512)).max(8),
+  }),
+  response: z.object({ changed: z.boolean() }),
+});

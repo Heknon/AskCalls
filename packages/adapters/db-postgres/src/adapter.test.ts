@@ -127,4 +127,16 @@ describe('postgres adapter specifics (pglite)', () => {
     const r = await limiter.hit('k', 2, 60_000);
     expect(r).toMatchObject({ allowed: true, resetAt: new Date('2026-01-01T00:02:00Z') });
   });
+
+  it('ages out RateBucket rows written before they carried an expiry', async () => {
+    const { createRateLimiter } = await import('./repos/rate-limiter');
+    const limiter = createRateLimiter(t.driver);
+    await t.driver.db.execute(
+      sql`INSERT INTO "RateBucket" ("key", "windowStart", "count") VALUES
+            ('old', '2026-01-01T00:00:00Z', 1), ('recent', '2026-02-01T00:00:00Z', 1)`,
+    );
+    expect(await limiter.deleteExpired(new Date('2026-02-03T00:00:01Z'))).toBe(1);
+    expect(await limiter.usage('old', new Date('2026-01-01T00:00:00Z'))).toBe(0);
+    expect(await limiter.usage('recent', new Date('2026-02-01T00:00:00Z'))).toBe(1);
+  });
 });

@@ -12,6 +12,7 @@ import type {
   TelemetryEvent,
   TranscriptionProvider,
   TranscriptSegment,
+  UsageWindow,
 } from '@askcalls/domain';
 import { uuidv7 } from 'uuidv7';
 
@@ -169,28 +170,39 @@ export class MockLlmProvider implements LlmProvider {
 }
 
 export class MemoryRateLimiter implements RateLimiter {
-  private hits = new Map<string, number[]>();
+  private hits = new Map<string, { times: number[]; windowMs: number }>();
   constructor(private clock: Clock = { now: () => new Date() }) {}
   healthCheck = ok;
   async hit(key: string, limit: number, windowMs: number) {
     const now = this.clock.now().getTime();
-    const recent = (this.hits.get(key) ?? []).filter((t) => t > now - windowMs);
+    const recent = (this.hits.get(key)?.times ?? []).filter((t) => t > now - windowMs);
     const allowed = recent.length < limit;
     if (allowed) recent.push(now);
-    this.hits.set(key, recent);
+    this.hits.set(key, { times: recent, windowMs });
     const resetAt = new Date((recent[0] ?? now) + windowMs);
     return { allowed, remaining: Math.max(0, limit - recent.length), resetAt };
   }
-  private counters = new Map<string, number>();
-  async consume(key: string, windowStart: Date, amount: number, limit: number | null) {
-    const k = `${key}@${windowStart.getTime()}`;
-    const used = this.counters.get(k) ?? 0;
+  private counters = new Map<string, { used: number; end: number }>();
+  async consume(key: string, window: UsageWindow, amount: number, limit: number | null) {
+    const k = `${key}@${window.start.getTime()}`;
+    const used = this.counters.get(k)?.used ?? 0;
     if (limit !== null && used + amount > limit) return { allowed: false, used };
-    this.counters.set(k, used + amount);
+    this.counters.set(k, { used: used + amount, end: window.end.getTime() });
     return { allowed: true, used: used + amount };
   }
   async usage(key: string, windowStart: Date) {
-    return this.counters.get(`${key}@${windowStart.getTime()}`) ?? 0;
+    return this.counters.get(`${key}@${windowStart.getTime()}`)?.used ?? 0;
+  }
+  async deleteExpired(now: Date) {
+    const t = now.getTime();
+    let n = 0;
+    for (const [k, h] of this.hits) {
+      if (h.times.every((x) => x <= t - h.windowMs)) n += +this.hits.delete(k);
+    }
+    for (const [k, c] of this.counters) {
+      if (c.end <= t) n += +this.counters.delete(k);
+    }
+    return n;
   }
 }
 

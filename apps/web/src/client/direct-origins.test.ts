@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { directAccessFor } from './browser-client';
 import {
-  ALL_PROVIDER_ORIGINS,
   directOrigins,
   encodeDirectCookie,
   normalizeOrigin,
   parseDirectCookie,
   readDirectCookie,
-  rewriteConnectSrc,
 } from './direct-origins';
 
 describe('direct origins', () => {
@@ -52,16 +50,6 @@ describe('direct origins', () => {
     expect(readDirectCookie(get, false)).toBe('p=openai');
     jar['__Host-askcalls-direct'] = 'p=deepgram';
     expect(readDirectCookie(get, true)).toBe('p=deepgram');
-  });
-
-  it('rewrites only connect-src', () => {
-    const csp = `default-src 'self'; connect-src 'self' https://blob.example ${ALL_PROVIDER_ORIGINS.join(' ')}; img-src 'self'`;
-    expect(rewriteConnectSrc(csp, ALL_PROVIDER_ORIGINS, [])).toBe(
-      "default-src 'self'; connect-src 'self' https://blob.example; img-src 'self'",
-    );
-    expect(rewriteConnectSrc(csp, ALL_PROVIDER_ORIGINS, ['https://api.openai.com'])).toContain(
-      "connect-src 'self' https://blob.example https://api.openai.com;",
-    );
   });
 
   it('derives access from the providers document', () => {

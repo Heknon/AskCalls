@@ -286,7 +286,7 @@ function toSummary(c: Call): CallSummary {
 export async function getCall(ports: Ports, actor: Actor, id: CallId): Promise<Call> {
   const userId = actor.userId;
   if (actor.kind === 'token') {
-    const n = await ports.apiTokens.incrementFetches(actor.tokenId, ports.clock.now());
+    const n = await ports.apiTokens.incrementFetches(userId, actor.tokenId, ports.clock.now());
     if (n > ports.limits.mcpFetchesPerTokenPerHour) {
       throw new DomainError('rate_limited', 'hourly fetch budget for this token is used up', {
         limit: ports.limits.mcpFetchesPerTokenPerHour,

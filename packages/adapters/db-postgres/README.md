@@ -80,7 +80,7 @@ round-trip exactly.
 | `InboxItem` | as spec | `(userId, createdAt)`, `(expiresAt)`; check payload or blob key present |
 | `ApiToken` | `fetchesThisHour`, `hourWindowStart` | unique `tokenHash`, `(userId)` |
 | `AuditEvent` | `actor`, `action` as text (no enum, so new actions need no migration); `callId` without a foreign key (the trail outlives the call) | `(userId, at DESC, id DESC)`, `(userId, action, at DESC, id DESC)` |
-| `RateBucket` | `key, windowStart, count`: sliding-window `hit` buckets and fixed-window quota counters (`consume` is one atomic upsert, `usage` one read) | PK `(key, windowStart)` |
+| `RateBucket` | `key, windowStart, count, expiresAt`: sliding-window `hit` buckets and fixed-window quota counters (`consume` is one atomic upsert, `usage` one read); the daily purge deletes rows past `expiresAt` | PK `(key, windowStart)`, `expiresAt` |
 
 Every user-owned table references `User` with `ON DELETE CASCADE`, so `deleteHard` is one
 `DELETE` (blob cleanup is the use case's job). Check constraints mirror the domain enums.
