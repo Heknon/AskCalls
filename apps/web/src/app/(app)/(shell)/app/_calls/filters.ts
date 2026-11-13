@@ -35,7 +35,7 @@ export const EMPTY_FILTERS: Filters = {
   intents: [],
   date: null,
   direction: 'all',
-  match: 'words',
+  match: 'meaning',
   sort: 'newest',
 };
 
@@ -63,7 +63,7 @@ export function parseFilters(params: URLSearchParams): Filters {
         ? { from: range[0]!, to: range[1]! }
         : null,
     direction: direction === 'in' || direction === 'out' ? direction : 'all',
-    match: params.get('match') === 'meaning' ? 'meaning' : 'words',
+    match: params.get('match') === 'words' ? 'words' : 'meaning',
     sort: sort && SORTS.includes(sort) ? sort : 'newest',
   };
 }
@@ -77,7 +77,7 @@ export function filtersToParams(f: Filters): URLSearchParams {
   if (f.intents.length) p.set('intent', f.intents.join(','));
   if (f.date) p.set('date', typeof f.date === 'string' ? f.date : `${f.date.from}~${f.date.to}`);
   if (f.direction !== 'all') p.set('dir', f.direction);
-  if (f.match === 'meaning') p.set('match', 'meaning');
+  if (f.match === 'words') p.set('match', 'words');
   if (f.sort !== 'newest') p.set('sort', f.sort);
   return p;
 }
@@ -92,7 +92,7 @@ export function isFiltered(f: Filters): boolean {
     f.intents.length > 0 ||
     f.date !== null ||
     f.direction !== 'all' ||
-    f.match === 'meaning'
+    f.match === 'words'
   );
 }
 
