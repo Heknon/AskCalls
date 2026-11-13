@@ -32,7 +32,10 @@ const config: NextConfig = {
     '@askcalls/ui',
     '@askcalls/adapter-mocks',
     '@askcalls/adapter-runtime',
+    '@askcalls/adapter-db-postgres',
   ],
+  // Database drivers load native/WebAssembly assets at runtime: keep them out of the bundle.
+  serverExternalPackages: ['pg', '@electric-sql/pglite', '@electric-sql/pglite-pgvector'],
   async headers() {
     return [
       {
