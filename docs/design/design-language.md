@@ -681,6 +681,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | S7 | Settings: audit log | SettingsSection, AuditEventRow, EmptyState |
 | S8 | Settings: data | SettingsSection, JobProgress, ConfirmDialog |
 | A1 | Admin instance | PageHeader, ProviderCard, HealthBadge, EnvLockedField, MaskedSecret, TestConnectionResult, OfflineBlockerList, UsageMeter |
+| A2 | Offline mode (card on A1) | OfflineBlockerList, ConfirmDialog |
 | W1 | First-run wizard | Stepper, ChoiceCard, ProviderCard, TestConnectionResult, MaskedSecret, OfflineBlockerList |
 | X1 | Keyboard shortcuts dialog | ShortcutsDialog, Kbd |
 | X2 | Toasts | Notice |
