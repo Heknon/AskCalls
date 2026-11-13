@@ -24,6 +24,7 @@ import {
 } from 'react';
 import type { BrowserClient } from '../browser-client';
 import { useNotify } from '../notices/notices';
+import { adoptStyleNonce } from '../style-nonce';
 
 export type Me = ResponseFor<typeof getMe>;
 
@@ -110,6 +111,7 @@ export function AppSessionProvider({
       window.location.reload();
       return;
     }
+    adoptStyleNonce();
     let cancelled = false;
     let created: BrowserClient | null = null;
     setError(null);
@@ -170,6 +172,7 @@ export function AppSessionProvider({
       (report) => {
         const added = report.processed;
         if (added > 0) {
+          refreshMe().catch(() => {});
           notify({
             kind: 'event',
             icon: Inbox,

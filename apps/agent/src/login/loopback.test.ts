@@ -30,7 +30,10 @@ describe('login loopback', () => {
 
   it('rejects a mismatched state, a foreign origin and other requests, and keeps waiting', async () => {
     login = await startLoopbackLogin({ serverOrigin: SERVER });
-    const wrongState = await post(login, { state: `x${login.state.slice(1)}`, token: TOKEN });
+    const wrongState = await post(login, {
+      state: `${login.state.startsWith('x') ? 'y' : 'x'}${login.state.slice(1)}`,
+      token: TOKEN,
+    });
     expect(wrongState.status).toBe(400);
     expect(await wrongState.text()).not.toContain(TOKEN);
     expect(

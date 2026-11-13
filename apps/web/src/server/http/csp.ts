@@ -63,7 +63,8 @@ export function appCsp(
   return [
     "default-src 'self'",
     `script-src ${script.join(' ')}`,
-    "style-src 'self'",
+    // Dialogs lock scrolling with an injected <style>; it carries this nonce (client/style-nonce.ts).
+    `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' blob: data:",
     `media-src 'self' blob: ${blobOrigins(config).join(' ')}`.trim(),
     "font-src 'self'",

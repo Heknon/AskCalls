@@ -109,6 +109,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const active = routeOf(pathname);
   const [dialog, setDialog] = useState(false);
+  // The call view gives phones its whole height: player at the bottom, no tab bar.
+  const tabBar = !pathname.startsWith('/app/calls/');
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -171,17 +173,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             onShortcuts={() => setDialog(true)}
             linkAs={Link}
           />
-          <div className="flex min-w-0 flex-1 flex-col pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))] md:pb-0">
+          <div
+            className={`flex min-w-0 flex-1 flex-col md:pb-0 ${tabBar ? 'pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))]' : ''}`}
+          >
             {online ? null : <StatusBanner condition="offline">{t('banner.offline')}</StatusBanner>}
             {children}
           </div>
         </div>
-        <MobileTabBar
-          active={active}
-          hrefs={APP_HREFS}
-          labels={{ ...nav, tags: t('nav.tagsShort'), main: t('nav.main') }}
-          linkAs={Link}
-        />
+        {tabBar ? (
+          <MobileTabBar
+            active={active}
+            hrefs={APP_HREFS}
+            labels={{ ...nav, tags: t('nav.tagsShort'), main: t('nav.main') }}
+            linkAs={Link}
+          />
+        ) : null}
         <Shortcuts open={dialog} onOpenChange={setDialog} />
       </ShellContext.Provider>
     </ShortcutsProvider>

@@ -1,7 +1,9 @@
-import { useTranslations } from 'next-intl';
-import { Screen } from '../../../_shell/screen';
+'use client';
+
+import { useParams } from 'next/navigation';
+import { CallScreen } from './_call/call-screen';
 
 export default function CallPage() {
-  const t = useTranslations('call');
-  return <Screen title={t('title')} back={{ href: '/app', label: t('back') }} width="reading" />;
+  const { id } = useParams<{ id: string }>();
+  return <CallScreen id={id} />;
 }

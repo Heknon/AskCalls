@@ -21,6 +21,7 @@ describe('app CSP', () => {
     expect(directive(csp, 'script-src')).toBe(
       "script-src 'self' 'nonce-abc' 'wasm-unsafe-eval' 'strict-dynamic'",
     );
+    expect(directive(csp, 'style-src')).toBe("style-src 'self' 'nonce-abc'");
     expect(csp).not.toContain('unsafe-inline');
     expect(csp).not.toContain("'unsafe-eval'");
     expect(appCsp(config({ BLOB_DRIVER: 'memory' }), 'abc', 'development')).toContain(

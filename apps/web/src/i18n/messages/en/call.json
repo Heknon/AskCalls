@@ -1,4 +1,108 @@
 {
   "title": "Call",
-  "back": "Back to calls"
+  "back": "Back to calls",
+  "backTo": {
+    "results": "Results for “{q}”",
+    "calls": "Calls"
+  },
+  "hit": "Hit {i} of {n}",
+  "hitPrevious": "Previous hit",
+  "hitNext": "Next hit",
+  "sig": {
+    "verified": "Signed by {device}",
+    "unknown": "Signed by a device that is no longer linked",
+    "invalid": "Signature doesn't match",
+    "invalidBanner": "This transcript doesn't match its signature. It may have been changed.",
+    "missing": "Not signed: imported through the inbox"
+  },
+  "tag": {
+    "add": "Tag"
+  },
+  "tags": {
+    "title": "Tags",
+    "search": "Find or create a tag",
+    "create": "Create tag “{name}”",
+    "remove": "Remove tag {name}",
+    "empty": "No tags yet. Type a name to create one.",
+    "noMatch": "No tag matches “{q}”",
+    "failed": "Couldn't update the tags. Try again.",
+    "done": "Done"
+  },
+  "whatsapp": "Open in WhatsApp",
+  "callBack": "Call back",
+  "noNumber": "No phone number for this call",
+  "download": "Download",
+  "downloadTxt": "Transcript (TXT)",
+  "downloadSrt": "Subtitles (SRT)",
+  "more": "More actions",
+  "delete": {
+    "action": "Delete call",
+    "title": "Delete this call?",
+    "body": "The transcript, notes, tags and recording are deleted for good.",
+    "done": "Call deleted",
+    "undo": "Undo",
+    "undoAlt": "Open the call again from your calls before it closes.",
+    "failed": "Couldn't delete the call. Try again."
+  },
+  "starFailed": "Couldn't save the star. Try again.",
+  "you": "You",
+  "speaker": "Speaker {n}",
+  "playFrom": "Play from {t}",
+  "noRecording": "No recording saved for this call",
+  "backToPlayback": "Back to playback",
+  "player": {
+    "play": "Play",
+    "pause": "Pause",
+    "back": "Back 5 seconds",
+    "forward": "Forward 5 seconds",
+    "speed": "Speed",
+    "position": "Position",
+    "of": "{current} of {total}",
+    "error": "Couldn't decrypt the recording"
+  },
+  "decryptFailed": {
+    "title": "Can't open this call on this device",
+    "body": "Its key doesn't match. Reference: {id}."
+  },
+  "notFound": "This call doesn't exist or was deleted.",
+  "panel": "Ask and notes",
+  "ask": {
+    "tab": "Ask",
+    "button": "Ask",
+    "placeholder": "Ask about this call",
+    "send": "Send",
+    "suggest": {
+      "summary": "Summarize this call",
+      "promises": "What did I promise?",
+      "next": "Next steps"
+    },
+    "route": {
+      "managed": "{model} via AskCalls · sends this call to {provider}",
+      "direct": "{model} with your key · sends this call to {provider}"
+    },
+    "off": "Ask is turned off.",
+    "offAction": "Settings → Providers",
+    "quota": "You've used today's {n} questions. More at 00:00 UTC.",
+    "error": "{provider} didn't respond. Try again."
+  },
+  "notes": {
+    "tab": "Notes",
+    "placeholder": "Notes",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "error": "Couldn't save.",
+    "retry": "Retry"
+  },
+  "consent": {
+    "title": "Send this call to {provider}?",
+    "managed": "This call's transcript and your question go through AskCalls to {provider} ({model}). AskCalls doesn't store them.",
+    "direct": "This call's transcript and your question go from your device straight to {provider} under your account. AskCalls doesn't see them.",
+    "scope": "Only this call. Not your other calls, contacts or notes.",
+    "names": "Names and numbers in the transcript are included.",
+    "retention": "{provider} may keep request logs under its standard policy.",
+    "remember": "Don't ask again until I lock AskCalls",
+    "change": "Change provider: Settings → Providers",
+    "cancel": "Cancel",
+    "send": "Send and ask"
+  }
 }

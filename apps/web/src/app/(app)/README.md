@@ -49,6 +49,8 @@ export default function UploadPage() {
 `Screen` renders the `AppTopBar` (from 768 px, only with `actions` or `hints`), the `MobileTopBar`
 (phones: title, `mobileAction`, the lock button, `back`), the `PageHeader` (`h1`) and the
 `<main>` column. `width`: `wide` (1120 px), `reading` (720 px, transcript), `form` (640 px).
+The call view also uses `topStart` (its back link in the desktop top bar), `aside` (the side
+panel beside the column from 768 px) and `titleHidden` (the `h1` is for screen readers only).
 Settings sections use `SectionScreen` from `settings/_settings/section-screen.tsx` instead.
 
 ## 2. Keys and the session: `useUnlocked()`
