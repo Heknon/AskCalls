@@ -114,7 +114,7 @@ Reading pages with `StepList` and `CopyableCode` blocks mirroring the README sec
 | `login.sent.change` | Use a different email | אימייל אחר |
 | `login.error.email` | Enter an email address. | יש להזין כתובת אימייל. |
 | `login.error.provider` | Google sign-in didn't complete. Try again. | הכניסה עם Google לא הושלמה. כדאי לנסות שוב. |
-| `login.legal` | By continuing you agree to the Terms and Privacy policy. | בהמשך הכניסה מתקבלים תנאי השימוש ומדיניות הפרטיות. |
+| `login.legal` | By continuing you agree to the Terms and Privacy policy. | המשך הכניסה מהווה הסכמה לתנאי השימוש ולמדיניות הפרטיות. |
 
 ---
 
@@ -142,7 +142,7 @@ Shared layout: logo top start, step count top end on mobile, horizontal `Stepper
 | Key | English | Hebrew |
 | --- | --- | --- |
 | `onb.passkey.title` | Create a passkey | יצירת מפתח גישה |
-| `onb.passkey.body` | You'll unlock AskCalls with your fingerprint, face or screen lock. | ביטול הנעילה של AskCalls ייעשה בטביעת אצבע, בזיהוי פנים או בנעילת המסך. |
+| `onb.passkey.body` | You'll unlock AskCalls with your fingerprint, face or screen lock. | את הנעילה של AskCalls פותחים בטביעת אצבע, בזיהוי פנים או בנעילת המסך. |
 | `onb.passkey.cta` | Create passkey | יצירת מפתח גישה |
 | `onb.passkey.alt` | Use a passphrase instead | שימוש במשפט סיסמה במקום |
 | `onb.passkey.waiting` | Waiting for your device… | ממתין למכשיר… |
@@ -238,21 +238,21 @@ Mock: [`unlock.html`](mocks/unlock.html).
 
 | Key | English | Hebrew |
 | --- | --- | --- |
-| `unlock.title` | Unlock your calls | ביטול נעילה של השיחות |
+| `unlock.title` | Unlock your calls | פתיחת הנעילה של השיחות |
 | `unlock.body` | Use the passkey you created for AskCalls. | עם מפתח הגישה שיצרת ל-AskCalls. |
-| `unlock.passkey` | Unlock with passkey | ביטול נעילה עם מפתח גישה |
+| `unlock.passkey` | Unlock with passkey | פתיחה עם מפתח גישה |
 | `unlock.recovery` | Use recovery code | שימוש בקוד שחזור |
 | `unlock.passphrase` | Use passphrase | שימוש במשפט סיסמה |
 | `unlock.account` | Signed in as {email} | החשבון המחובר: {email} |
 | `unlock.signOut` | Sign out | יציאה |
 | `unlock.lost` | Without a passkey or recovery code, calls can't be recovered. Options | בלי מפתח גישה או קוד שחזור אי אפשר לשחזר את השיחות. אפשרויות |
-| `unlock.back` | Other ways to unlock | דרכים אחרות לביטול נעילה |
+| `unlock.back` | Other ways to unlock | דרכים אחרות לפתיחת הנעילה |
 | `unlock.rc.title` | Enter your recovery code | הזנת קוד השחזור |
 | `unlock.rc.body` | 8 groups of 4 characters. | 8 קבוצות של 4 תווים. |
 | `unlock.rc.wrong` | Wrong code. Check each group and try again. | קוד שגוי. כדאי לבדוק כל קבוצה ולנסות שוב. |
 | `unlock.pass.wrong` | Wrong passphrase. Try again. | משפט סיסמה שגוי. כדאי לנסות שוב. |
 | `unlock.passkey.failed` | Couldn't unlock with this passkey. Try again or use your recovery code. | לא ניתן לפתוח עם מפתח הגישה הזה. אפשר לנסות שוב או להשתמש בקוד השחזור. |
-| `unlock.cta` | Unlock | ביטול נעילה |
+| `unlock.cta` | Unlock | פתיחה |
 | `unlock.busy` | Unlocking… | מבטל נעילה… |
 | `unlock.signOut.confirm` | Signing out also removes this device's saved keys. You'll need your passkey or recovery code to unlock again. | היציאה מוחקת גם את המפתחות השמורים במכשיר הזה. כדי לפתוח שוב יידרשו מפתח גישה או קוד שחזור. |
 
@@ -543,7 +543,7 @@ Tabs: Single, Bulk. The active transcription provider and its `DataFlowNote` app
 | `upload.txOff` | Transcription is off. Add a transcript file to upload this call. | התמלול כבוי. כדי להעלות את השיחה יש להוסיף קובץ תמלול. |
 | `upload.unsupported` | This file type isn't supported. Use audio, or TXT, SRT, VTT or JSON transcripts. | סוג הקובץ לא נתמך. אפשר להעלות שמע, או תמלול בפורמט TXT, SRT, VTT או JSON. |
 | `upload.quota` | Transcription limit reached for this month. Upload the transcript instead, or use your own key. | הגעת למגבלת התמלול של החודש. אפשר להעלות תמלול במקום, או להשתמש במפתח משלך. |
-| `dataFlow.tx.managed` | Audio passes through AskCalls to {provider}, streamed and not stored. {provider} may keep request logs under its standard policy. | השמע עובר דרך AskCalls אל {provider}, בזרימה ובלי שמירה. {provider} עשויה לשמור יומני בקשות לפי המדיניות הרגילה שלה. |
+| `dataFlow.tx.managed` | Audio passes through AskCalls to {provider}, streamed and not stored. {provider} may keep request logs under its standard policy. | השמע עובר דרך AskCalls אל {provider}, בהזרמה ובלי שמירה. {provider} עשויה לשמור יומני בקשות לפי המדיניות הרגילה שלה. |
 | `dataFlow.tx.direct` | Audio goes from your device straight to {provider} under your account. AskCalls doesn't see it. | השמע יוצא מהמכשיר שלך ישירות ל-{provider}, תחת החשבון שלך. AskCalls לא רואה אותו. |
 
 ### U2 Bulk upload
@@ -576,7 +576,7 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 | `bulk.pause` / `pausing` / `resume` | Pause / Pausing… / Resume | השהיה / משהה… / המשך |
 | `bulk.tab.*` | All · In progress · Failed · Duplicates | הכול · בתהליך · נכשלו · כפילויות |
 | `bulk.col.*` | File · Contact · Status | קובץ · איש קשר · סטטוס |
-| `bulk.retry` / `retryAll` | Retry / Retry all failed | ניסיון חוזר / ניסיון חוזר לכל הכושלים |
+| `bulk.retry` / `retryAll` | Retry / Retry all failed | ניסיון חוזר / ניסיון חוזר לכל מה שנכשל |
 | `queue.*` | Queued · Decoding · Transcribing · Indexing · Encrypting · Uploading · Done · Duplicate · Failed | בתור · מפענח שמע · מתמלל · מאנדקס · מצפין · מעלה · הושלם · כפילות · נכשל |
 | `bulk.dupOf` | Same audio as the call on {when} | אותו שמע כמו השיחה מ-{when} |
 | `bulk.err.decode` | Couldn't decode the audio. The file may be damaged or in an unsupported format. | לא ניתן לפענח את השמע. ייתכן שהקובץ פגום או בפורמט שלא נתמך. |
@@ -707,7 +707,7 @@ Mock: [`settings-security.html`](mocks/settings-security.html).
 | Key | English | Hebrew |
 | --- | --- | --- |
 | `sec.title` | Security | אבטחה |
-| `sec.subtitle` | Keep at least two ways to unlock. | כדאי לשמור לפחות שתי דרכים לביטול נעילה. |
+| `sec.subtitle` | Keep at least two ways to unlock. | כדאי לשמור לפחות שתי דרכים לפתיחת הנעילה. |
 | `sec.passkeys` / `add` | Passkeys / Add passkey | מפתחות גישה / הוספת מפתח גישה |
 | `sec.thisDevice` | This device | המכשיר הזה |
 | `sec.created` / `lastUsed` | Created {date} / Last used {when} on {os} | נוצר ב-{date} / שימוש אחרון {when} ב-{os} |
@@ -775,8 +775,8 @@ Mock: dialog in `settings-security.html`.
 | `ret.title` | Retention | שמירת נתונים |
 | `ret.forever` | Keep calls until I delete them | לשמור שיחות עד שאמחק אותן |
 | `ret.days` | Delete calls older than {n} days | למחוק שיחות ישנות מ-{n} ימים |
-| `ret.confirm` | {n} calls are older than this and will be deleted tonight. | {n} שיחות ישנות מזה וימחקו הלילה. |
-| `ret.bucket` | Recordings in your bucket are deleted by your device at the next unlock. | הקלטות בדלי שלך נמחקות על ידי המכשיר שלך בביטול הנעילה הבא. |
+| `ret.confirm` | {n} calls are older than this and will be deleted tonight. | {n} שיחות ישנות יותר ויימחקו הלילה. |
+| `ret.bucket` | Recordings in your bucket are deleted by your device at the next unlock. | הקלטות בדלי שלך נמחקות על ידי המכשיר שלך בפתיחת הנעילה הבאה. |
 
 ### S4 API and MCP
 
@@ -799,7 +799,7 @@ Mock: dialog in `settings-security.html`.
 | `api.fetches` | Fetches this hour | שליפות בשעה האחרונה |
 | `api.agent` | Local agent | סוכן מקומי |
 | `api.remote` | Remote MCP | MCP מרוחק |
-| `dataFlow.inbox` | Inbox uploads are visible to the AskCalls server in transit. They're encrypted to your key on arrival and added to your calls the next time you unlock. | העלאות לתיבה גלויות לשרת של AskCalls בזמן ההעברה. הן מוצפנות למפתח שלך מיד כשהן מגיעות ונוספות לשיחות בביטול הנעילה הבא. |
+| `dataFlow.inbox` | Inbox uploads are visible to the AskCalls server in transit. They're encrypted to your key on arrival and added to your calls the next time you unlock. | העלאות לתיבה גלויות לשרת של AskCalls בזמן ההעברה. הן מוצפנות למפתח שלך מיד כשהן מגיעות ונוספות לשיחות בפתיחת הנעילה הבאה. |
 
 ### S5 Providers
 
@@ -999,4 +999,4 @@ Toasts (`Notice`, Sonner) stack at the bottom end, above the bottom navigation o
 | --- | --- | --- |
 | `lock.button` | Lock | נעילה |
 | `lock.tooltip` | Locks after {n} min idle | ננעל אחרי {n} דקות ללא פעילות |
-| `inbox.failed` | Couldn't add {n} inbox items. They'll be retried next time you unlock. | לא ניתן להוסיף {n} פריטים מהתיבה. ננסה שוב בביטול הנעילה הבא. |
+| `inbox.failed` | Couldn't add {n} inbox items. They'll be retried next time you unlock. | לא ניתן להוסיף {n} פריטים מהתיבה. ננסה שוב בפתיחת הנעילה הבאה. |
