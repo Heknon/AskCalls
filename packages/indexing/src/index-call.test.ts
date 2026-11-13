@@ -73,7 +73,7 @@ describe('analyzeCall', () => {
     ).toBeNull();
   });
 
-  it('redacts chunks and snippets', () => {
+  it('redacts what gets embedded, and keeps the original words in the encrypted snippet', () => {
     expect(out.chunks).toHaveLength(1);
     const c = out.chunks[0]!;
     expect(c.embedText.startsWith('passage: ')).toBe(true);
@@ -83,8 +83,10 @@ describe('analyzeCall', () => {
     expect(c.text).toContain('[ID]');
     for (const secret of ['רונית', 'כהן', '054', '4321', 'ronit@', '123456782']) {
       expect(c.text).not.toContain(secret);
-      expect(c.snippet).not.toContain(secret);
+      expect(c.embedText).not.toContain(secret);
     }
+    expect(c.snippet).toContain('רונית');
+    expect(c.snippet).not.toContain('[NAME]');
     expect([...c.snippet].length).toBeLessThanOrEqual(300);
     expect(out.redactionCounts).toMatchObject({ NAME: 2, PHONE: 1, EMAIL: 1, ID: 1 });
   });

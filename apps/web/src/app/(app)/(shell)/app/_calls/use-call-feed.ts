@@ -2,6 +2,7 @@
 
 import { listCalls } from '@askcalls/client-core/calls';
 import type { ClientContext } from '@askcalls/client-core/context';
+import { meaningHighlights } from '@askcalls/client-core/meaning';
 import { type HighlightRange, searchCalls } from '@askcalls/client-core/search';
 import { intentTagId, type ResolvedTag } from '@askcalls/client-core/tags';
 import type { CallMeta, DurationBucket } from '@askcalls/domain';
@@ -71,6 +72,8 @@ type Page = {
   nextCursor: string | null;
   alsoMatched: string[];
   forms: string[];
+  /** The query's embedding on a meaning search. */
+  vector: Float32Array | null;
 };
 
 async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null): Promise<Page> {
@@ -97,6 +100,7 @@ async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null
       nextCursor: res.nextCursor,
       alsoMatched: [],
       forms: [],
+      vector: null,
     };
   }
   const res = await searchCalls(ctx, {
@@ -130,6 +134,7 @@ async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null
     nextCursor: res.nextCursor,
     alsoMatched: res.alsoMatched,
     forms: res.forms,
+    vector: res.vector,
   };
 }
 
@@ -193,13 +198,20 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     async (q: FeedQuery, cursor: string | null, id: number) => {
       const f = q.filters;
       const needAll = f.sort === 'oldest' || f.sort === 'longest';
-      const out: Page = { items: [], nextCursor: cursor, alsoMatched: [], forms: [] };
+      const out: Page = {
+        items: [],
+        nextCursor: cursor,
+        alsoMatched: [],
+        forms: [],
+        vector: null,
+      };
       for (let page = 0; page < MAX_PAGES; page++) {
         const p = await fetchPage(ctx, q, out.nextCursor);
         if (id !== run.current) return null;
         if (page === 0) {
           out.alsoMatched = p.alsoMatched;
           out.forms = p.forms;
+          out.vector = p.vector;
         }
         out.items.push(...p.items);
         out.nextCursor = p.nextCursor;
@@ -214,6 +226,32 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
       return out;
     },
     [ctx, decryptAll],
+  );
+
+  /** On a meaning search, marks the phrase of each snippet closest to the query. */
+  const markMeaning = useCallback(
+    (p: Page, id: number) => {
+      if (!p.vector) return;
+      meaningHighlights(
+        ctx.embedder,
+        p.vector,
+        p.items.map((i) => i.snippet),
+      ).then(
+        (ranges) => {
+          if (id !== run.current) return;
+          const byId = new Map(p.items.map((item, k) => [item.id, ranges[k]] as const));
+          setState((s) => ({
+            ...s,
+            raw: s.raw.map((i) => {
+              const r = byId.get(i.id);
+              return r ? { ...i, highlights: [...i.highlights, r] } : i;
+            }),
+          }));
+        },
+        () => {},
+      );
+    },
+    [ctx],
   );
 
   const key = JSON.stringify(query);
@@ -236,6 +274,7 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
           forms: p.forms,
           mode: isSearchQuery(q) ? 'search' : 'list',
         });
+        markMeaning(p, id);
       },
       (error: unknown) => {
         if (id !== run.current) return;
@@ -243,7 +282,7 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
         setState({ ...INITIAL, status: 'error', error });
       },
     );
-  }, [key, attempt, fetchMore]);
+  }, [key, attempt, fetchMore, markMeaning]);
 
   const loadMore = useCallback(() => {
     const s = stateRef.current;
@@ -260,10 +299,11 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
           raw: [...st.raw, ...p.items.filter((i) => !known.has(i.id))],
           cursor: p.nextCursor,
         }));
+        markMeaning(p, id);
       },
       () => setLoadingMore(false),
     );
-  }, [fetchMore, loadingMore]);
+  }, [fetchMore, loadingMore, markMeaning]);
 
   const reload = useCallback(() => setAttempt((a) => a + 1), []);
 
@@ -282,14 +322,12 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     const at = (i: FeedItem) => metas.current.get(i.id)?.startedAt ?? '';
     const byDate = (a: FeedItem, b: FeedItem) => a.day - b.day || at(a).localeCompare(at(b));
     if (sort === 'oldest') return visible.sort(byDate);
-    if (sort === 'newest' && query.filters.match === 'meaning')
-      return visible.sort((a, b) => byDate(b, a));
     if (sort === 'longest') {
       const len = (i: FeedItem) => metas.current.get(i.id)?.durationSec ?? i.durationBucket * 60;
       return visible.sort((a, b) => len(b) - len(a));
     }
     return visible;
-  }, [state.raw, hidden, direction, sort, query.filters.match, metaVersion]);
+  }, [state.raw, hidden, direction, sort, metaVersion]);
 
   return {
     status: state.status,

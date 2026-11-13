@@ -347,7 +347,7 @@ The calls list uses one search pattern, shared with the owner's other product (`
 
 ```
 [ 🔍  מחיר                                            × ]          SearchBox (suggestions drop below while typing)
-Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase interest] · from [the last 30 days] · [in and out] · matching [exact words]   Clear
+Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase interest] · from [the last 30 days] · [in and out] · matching [meaning]   Clear
 18 calls   also matched  מחירים ×  המחיר ×  price ×                                  Newest first ▾                                                     ResultLine
 ```
 
@@ -371,7 +371,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **RTL:** labels `dir="auto"`; phone numbers are LTR islands; the ↵ hint sits at the end edge.
 
 #### FilterSentence
-- **Purpose:** shows every filter at once, as a sentence the user can read and edit: "Showing [all calls] · with [anyone] · tagged [any tag] · about [any intent] · from [any time] · [in and out] · matching [exact words]".
+- **Purpose:** shows every filter at once, as a sentence the user can read and edit: "Showing [all calls] · with [anyone] · tagged [any tag] · about [any intent] · from [any time] · [in and out] · matching [meaning]".
 - **Props:** `blanks: FilterBlank[]`, `onClear` (the "Clear" link appears when any blank is set).
 - **Composes:** text + `FilterBlank`s. **Screens:** C1, C2; M1 (read-only fragments in use-case samples).
 - **Copy:** each blank is a message with its value interpolated, so each language places its own prepositions. Hebrew folds some prepositions into the value ("[בכל זמן]", "[ב-30 הימים האחרונים]") instead of a separate word. Full sentences in both languages are in `screens.md` C2.
@@ -382,7 +382,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Purpose:** one filter inside the sentence: its current value, and the button that changes it.
 - **Props:** `facet` (`starred`, `contact`, `tag`, `intent`, `date`, `direction`, `match`), `empty` text ("anyone"), `value` ("Hot lead", or `<bdi>דנה לוי</bdi> + 1` for several: user text is a bidi island so the "+ 1" stays in the sentence's direction), `readOnly` (marketing samples), `inactive` (no effect right now), `busy` (loading the meaning model). The open state comes from the picker (`data-state="open"`).
 - **Looks:** empty = bold text with a dashed underline; set = accent tint with a solid accent underline. Never a pill or a chip.
-- **Match blank:** "matching [exact words | meaning]" is the semantic search switch. It is a single-choice blank because it is one concept: how the text is matched. Choosing "meaning" sorts by best match and loads the meaning model once.
+- **Match blank:** "matching [meaning | exact words]" is the semantic search switch. It is a single-choice blank because it is one concept: how the text is matched. Meaning is the default and sorts by best match; its snippet marks the phrase closest to the query, found on the device by embedding the decrypted phrases. "Exact words" runs the keyword search (typos, synonyms, Hebrew prefixes) and marks the matched words.
 - **Composes:** `Button`. Opens `FilterPicker`. **Screens:** C1, C2, M1.
 - **A11y:** `aria-haspopup="dialog"`, `aria-expanded`. **RTL:** none beyond the sentence.
 

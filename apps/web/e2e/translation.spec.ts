@@ -7,6 +7,11 @@ const txt = (name: string, content: string) => ({ name, content, mimeType: 'text
 const rows = (page: Page) => page.locator('[data-component="CallRow"]:not([data-state="locked"])');
 const search = (page: Page) => page.getByRole('combobox', { name: 'Search calls' });
 
+async function matchBy(page: Page, by: 'Exact words' | 'Meaning') {
+  await page.locator('[data-component="FilterBlank"][data-facet="match"]').click();
+  await page.getByRole('button', { name: by }).click();
+}
+
 async function settled(page: Page) {
   await page.waitForTimeout(400);
   await expect(page.locator('ul[aria-busy="true"]')).toHaveCount(0);
@@ -39,6 +44,7 @@ test('translation rules: one-way search, backfill, and the call view in each lan
 
   await go(page, 'Calls');
   await search(page).fill('price');
+  await matchBy(page, 'Exact words');
   await settled(page);
   await expect(rows(page)).toHaveCount(1);
   await expect(rows(page).first().locator('[data-slot="language"]')).toHaveText('EN');
@@ -48,10 +54,8 @@ test('translation rules: one-way search, backfill, and the call view in each lan
   await settled(page);
   await expect(rows(page)).toHaveCount(0);
   // Meaning search is cross-lingual and still finds it.
-  await page.locator('[data-component="FilterBlank"][data-facet="match"]').click();
-  await page.getByRole('button', { name: 'Meaning' }).click();
+  await matchBy(page, 'Meaning');
   await expect(rows(page).first()).toBeVisible({ timeout: 60_000 });
-  await page.getByRole('button', { name: 'Clear', exact: true }).click();
   await search(page).fill('');
   await settled(page);
 
@@ -73,6 +77,7 @@ test('translation rules: one-way search, backfill, and the call view in each lan
 
   await go(page, 'Calls');
   await search(page).fill('חוזה');
+  await matchBy(page, 'Exact words');
   await settled(page);
   await expect(rows(page)).toHaveCount(1);
   await expect(rows(page).first().locator('[data-slot="language"]')).toHaveText('HE');
