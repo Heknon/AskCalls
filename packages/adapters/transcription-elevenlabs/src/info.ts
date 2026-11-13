@@ -10,4 +10,5 @@ export const ELEVENLABS_INFO: ProviderInfo = {
   browserDirect: true,
   baseUrl: 'fixed',
   keyRequired: true,
+  zeroRetention: true,
 };

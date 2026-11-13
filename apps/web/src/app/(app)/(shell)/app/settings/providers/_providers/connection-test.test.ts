@@ -13,7 +13,13 @@ describe('connection tests', () => {
   });
 
   it('reports a rejected key and quota without provider text', async () => {
-    const key = { provider: 'elevenlabs', apiKey: 'bad', baseUrl: null, model: null };
+    const key = {
+      provider: 'elevenlabs',
+      apiKey: 'bad',
+      baseUrl: null,
+      model: null,
+      zeroRetention: false,
+    };
     const realFetch = globalThis.fetch;
     globalThis.fetch = (async () => new Response('secret detail', { status: 401 })) as typeof fetch;
     try {
@@ -30,6 +36,51 @@ describe('connection tests', () => {
         Response.json({ error: { code: 'quota_exceeded', message: 'x' } }, { status: 403 }),
     });
     expect(await testTranscription(api, null)).toMatchObject({ ok: false, reason: 'quota' });
+  });
+
+  it.each([
+    [403, 'not_allowed', true, 'zeroRetention'],
+    [401, 'missing_permissions', false, 'permission'],
+    [401, 'invalid_api_key', false, 'key'],
+  ] as const)('names the refusal for HTTP %i %s', async (status, code, zeroRetention, reason) => {
+    const key = { provider: 'elevenlabs', apiKey: 'k', baseUrl: null, model: null, zeroRetention };
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      Response.json({ detail: { status: code, message: 'secret' } }, { status })) as typeof fetch;
+    try {
+      expect(await testTranscription(createApiClient(), key)).toEqual({
+        ok: false,
+        reason,
+        status,
+      });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  it('names the refusal on the managed route', async () => {
+    const api = createApiClient({
+      fetch: async () =>
+        Response.json(
+          {
+            error: {
+              code: 'provider_error',
+              message: 'x',
+              details: {
+                provider: 'elevenlabs',
+                status: 403,
+                reason: 'zero_retention_unavailable',
+              },
+            },
+          },
+          { status: 502 },
+        ),
+    });
+    expect(await testTranscription(api, null)).toEqual({
+      ok: false,
+      reason: 'zeroRetention',
+      status: 403,
+    });
   });
 
   it('maps bucket probes', async () => {

@@ -650,6 +650,10 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Purpose:** shows that a secret is saved without revealing it.
 - **Props:** `prefix`, `last4`, `onReplace`, `onRemove`. **Composes:** `Input` (read-only), `Button`. **Screens:** S4, S5, A1, W1.
 
+#### SettingSwitch
+- **Purpose:** a yes/no setting with a one-line hint on what it changes.
+- **Props:** `label`, `hint`, `checked`, `disabled`, `onChange`. **Composes:** `Switch`, `Label`. **Screens:** S5 (zero retention on an own key), A1.
+
 #### TestConnectionResult
 - **Purpose:** the outcome of a provider or port health check.
 - **Props:** `state="idle" | "testing" | "ok" | "failed"`, `detail`. **Composes:** `Button`, text with icon. **Screens:** S5, A1, W1.
