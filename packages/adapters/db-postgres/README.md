@@ -140,7 +140,28 @@ The vector path computes the exact distance for every chunk of the calls that pa
 filters, so results are complete and pages are stable; the HNSW index (kept per spec 5) is not
 used by this query shape, because an approximate top-k cannot be paged or combined with
 arbitrary filters exactly. At the free tier (500 calls) and the spec 13 benchmark size
-(10,000 calls) the exact scan is within budget; see the numbers below.
+(10,000 calls) the exact scan is within budget:
+
+`search-perf.int.test.ts`, one user with 10,000 calls (120 keyword tokens each) and 50,000
+chunks, timed around the adapter call (RLS transaction and driver round trips included),
+measured 2026-11-13 on a shared cloud container (PGlite 0.5.16 in-process; local Postgres 16.15
+with pgvector 0.8.7, default settings):
+
+| Query | PGlite p50 / p95 | Postgres p50 / p95 |
+| --- | --- | --- |
+| No filters, newest first | 3.5 / 5.2 ms | 2.5 / 3.6 ms |
+| Two keyword groups (OR variants) + tag | 21 / 25 ms | 28 / 29 ms |
+| Keyword + contacts + day range + excluded tag | 2.0 / 3.6 ms | 1.3 / 2.0 ms |
+| Vector over all 10,000 calls (50,000 distances) | 145 / 157 ms | 85 / 100 ms |
+| Vector + keyword group | 22 / 23 ms | 18 / 20 ms |
+
+All are under the 300 ms budget (spec 13). The unfiltered vector query grows linearly with the
+number of chunks; past roughly 100,000 chunks per user it needs an HNSW candidate stage
+(`hnsw.iterative_scan`), which would make deep pages approximate. Seeding the PGlite run drops
+the HNSW index first, because maintaining it for 50,000 single-threaded WASM inserts takes over
+ten minutes; the query plan doesn't use it either way. Run it with
+`bun run test:integration -- --disableConsoleIntercept packages/adapters/db-postgres/src/search-perf`
+to see the timings.
 
 ## Migrations
 
