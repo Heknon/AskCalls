@@ -1,6 +1,5 @@
 'use client';
 
-import type { ClientContext } from '@askcalls/client-core/context';
 import { ingestCall } from '@askcalls/client-core/ingest';
 import { getCall } from '@askcalls/client-core/calls';
 import { highlightRanges, type SearchResponse, searchCalls } from '@askcalls/client-core/search';
@@ -8,6 +7,7 @@ import { CallRow } from '@askcalls/ui/components/CallRow';
 import { EmptyState } from '@askcalls/ui/components/EmptyState';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { GateHeading } from '@askcalls/ui/components/Gate';
+import { JobProgress } from '@askcalls/ui/components/JobProgress';
 import { ResultLine } from '@askcalls/ui/components/ResultLine';
 import { SearchBox } from '@askcalls/ui/components/SearchBox';
 import { Button } from '@askcalls/ui/primitives/button';
@@ -15,6 +15,8 @@ import { Card } from '@askcalls/ui/primitives/card';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import type { EmbedderStatus } from '../../../../../../client/adapters/embedder/embedder';
+import type { BrowserClient } from '../../../../../../client/browser-client';
 import { intlLocale } from '../../../../../../i18n/locales';
 import { SAMPLE_CALLS, sampleStartedAt } from './sample-calls';
 import { reportActivation } from './telemetry';
@@ -24,7 +26,18 @@ type Imported = { callId: string };
 const DIRECTION = { in: 'incoming', out: 'outgoing', unknown: 'unknown' } as const;
 
 /** O5: import the bundled sample call, then a guided search with a typo that still finds it. */
-export function TryStep({ ctx, onNext }: { ctx: ClientContext; onNext: () => void }) {
+const MB = 1024 * 1024;
+
+/** The model's first-load download while importing; nothing once it is cached or ready. */
+function useEmbedderStatus(client: BrowserClient): EmbedderStatus | null {
+  const [status, setStatus] = useState(() => client.embedderStatus());
+  useEffect(() => client.onEmbedderStatus(setStatus), [client]);
+  return status;
+}
+
+export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () => void }) {
+  const { ctx } = client;
+  const model = useEmbedderStatus(client);
   const t = useTranslations('onboarding.try');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -120,7 +133,23 @@ export function TryStep({ ctx, onNext }: { ctx: ClientContext; onNext: () => voi
       <GateHeading title={t('title')} description={<p>{t('body')}</p>} />
       {!imported ? (
         <div className="flex flex-col gap-3">
-          {importFailed ? <ErrorState scope="inline" title={t('failed')} /> : null}
+          {importFailed ? (
+            <ErrorState
+              scope="inline"
+              title={model?.state === 'failed' ? t('modelFailed') : t('failed')}
+            />
+          ) : null}
+          {importing && model?.state === 'loading' ? (
+            <JobProgress
+              done={model.progress.loaded}
+              total={model.progress.total}
+              label={t('loadingModel', {
+                loaded: Math.round(model.progress.loaded / MB),
+                total: Math.round(model.progress.total / MB),
+              })}
+              labels={{ pause: '', resume: '', stop: '', progress: t('loadingModelLabel') }}
+            />
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" size="lg" autoFocus loading={importing} onClick={importSample}>
               {importing ? t('importing') : t('import')}

@@ -13,7 +13,7 @@ import type { Providers } from '@askcalls/client-core/userdata';
 import { DomainError } from '@askcalls/domain';
 import { BrowserAudioCodec } from './adapters/audio/codec';
 import { BrowserBulkFiles } from './adapters/bulk-files';
-import { WorkerEmbedder } from './adapters/embedder/embedder';
+import { type EmbedderStatus, WorkerEmbedder } from './adapters/embedder/embedder';
 import { DeviceDb } from './adapters/idb';
 import { bucketOrigin, SigV4BucketStore } from './adapters/own-bucket';
 import { SettingsTranscriber } from './adapters/own-key-transcriber';
@@ -29,6 +29,7 @@ import {
   PROVIDER_ORIGINS,
 } from './direct-origins';
 import { BlobUrls, installLockRules } from './lock';
+import { readEmbeddingModelUrl } from './runtime-config';
 
 export interface BrowserClient {
   /** client-core's context: pass it to every use case (ingest, search, calls, …). */
@@ -41,6 +42,12 @@ export interface BrowserClient {
   bulkState: BulkStateStore;
   bulkFiles: BrowserBulkFiles;
   embedder: Embedder;
+  /**
+   * The model's first-load status (download progress for the UI); null when a stand-in
+   * embedder replaces the model.
+   */
+  embedderStatus(): EmbedderStatus | null;
+  onEmbedderStatus(listener: (s: EmbedderStatus) => void): () => void;
   audio: BrowserAudioCodec;
   ownBuckets: SigV4BucketStore;
   /** Object URLs for decrypted media; revoked on lock. */
@@ -107,7 +114,9 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     opts.idleTimeoutMs === undefined ? {} : { idleTimeoutMs: opts.idleTimeoutMs },
   );
   const db = new DeviceDb(opts.dbName);
-  const worker = opts.embedder ? null : new WorkerEmbedder();
+  const worker = opts.embedder
+    ? null
+    : new WorkerEmbedder({ modelBaseUrl: readEmbeddingModelUrl() });
   const embedder: Embedder = opts.embedder ?? worker!;
   const audio = new BrowserAudioCodec();
   const blobUrls = new BlobUrls();
@@ -176,6 +185,8 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     bulkState: new IdbBulkStateStore(db, session),
     bulkFiles: new BrowserBulkFiles(db),
     embedder,
+    embedderStatus: () => worker?.status ?? null,
+    onEmbedderStatus: (listener) => worker?.onStatus(listener) ?? (() => {}),
     audio,
     ownBuckets,
     blobUrls,

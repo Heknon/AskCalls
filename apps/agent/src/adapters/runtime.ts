@@ -78,14 +78,24 @@ export type FeatureExtractor = (
 ) => Promise<{ data: Float32Array; dims: number[] }>;
 
 /**
- * Runs the model in a child Bun process (one JSON line per request on stdin and stdout). The
+ * Runs the model in a child Bun process (one JSON line per request on stdin and stdout), set up
+ * like onnx-web.ts. The
  * compiled binary can't resolve packages on disk from its own process, but the Bun it embeds can.
  * Texts travel through the pipe only, on this computer.
  */
-const WORKER = `import { env, pipeline } from '@huggingface/transformers';
+const WORKER = `import { createRequire } from 'node:module';
 import { createInterface } from 'node:readline';
-env.cacheDir = process.argv[2];
-const extract = await pipeline('feature-extraction', process.argv[3], { dtype: process.argv[4] });
+const ort = await import(createRequire(import.meta.resolve('@huggingface/transformers')).resolve('onnxruntime-web'));
+globalThis[Symbol.for('onnxruntime')] = ort;
+ort.env.wasm.numThreads = 1;
+const { env, pipeline } = await import('@huggingface/transformers');
+env.allowRemoteModels = false;
+env.localModelPath = process.argv[2];
+const extract = await pipeline('feature-extraction', process.argv[3], {
+  dtype: process.argv[4],
+  device: 'auto',
+  session_options: { executionProviders: ['wasm'] },
+});
 let queue = Promise.resolve();
 const send = (m) => process.stdout.write(JSON.stringify(m) + '\\n');
 createInterface({ input: process.stdin }).on('line', (line) => {
@@ -105,7 +115,8 @@ send({ ready: true });
 
 export async function workerExtractor(opts: {
   runtimeDir: string;
-  modelsDir: string;
+  /** Verified model files (model-files.ts), as transformers.js's `localModelPath`. */
+  localModelPath: string;
   model: string;
   dtype: string;
   log: (line: string) => void;
@@ -113,7 +124,7 @@ export async function workerExtractor(opts: {
   await ensureRuntime(opts.runtimeDir, opts.log);
   const script = join(opts.runtimeDir, 'embed-worker.mjs');
   await writeFile(script, WORKER);
-  const child = spawn(process.execPath, [script, opts.modelsDir, opts.model, opts.dtype], {
+  const child = spawn(process.execPath, [script, opts.localModelPath, opts.model, opts.dtype], {
     cwd: opts.runtimeDir,
     env: asBun,
     stdio: ['pipe', 'pipe', 'ignore'],

@@ -4,6 +4,7 @@ import {
   appCsp,
   blobOrigins,
   DIRECT_PROVIDER_ORIGINS,
+  embeddingModelUrl,
   GOOGLE_ONE_TAP_ORIGIN,
   publicCsp,
 } from './csp';
@@ -53,6 +54,36 @@ describe('app CSP', () => {
       'production',
     );
     expect(directive(offline, 'connect-src')).toBe("connect-src 'self'");
+  });
+
+  it('adds the embedding model host to connect-src only when one is configured', () => {
+    const none = config({ BLOB_DRIVER: 'memory' });
+    expect(embeddingModelUrl(none)).toBeNull();
+    expect(directive(appCsp(none, 'n', 'production'), 'connect-src')).not.toContain('models.');
+
+    const hosted = config({
+      BLOB_DRIVER: 'memory',
+      EMBEDDING_MODEL_URL: 'https://models.example.com/askcalls',
+    });
+    expect(embeddingModelUrl(hosted)).toBe('https://models.example.com/askcalls');
+    const connect = directive(appCsp(hosted, 'n', 'production'), 'connect-src').split(' ');
+    expect(connect).toContain('https://models.example.com');
+    expect(connect.filter((s) => s.includes('models.example.com'))).toHaveLength(1);
+  });
+
+  it('serves the model from this origin in offline mode', () => {
+    const c = config({
+      BLOB_DRIVER: 'memory',
+      OFFLINE_MODE: 'true',
+      AUTH_LOCAL_ACCOUNTS: 'true',
+      EMBEDDING_MODEL_URL: 'https://models.example.com',
+    });
+    expect(embeddingModelUrl(c)).toBeNull();
+    expect(directive(appCsp(c, 'n', 'production'), 'connect-src')).toBe("connect-src 'self'");
+  });
+
+  it('rejects a plain-http model host', () => {
+    expect(() => config({ EMBEDDING_MODEL_URL: 'http://models.example.com' })).toThrow();
   });
 });
 

@@ -109,7 +109,7 @@ export function OnboardingFlow() {
           ) : null}
           {step === 'try' ? (
             <>
-              <TryStep ctx={client.ctx} onNext={() => setStep('ai')} />
+              <TryStep client={client} onNext={() => setStep('ai')} />
               <div>
                 <Button variant="link" onClick={() => setStep('ai')}>
                   {t('skip')}
