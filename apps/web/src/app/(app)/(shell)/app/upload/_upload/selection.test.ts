@@ -1,6 +1,7 @@
 import type { IngestMeta } from '@askcalls/client-core/ingest';
 import { describe, expect, it } from 'vitest';
-import { groupItems, groupState, selectionSummary } from './selection';
+import { groupItems, groupState } from './grouping';
+import { selectionSummary } from './selection';
 
 const ref = (name: string, size = 8_000) => ({ ref: name, name, size });
 const item = (key: string, audio?: string, transcript?: string) => ({

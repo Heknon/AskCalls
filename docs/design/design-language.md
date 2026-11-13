@@ -596,7 +596,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### ImportEditDialog
 - **Purpose:** corrects the contact name, number, direction and (for one call) time of planned calls of a bulk import before it starts: one call from its `QueueRow`, or a whole `ImportGroup` at once.
 - **Props:** `values` (a field the calls disagree on is left out and shown as "Mixed"), `date` (one call only), `contactNames`, `phoneError`, `onSave(changed)` (only the fields the user changed), `onRevert?` (back to file names and the manifest), `labels`.
-- **Composes:** `Dialog`, `Input`, `ToggleGroup`, `ErrorState`, `Button`. **Screens:** U2. Opened by the `edit` prop of `ImportGroup` and `QueueRow` (`pencil` icon button).
+- **Composes:** `Dialog`, `Input`, `ToggleGroup`, `ErrorState`, `Button`. **Screens:** U2. Opened by the `edit` prop of `ImportGroup` and `QueueRow` (`pencil` icon button; `QueueRow` takes the button as a node so the queue view doesn't load it).
 - **A11y:** every field labelled; Esc closes. **RTL:** the name is `dir="auto"`, the number LTR.
 
 #### ImportFormatGuide

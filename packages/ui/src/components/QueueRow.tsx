@@ -1,4 +1,4 @@
-import { Pencil, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../lib/cn';
 import { Button } from '../primitives/button';
@@ -15,8 +15,11 @@ export type QueueRowProps = {
   /** Duplicates: a link to the existing call. */
   duplicateOf?: ReactNode;
   retry?: { label: string; onRetry: () => void };
-  /** Before an import starts: opens the `ImportEditDialog`. `label`: "Edit {file}". */
-  edit?: { label: string; onEdit: () => void };
+  /**
+   * Before an import starts: the button that opens the `ImportEditDialog`, passed in like
+   * `select.control` so the queue view doesn't load it.
+   */
+  edit?: ReactNode;
   /**
    * Before an import starts: whether this call is in it, and the `Checkbox` that changes it
    * (passed in, so the queue view doesn't load it). Left-out rows are dimmed.
@@ -85,11 +88,7 @@ export function QueueRow({
             {retry.label}
           </Button>
         ) : null}
-        {edit ? (
-          <Button variant="ghost" size="icon-sm" aria-label={edit.label} onClick={edit.onEdit}>
-            <Pencil className="size-4" aria-hidden />
-          </Button>
-        ) : null}
+        {edit}
       </td>
     </tr>
   );

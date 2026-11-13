@@ -13,13 +13,14 @@ import { Card } from '@askcalls/ui/primitives/card';
 import { Checkbox } from '@askcalls/ui/primitives/checkbox';
 import { Input } from '@askcalls/ui/primitives/input';
 import { ToggleGroup, ToggleGroupItem } from '@askcalls/ui/primitives/toggle-group';
+import { Pencil } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { intlLocale } from '../../../../../../i18n/locales';
 import type { BulkController } from './bulk-controller';
 import { editValues, toEdits } from './edit';
+import { type GroupBy, type GroupLabel, groupItems, groupState, type ItemGroup } from './grouping';
 import { contactOf, PAGE, parts, QueueTable } from './queue-parts';
-import { type GroupBy, type GroupLabel, groupItems, groupState, type ItemGroup } from './selection';
 import { phoneValid } from './single';
 
 const GROUP_PAGE = 30;
@@ -219,10 +220,16 @@ export function ReviewTable({
                           state: 'queued',
                           label: t(included ? 'queue.queued' : 'queue.excluded'),
                         }}
-                        edit={{
-                          label: tr('editCall', { name: file }),
-                          onEdit: () => setEditing({ keys: [key], title: file }),
-                        }}
+                        edit={
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={tr('editCall', { name: file })}
+                            onClick={() => setEditing({ keys: [key], title: file })}
+                          >
+                            <Pencil className="size-4" aria-hidden />
+                          </Button>
+                        }
                         select={{
                           checked: included,
                           control: (
