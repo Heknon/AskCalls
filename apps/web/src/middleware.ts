@@ -29,7 +29,11 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const resolved = await getContainer().then(
     (c) => c.config,
-    () => getConfigService().then((s) => s.get(), () => null),
+    () =>
+      getConfigService().then(
+        (s) => s.get(),
+        () => null,
+      ),
   );
   if (resolved && !localRequestAllowed(resolved.config)) {
     return new NextResponse('Start this AskCalls with askcalls local.', {
