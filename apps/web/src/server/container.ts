@@ -56,7 +56,7 @@ export async function buildContainer(
     buildBlobStore(config),
     buildTranscription(config, http),
     buildLlm(config, http),
-    buildTelemetry(config),
+    buildTelemetry(config, http),
   ]);
   const dbConfig = prev ? prev.dbConfig : config.db;
   const scheduler = buildScheduler(config);

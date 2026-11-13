@@ -54,6 +54,10 @@
         "@askcalls/adapter-llm-ai-sdk": "workspace:*",
         "@askcalls/adapter-mocks": "workspace:*",
         "@askcalls/adapter-runtime": "workspace:*",
+        "@askcalls/adapter-telemetry-otel": "workspace:*",
+        "@askcalls/adapter-telemetry-posthog": "workspace:*",
+        "@askcalls/adapter-telemetry-sentry": "workspace:*",
+        "@askcalls/adapter-telemetry-umami": "workspace:*",
         "@askcalls/adapter-transcription-deepgram": "workspace:*",
         "@askcalls/adapter-transcription-elevenlabs": "workspace:*",
         "@askcalls/adapter-transcription-openai": "workspace:*",
@@ -170,6 +174,46 @@
       "dependencies": {
         "@askcalls/domain": "workspace:*",
         "uuidv7": "1.2.1",
+      },
+      "devDependencies": {
+        "vitest": "5.1.0",
+      },
+    },
+    "packages/adapters/telemetry-otel": {
+      "name": "@askcalls/adapter-telemetry-otel",
+      "version": "0.0.0",
+      "dependencies": {
+        "@askcalls/domain": "workspace:*",
+      },
+      "devDependencies": {
+        "vitest": "5.1.0",
+      },
+    },
+    "packages/adapters/telemetry-posthog": {
+      "name": "@askcalls/adapter-telemetry-posthog",
+      "version": "0.0.0",
+      "dependencies": {
+        "@askcalls/domain": "workspace:*",
+      },
+      "devDependencies": {
+        "vitest": "5.1.0",
+      },
+    },
+    "packages/adapters/telemetry-sentry": {
+      "name": "@askcalls/adapter-telemetry-sentry",
+      "version": "0.0.0",
+      "dependencies": {
+        "@askcalls/domain": "workspace:*",
+      },
+      "devDependencies": {
+        "vitest": "5.1.0",
+      },
+    },
+    "packages/adapters/telemetry-umami": {
+      "name": "@askcalls/adapter-telemetry-umami",
+      "version": "0.0.0",
+      "dependencies": {
+        "@askcalls/domain": "workspace:*",
       },
       "devDependencies": {
         "vitest": "5.1.0",
@@ -356,6 +400,14 @@
     "@askcalls/adapter-mocks": ["@askcalls/adapter-mocks@workspace:packages/adapters/mocks"],
 
     "@askcalls/adapter-runtime": ["@askcalls/adapter-runtime@workspace:packages/adapters/runtime"],
+
+    "@askcalls/adapter-telemetry-otel": ["@askcalls/adapter-telemetry-otel@workspace:packages/adapters/telemetry-otel"],
+
+    "@askcalls/adapter-telemetry-posthog": ["@askcalls/adapter-telemetry-posthog@workspace:packages/adapters/telemetry-posthog"],
+
+    "@askcalls/adapter-telemetry-sentry": ["@askcalls/adapter-telemetry-sentry@workspace:packages/adapters/telemetry-sentry"],
+
+    "@askcalls/adapter-telemetry-umami": ["@askcalls/adapter-telemetry-umami@workspace:packages/adapters/telemetry-umami"],
 
     "@askcalls/adapter-transcription-deepgram": ["@askcalls/adapter-transcription-deepgram@workspace:packages/adapters/transcription-deepgram"],
 

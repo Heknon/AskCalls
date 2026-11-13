@@ -1,8 +1,60 @@
+import { execFileSync } from 'node:child_process';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
+/**
+ * The build id names /_next/static/<id>/; Next.js makes a random one by default. The commit
+ * (or ASKCALLS_BUILD_ID where there is no .git, as in the Docker build) keeps two builds of
+ * the same commit byte-identical (docs/reproducible-builds.md).
+ */
+function buildId(): string | null {
+  if (process.env.ASKCALLS_BUILD_ID) return process.env.ASKCALLS_BUILD_ID;
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+type Ordered = { sortWith(compare: (a: never, b: never) => number): void } | undefined;
+interface Group {
+  name?: string | null;
+  id: string;
+  _children?: Ordered;
+}
+interface Compilation {
+  chunkGroups: Group[];
+  chunks: Iterable<{ _groups?: Ordered }>;
+  hooks: { afterOptimizeChunkIds: { tap(name: string, fn: () => void): void } };
+}
+
+/**
+ * The webpack runtime maps chunk ids to file names in the order it walks chunk groups, which
+ * follows module build completion and so varies between builds. Sorting the groups by name and
+ * id once ids are fixed makes the runtime chunk, and so every client asset, the same on every
+ * build of a commit (docs/reproducible-builds.md).
+ */
+class StableChunkOrder {
+  apply(compiler: {
+    hooks: { compilation: { tap(n: string, fn: (c: Compilation) => void): void } };
+  }) {
+    const key = (g: Group) => `${g.name ?? ''}\0${g.id}`;
+    const byKey = (a: Group, b: Group) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0);
+    compiler.hooks.compilation.tap('StableChunkOrder', (compilation) => {
+      compilation.hooks.afterOptimizeChunkIds.tap('StableChunkOrder', () => {
+        for (const group of compilation.chunkGroups) group._children?.sortWith(byKey as never);
+        for (const chunk of compilation.chunks) chunk._groups?.sortWith(byKey as never);
+      });
+    });
+  }
+}
+
 const config: NextConfig = {
   output: 'standalone',
+  generateBuildId: async () => buildId(),
   reactStrictMode: true,
   poweredByHeader: false,
   // Put generateMetadata output in <head> for every client, not only known bots: marketing
@@ -26,11 +78,16 @@ const config: NextConfig = {
     '@askcalls/adapter-transcription-soniox',
     '@askcalls/adapter-transcription-openai-compatible',
     '@askcalls/adapter-llm-ai-sdk',
+    '@askcalls/adapter-telemetry-otel',
+    '@askcalls/adapter-telemetry-posthog',
+    '@askcalls/adapter-telemetry-sentry',
+    '@askcalls/adapter-telemetry-umami',
     '@askcalls/adapter-db-postgres',
   ],
   // Database drivers load native/WebAssembly assets at runtime: keep them out of the bundle.
   serverExternalPackages: ['pg', '@electric-sql/pglite', '@electric-sql/pglite-pgvector'],
-  webpack(webpackConfig) {
+  webpack(webpackConfig, { isServer }) {
+    if (!isServer) webpackConfig.plugins.push(new StableChunkOrder());
     // onnxruntime-web references its own WebAssembly with `new URL(…, import.meta.url)`, which
     // would emit a second 27 MB copy. The embedder always loads it from /ort (assets.ts).
     webpackConfig.module.rules.push({

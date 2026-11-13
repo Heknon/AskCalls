@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./telemetry": "./src/telemetry.ts",
     "./use-cases/*": "./src/use-cases/*.ts",
     "./contracts/*": "./test/contracts/*.contract.ts"
   },

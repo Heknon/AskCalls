@@ -15,6 +15,8 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
     ▼ merge (PR dev → master)
  master  ─manual─▶ production Actions → Deploy → Run workflow on master → full tests (fast checks + integration ∥ E2E)
                               → migrate main → Vercel --prod
+ v*.*.*  ──tag───▶ release    fast checks → client asset hashes → npm (agent) → Docker image (GHCR, amd64 + arm64)
+                              → offline bundles → GitHub release
 ```
 
 | Workflow | Trigger | What it does |
@@ -22,10 +24,17 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
 | `ci.yml` (Full tests) | before production (called by `deploy.yml`); the `full-tests` label on a pull request; Run workflow by hand | two parallel jobs: fast checks + integration tests (pgvector Postgres service, MinIO), and Playwright E2E on Chromium |
 | `preview.yml` | pull request opened / synchronized / reopened / closed (not for docs-only changes) | one job: per-PR database branch + migrations + preview deploy + PR comment, then the fast checks; cleanup on close |
 | `deploy.yml` | push to `dev`; production only via Run workflow on `master` (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → migrations → Vercel |
+| `release.yml` | a `v<major>.<minor>.<patch>` tag | one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
+| `codeql.yml` | weekly, pushes to `master`, by hand | CodeQL (JavaScript and TypeScript, security-extended) |
+
+Dependabot (`.github/dependabot.yml`) opens one grouped pull request per ecosystem each week:
+Bun packages, GitHub Actions, the Dockerfile and the Compose files.
 
 Shared pieces: `.github/actions/setup` (Bun at the `packageManager` version, cached store keyed
 on `bun.lock`, frozen install) and `.github/actions/checks` (lint, typecheck, boundaries, unit
-and contract tests on PGlite and in-memory adapters, including the leak test). The Vercel and
+and contract tests on PGlite, fs and in-memory adapters, including the leak test on both
+storages, the telemetry scrubber contract and the CSP check; then the dependency audit, a
+production build and the bundle-size budget). The Vercel and
 Neon CLIs are pinned root devDependencies, so the workflows run `bunx vercel` and
 `bunx neonctl` at the versions in `bun.lock`.
 
@@ -240,11 +249,17 @@ Atlantic round trip on every query.
    | `production` | `master` only | `DATABASE_URL` (`main`, **direct**), `VERCEL_TOKEN` |
 
    `DATABASE_URL` here only runs migrations; the app's pooled URL is in Vercel.
-4. Labels: `full-tests` (runs `ci.yml` on the PR) and `real-providers` (previews use the
+4. Repository secret `NPM_TOKEN`: an npm automation token for the `askcalls` package, used by
+   `release.yml`. Without it a release skips the npm publish and says so. The workflow publishes
+   GHCR images with its own `GITHUB_TOKEN` (`packages: write`); make the package public under the
+   repository's Packages settings after the first release.
+5. Labels: `full-tests` (runs `ci.yml` on the PR) and `real-providers` (previews use the
    non-prod provider keys).
-5. Production approval: merging into `master` deploys nothing; production deploys when someone
+6. Production approval: merging into `master` deploys nothing; production deploys when someone
    runs **Actions → Deploy → Run workflow** on `master` (required reviewers and branch protection
    need a paid plan for private repos; with them, add reviewers to `production`).
+7. Security: turn on secret scanning and push protection (Settings → Code security), and
+   private vulnerability reporting, which [SECURITY.md](../SECURITY.md) points reporters to.
 
 ## Authentication (Auth.js v5)
 

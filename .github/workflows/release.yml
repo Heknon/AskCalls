@@ -1,0 +1,139 @@
+name: Release
+
+# A version tag (v1.2.3) publishes a release (spec 14.1), in one job:
+#   build → client asset hashes → npm (agent) → Docker image to GHCR (multi-arch only here) →
+#   offline bundles → GitHub release with every checksum in its notes.
+# `bun run release:dry-run` does the same locally without publishing anything.
+#
+# Tag a commit that is already on master and deployed: the full suite ran before production
+# (deploy.yml), so only the fast checks run here. NPM_TOKEN (repository secret) publishes the
+# agent; without it the npm step is skipped and the run says so.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+# A release that started finishes: a half-published version is worse than a late one.
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    env:
+      DIST: dist/release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Read the version
+        id: v
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not v<major>.<minor>.<patch>"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      # Builds the web app (with the model, like production) and checks it.
+      - name: Build the web app
+        run: bun run --cwd apps/web build
+      - uses: ./.github/actions/checks
+
+      - name: Hash the client assets
+        run: |
+          mkdir -p "$DIST/images"
+          bun scripts/release/client-hashes.ts --out "$DIST/client-assets.sha256"
+
+      - name: Build the agent
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          bun scripts/release/agent-package.ts --version "$VERSION"
+          (cd apps/agent/dist/npm && npm pack --pack-destination "$GITHUB_WORKSPACE/$DIST")
+          bun scripts/release/agent-binaries.ts --all --out "$DIST/agent"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish the agent to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::notice::NPM_TOKEN is not set (docs/deployment.md, GitHub); the agent was not published to npm."
+            exit 0
+          fi
+          npm publish "$DIST/askcalls-$VERSION.tgz" --provenance --access public
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push the image (amd64, arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: ASKCALLS_BUILD_ID=${{ github.sha }}
+          push: true
+          provenance: mode=max
+          tags: |
+            ${{ steps.v.outputs.image }}:${{ steps.v.outputs.version }}
+            ${{ steps.v.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.v.outputs.version }}
+            org.opencontainers.image.licenses=MIT
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The same build, from the layer cache, as one `docker load`-able tarball per architecture.
+      - name: Export the images for the offline bundles
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          IMAGE: ${{ steps.v.outputs.image }}
+          SHA: ${{ github.sha }}
+        run: |
+          for arch in amd64 arm64; do
+            docker buildx build -f docker/Dockerfile --platform "linux/$arch" \
+              --build-arg "ASKCALLS_BUILD_ID=$SHA" --cache-from type=gha \
+              -t "$IMAGE:$VERSION" \
+              --output "type=docker,dest=$DIST/images/askcalls-$VERSION-$arch.tar" .
+          done
+
+      - name: Assemble the offline bundles and release notes
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: bun scripts/release/assemble.ts --version "$VERSION" --dist "$DIST"
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          cd "$DIST"
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "AskCalls $VERSION" \
+            --notes-file release-notes.md \
+            askcalls-offline-"$VERSION"-*.tar.gz "askcalls-$VERSION.tgz" agent/askcalls-* \
+            client-assets.sha256 SHA256SUMS

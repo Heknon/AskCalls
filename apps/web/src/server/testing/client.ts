@@ -40,6 +40,8 @@ export function blobTransport(blobs: MemoryBlobStore) {
   };
 }
 
+export type BlobTransport = ReturnType<typeof blobTransport>;
+
 export interface ClientDevice {
   session: KeySession;
   ctx: ClientContext;
@@ -64,14 +66,15 @@ export interface ClientHarness {
  * typed API client dispatches in-process. Tests only.
  */
 export async function startClientHarness(
-  opts: Parameters<typeof startTestApp>[0] = {},
+  opts: Parameters<typeof startTestApp>[0] & { transport?: BlobTransport } = {},
 ): Promise<ClientHarness> {
-  const app = startTestApp(opts);
+  const { transport: blobs, ...appOpts } = opts;
+  const app = startTestApp(appOpts);
   const user = await app.ports.users.create({ email: 'owner@example.test' });
   const cookie = await sessionCookie(user.id);
   const embedder = new FakeEmbedder();
   const audio = new FakeAudioCodec();
-  const transport = blobTransport(app.ports.blobStore);
+  const transport = blobs ?? blobTransport(app.ports.blobStore);
 
   const device = (api: ReturnType<TestApp['client']>, extractable: boolean): ClientDevice => {
     const session = new KeySession({ idleTimeoutMs: 0 });
