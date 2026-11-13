@@ -41,8 +41,10 @@ export const InstanceConfigSchema = z.object({
       driver: z.enum(['postgres', 'pglite', 'memory']).default('postgres'),
       url: secret,
       pgliteDir: z.string().default('~/.askcalls/db'),
+      /** Apply pending migrations when the server starts (self-host). PGlite always does. */
+      migrateOnBoot: z.boolean().default(false),
     })
-    .default({ driver: 'postgres', pgliteDir: '~/.askcalls/db' }),
+    .default({ driver: 'postgres', pgliteDir: '~/.askcalls/db', migrateOnBoot: false }),
 
   blob: z
     .object({
@@ -168,6 +170,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['DB_DRIVER', 'db.driver', str],
   ['DATABASE_URL', 'db.url', str],
   ['PGLITE_DATA_DIR', 'db.pgliteDir', str],
+  ['DB_MIGRATE_ON_BOOT', 'db.migrateOnBoot', bool],
   ['BLOB_DRIVER', 'blob.driver', str],
   ['S3_ENDPOINT', 'blob.s3.endpoint', str],
   ['S3_REGION', 'blob.s3.region', str],

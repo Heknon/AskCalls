@@ -1,0 +1,13 @@
+{
+  "text": "שלום, מדבר דני מהמוסך. הרכב שלך מוכן, המחיר הוא 1,250 שקל. Great, thanks. Can I pick it up tomorrow at nine? כן, בטח. נתראה מחר.",
+  "usage": {
+    "type": "tokens",
+    "input_tokens": 214,
+    "input_token_details": {
+      "text_tokens": 0,
+      "audio_tokens": 214
+    },
+    "output_tokens": 61,
+    "total_tokens": 275
+  }
+}

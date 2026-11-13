@@ -14,7 +14,18 @@ const config: NextConfig = {
     '@askcalls/ui',
     '@askcalls/adapter-mocks',
     '@askcalls/adapter-runtime',
+    '@askcalls/adapter-blob-fs',
+    '@askcalls/adapter-blob-s3',
+    '@askcalls/adapter-transcription-elevenlabs',
+    '@askcalls/adapter-transcription-openai',
+    '@askcalls/adapter-transcription-deepgram',
+    '@askcalls/adapter-transcription-soniox',
+    '@askcalls/adapter-transcription-openai-compatible',
+    '@askcalls/adapter-llm-ai-sdk',
+    '@askcalls/adapter-db-postgres',
   ],
+  // Database drivers load native/WebAssembly assets at runtime: keep them out of the bundle.
+  serverExternalPackages: ['pg', '@electric-sql/pglite', '@electric-sql/pglite-pgvector'],
   // The CSP for /app/** and /admin/** is set per request by middleware (nonce for Next.js
   // bootstrap scripts).
   async headers() {
