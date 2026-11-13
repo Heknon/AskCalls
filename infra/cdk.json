@@ -1,0 +1,18 @@
+{
+  "app": "bun bin/askcalls.ts",
+  "context": {
+    "askcalls:region": "eu-central-1",
+    "askcalls:githubRepo": "Heknon/AskCalls",
+    "askcalls:buckets": {
+      "prod": "askcalls-prod",
+      "dev": "askcalls-dev"
+    },
+    "askcalls:modelsBucket": "askcalls-models",
+    "askcalls:appOrigins": {
+      "prod": ["https://askcalls.com"],
+      "dev": ["https://dev.askcalls.com", "https://askcalls-*.vercel.app", "http://localhost:3000"]
+    },
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "cli-telemetry": false
+  }
+}

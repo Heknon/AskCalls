@@ -6,8 +6,10 @@ name: Deploy
 #          reviewers need a paid GitHub plan on private repos). The production environment
 #          only accepts master.
 #
-# Order matters: migrations run before the code that needs them is live, so every migration
-# must be backward compatible with the version still serving (docs/deployment.md).
+# Order: AWS (CDK stacks, then the embedding model) → migrations → app. Migrations run before
+# the code that needs them is live, so every migration must be backward compatible with the
+# version still serving (docs/deployment.md). AWS goes first so a new bucket setting or model
+# build is in place before the code that relies on it.
 #
 # Before the one-time setup (docs/deployment.md) the secrets are empty: dev still runs the fast
 # checks, nothing is migrated or deployed, and the run says so.
@@ -45,12 +47,18 @@ jobs:
       !cancelled() && !failure()
       && (github.ref_name == 'dev' || github.ref_name == 'master')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # A first deploy creates the CloudFront distribution, which takes several minutes.
+    timeout-minutes: 40
     environment:
       name: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
       url: ${{ steps.app.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write # AWS OIDC (askcalls-github-deploy trusts only the dev and production environments)
     env:
       TARGET: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
+      # The infra/ name of the environment (AskCallsStorage-<env>, askcalls:buckets.<env>).
+      STACK_ENV: ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
       VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
     steps:
@@ -65,6 +73,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           DEV_DOMAIN: ${{ vars.DEV_DOMAIN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
         run: |
           if [ -z "$DATABASE_URL" ] || [ -z "$VERCEL_TOKEN" ]; then
             echo "::notice::The $TARGET environment is not set up yet (DATABASE_URL or VERCEL_TOKEN missing; docs/deployment.md, One-time setup). Nothing was migrated or deployed."
@@ -72,7 +82,7 @@ jobs:
             exit 0
           fi
           # The secrets are in, so a missing variable is a setup mistake, not a fresh repo.
-          required="VERCEL_ORG_ID VERCEL_PROJECT_ID"
+          required="VERCEL_ORG_ID VERCEL_PROJECT_ID AWS_REGION AWS_DEPLOY_ROLE_ARN"
           if [ "$TARGET" = dev ]; then required="$required DEV_DOMAIN"; fi
           missing=""
           for v in $required; do
@@ -83,6 +93,44 @@ jobs:
             exit 1
           fi
           echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.cfg.outputs.deploy == 'true'
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # AskCallsGithubDeploy (the roles this job assumes) is deployed by hand, never here.
+      - name: Deploy AWS infrastructure
+        if: steps.cfg.outputs.deploy == 'true'
+        working-directory: infra
+        run: |
+          stacks=("AskCallsStorage-$STACK_ENV")
+          # The model CDN is shared by every environment; production owns it.
+          if [ "$STACK_ENV" = prod ]; then stacks+=(AskCallsModels); fi
+          bunx cdk deploy "${stacks[@]}" --require-approval never --no-notices
+
+      # Idempotent: a few HEAD requests when the pinned build is already there. Runs on dev too,
+      # so a dev deploy that pins a new build never serves a model the CDN doesn't have.
+      - name: Publish the embedding model
+        if: steps.cfg.outputs.deploy == 'true'
+        run: |
+          url=$(aws cloudformation describe-stacks --stack-name AskCallsModels \
+            --query "Stacks[0].Outputs[?OutputKey=='ModelsUrl'].OutputValue" --output text 2>/dev/null || true)
+          if [ -z "$url" ] || [ "$url" = None ]; then
+            if [ "$STACK_ENV" = prod ]; then
+              echo "::error::Could not read AskCallsModels' ModelsUrl output right after deploying it"
+              exit 1
+            fi
+            echo "::notice::AskCallsModels is not deployed yet (the first production deploy creates it); the model was not published."
+            exit 0
+          fi
+          context() { jq -r ".context[\"askcalls:$1\"]$2" infra/cdk.json; }
+          MODELS_S3_BUCKET=$(context modelsBucket) \
+          MODELS_S3_REGION="$AWS_REGION" \
+          MODELS_PUBLIC_URL="$url" \
+          MODELS_CHECK_ORIGINS=$(context appOrigins ".${STACK_ENV}[0]") \
+            bun run models:publish
 
       - name: Apply database migrations
         if: steps.cfg.outputs.deploy == 'true'

@@ -7,7 +7,7 @@ export const generateMetadata = meta('subprocessors', '/subprocessors');
 const ROWS = [
   ['Vercel', 'vercel'],
   ['Neon', 'neon'],
-  ['Cloudflare R2', 'r2'],
+  ['Amazon Web Services', 'aws'],
   ['ElevenLabs', 'elevenlabs'],
   ['Anthropic', 'anthropic'],
 ] as const;
