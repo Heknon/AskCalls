@@ -8,6 +8,7 @@ import type {
   CallRepository,
   InboxRepository,
   KeyringRepository,
+  LocalCredentialRepository,
   RateLimiter,
   SearchIndex,
   UserDataStore,
@@ -26,6 +27,7 @@ export interface DatabasePorts {
   userData: UserDataStore;
   inbox: InboxRepository;
   apiTokens: ApiTokenRepository;
+  localCredentials: LocalCredentialRepository;
   audit: AuditLog;
   rateLimiter: RateLimiter;
   close(): Promise<void>;
@@ -67,6 +69,7 @@ export async function buildDatabase(config: InstanceConfig): Promise<DatabasePor
         userData: db.userDataStore,
         inbox: db.inboxRepo,
         apiTokens: db.tokenRepo,
+        localCredentials: db.localCredentialRepo,
         audit: db.auditLog,
         rateLimiter: new MemoryRateLimiter(),
         close: async () => {},

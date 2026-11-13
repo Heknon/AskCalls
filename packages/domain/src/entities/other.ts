@@ -88,6 +88,8 @@ export type AuditAction =
   | 'retention.update'
   | 'retention.purge'
   | 'account.delete'
+  | 'role.grant'
+  | 'instance.update'
   | 'ingest';
 
 export interface AuditEvent {

@@ -4,6 +4,7 @@ import type {
   CallRepository,
   InboxRepository,
   KeyringRepository,
+  LocalCredentialRepository,
   RateLimiter,
   SearchIndex,
   UserDataStore,
@@ -17,6 +18,7 @@ import { createAuditLog } from './repos/audit';
 import { createCallRepository } from './repos/calls';
 import { createInboxRepository } from './repos/inbox';
 import { createKeyringRepository } from './repos/keyring';
+import { createLocalCredentialRepository } from './repos/local-credentials';
 import { createRateLimiter } from './repos/rate-limiter';
 import { createSearchIndex } from './repos/search';
 import { createUserDataStore } from './repos/user-data';
@@ -35,6 +37,7 @@ export interface PostgresDatabase {
   userData: UserDataStore;
   inbox: InboxRepository;
   apiTokens: ApiTokenRepository;
+  localCredentials: LocalCredentialRepository;
   audit: AuditLog;
   rateLimiter: RateLimiter;
   /** Applies pending committed migrations. Idempotent and safe to run concurrently. */
@@ -52,6 +55,7 @@ export function buildPostgresDatabase(driver: Driver): PostgresDatabase {
     userData: createUserDataStore(driver),
     inbox: createInboxRepository(driver),
     apiTokens: createApiTokenRepository(driver),
+    localCredentials: createLocalCredentialRepository(driver),
     audit: createAuditLog(driver),
     rateLimiter: createRateLimiter(driver),
     migrate: () => runMigrations(driver),

@@ -1,5 +1,6 @@
 import { describeCallRepositoryContract } from '@askcalls/domain/contracts/call-repository';
 import { describeKeyringRepositoryContract } from '@askcalls/domain/contracts/keyring-repository';
+import { describeLocalCredentialRepositoryContract } from '@askcalls/domain/contracts/local-credentials';
 import { describeSearchIndexContract } from '@askcalls/domain/contracts/search-index';
 import {
   describeApiTokenRepositoryContract,
@@ -65,5 +66,6 @@ export function describePostgresContracts(name: string, open: () => Promise<Test
   describeInboxRepositoryContract(name, scoped('inbox'));
   describeApiTokenRepositoryContract(name, scoped('apiTokens'));
   describeAuditLogContract(name, scoped('audit'));
+  describeLocalCredentialRepositoryContract(name, scoped('localCredentials'));
   describeRateLimiterContract(name, { setup: async () => (await fresh()).db.rateLimiter });
 }

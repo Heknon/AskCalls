@@ -41,3 +41,18 @@ export interface VerificationToken {
   token: string;
   expires: Date;
 }
+
+/**
+ * A passkey for local-account sign-in (Auth.js WebAuthn). Not an unlock method: the keyring's
+ * passkeys wrap the root key; these only prove who is signing in. Binary fields are base64.
+ */
+export interface SignInPasskey {
+  credentialId: string;
+  userId: string;
+  providerAccountId: string;
+  publicKey: string;
+  counter: number;
+  deviceType: string;
+  backedUp: boolean;
+  transports: string | null;
+}
