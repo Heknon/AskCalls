@@ -13,6 +13,7 @@ import {
   type SecretStore,
   unlockWithDevice,
 } from '@askcalls/client-core';
+import { RecordingStores } from '@askcalls/client-core/recording-stores/router';
 import { fromUtf8, utf8 } from '@askcalls/crypto';
 import { isDomainError } from '@askcalls/domain';
 import { FfmpegAudioCodec } from './adapters/audio';
@@ -132,8 +133,8 @@ export interface UnlockedAgent extends AgentAccount {
 
 /**
  * Unlocks with the RK wrapped under the keychain's device secret (spec 6.5 step 5) and builds the
- * client context: Node adapters, and the transcriber chosen in Settings → Providers. The agent
- * never auto-locks (idle timeout 0); its keys live as long as the process.
+ * client context: Node adapters, and the transcriber and recording store chosen in Settings →
+ * Providers. The agent never auto-locks (idle timeout 0); its keys live as long as the process.
  */
 export async function unlockAgent(
   account: AgentAccount,
@@ -174,6 +175,13 @@ export async function unlockAgent(
   } catch {
     // A broken own-key LLM setting stores calls in their own language only.
   }
-  const ctx: ClientContext = { ...base, transcriber, translator };
+  // The user's own bucket or Google Drive, with the credentials the browser saved in the
+  // providers document; Drive access tokens come from the server's pass-through route.
+  const ownStores = new RecordingStores({
+    api: account.api,
+    providers: () => base.userData.get('providers'),
+    updateProviders: (mutate) => base.userData.update('providers', mutate),
+  });
+  const ctx: ClientContext = { ...base, transcriber, translator, ownStores };
   return { ...account, session, ctx };
 }

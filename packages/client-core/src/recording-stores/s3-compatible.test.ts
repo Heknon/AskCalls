@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { type BucketConfig, bucketTarget, SigV4BucketStore } from './own-bucket';
-import { readBody } from './transfer';
+import { readBody } from './http';
+import { type BucketConfig, bucketTarget, SigV4BucketStore } from './s3-compatible';
 
 const bucket = (over: Partial<BucketConfig> = {}): BucketConfig => ({
   id: 'b1',
@@ -42,9 +42,10 @@ describe('own bucket', () => {
         return new Response(null, { status: 200 });
       },
     });
-    await store.put('b1', 'askcalls/c/x', Uint8Array.of(1, 2, 3));
+    const { objectKey } = await store.put('b1', 'c', Uint8Array.of(1, 2, 3));
+    expect(objectKey).toMatch(/^askcalls\/c\/[0-9a-f-]{36}$/);
     const { url, init } = seen[0]!;
-    expect(url).toBe('https://acct.r2.cloudflarestorage.com/calls/askcalls/c/x');
+    expect(url).toBe(`https://acct.r2.cloudflarestorage.com/calls/${objectKey}`);
     const h = init.headers as Record<string, string>;
     expect(h['x-amz-content-sha256']).toBe(
       '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81',
@@ -64,12 +65,28 @@ describe('own bucket', () => {
           return new Response(null, { status });
         },
       });
-    expect(await store(200).probe(bucket())).toEqual({ ok: true });
-    expect(await store(403).probe(bucket())).toMatchObject({ ok: false, reason: 'unauthorized' });
-    expect(await store('throw').probe(bucket())).toEqual({
+    expect(await store(200).probe('b1')).toEqual({ ok: true });
+    expect(await store(403).probeBucket(bucket())).toMatchObject({
+      ok: false,
+      reason: 'unauthorized',
+    });
+    expect(await store('throw').probe('b1')).toEqual({
       ok: false,
       reason: 'cors_or_network',
     });
+  });
+
+  it('streams downloads and treats a missing object as deleted', async () => {
+    const store = new SigV4BucketStore(async () => bucket(), {
+      fetch: async (_url, init) =>
+        init?.method === 'DELETE'
+          ? new Response(null, { status: 404 })
+          : new Response(Uint8Array.of(7, 8, 9), { status: 200 }),
+    });
+    const parts: number[] = [];
+    for await (const p of store.get('b1', 'askcalls/c/x')) parts.push(...p);
+    expect(parts).toEqual([7, 8, 9]);
+    await expect(store.delete('b1', 'askcalls/c/x')).resolves.toBeUndefined();
   });
 
   it('reads streamed bodies with and without a length', async () => {
