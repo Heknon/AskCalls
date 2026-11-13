@@ -4,6 +4,7 @@ import { access, readFile } from 'node:fs/promises';
 import { delimiter, join } from 'node:path';
 import type { AudioCodec, AudioSource, DecodedAudio, EncodedAudio } from '@askcalls/client-core';
 import { DomainError } from '@askcalls/domain';
+import { ffmpegStaticPath } from './runtime';
 
 const SAMPLE_RATE = 16_000;
 
@@ -21,11 +22,11 @@ async function onPath(name: string): Promise<string | null> {
 }
 
 /** The system ffmpeg when one is on PATH, otherwise the binary bundled by ffmpeg-static. */
-export async function findFfmpeg(): Promise<string | null> {
+export async function findFfmpeg(runtimeDir: string): Promise<string | null> {
   const system = await onPath('ffmpeg');
   if (system) return system;
   try {
-    const bundled = (await import('ffmpeg-static')).default as unknown as string | null;
+    const bundled = await ffmpegStaticPath(runtimeDir, (line) => console.error(line));
     if (bundled) {
       await access(bundled, constants.X_OK);
       return bundled;
@@ -73,8 +74,8 @@ const pcmBytes = (pcm: Float32Array) => new Uint8Array(pcm.buffer, pcm.byteOffse
 export class FfmpegAudioCodec implements AudioCodec {
   constructor(private readonly ffmpeg: string) {}
 
-  static async create(): Promise<FfmpegAudioCodec | null> {
-    const path = await findFfmpeg();
+  static async create(runtimeDir: string): Promise<FfmpegAudioCodec | null> {
+    const path = await findFfmpeg(runtimeDir);
     return path ? new FfmpegAudioCodec(path) : null;
   }
 

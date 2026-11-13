@@ -131,11 +131,12 @@ export async function unlockAgent(
     throw e;
   }
   const blobs = deps.blobs ?? fetchBlobTransport();
-  const audio = deps.audio === undefined ? await FfmpegAudioCodec.create() : deps.audio;
+  const dirs = paths(account.dir);
+  const audio = deps.audio === undefined ? await FfmpegAudioCodec.create(dirs.runtime) : deps.audio;
   const base = createClientContext({
     api: account.api,
     session,
-    embedder: deps.embedder ?? new TransformersEmbedder(paths(account.dir).models),
+    embedder: deps.embedder ?? new TransformersEmbedder(dirs),
     ...(audio && { audio }),
     ...(deps.clock && { clock: deps.clock }),
     uploader: blobs,

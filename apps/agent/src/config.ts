@@ -19,8 +19,8 @@ export type AgentConfig = z.output<typeof AgentConfigSchema>;
 
 /**
  * The agent's data directory: `~/.askcalls`, or `ASKCALLS_HOME`. It holds `config.json`, the
- * bulk queue state, the embedding model cache and, only when no OS keychain exists, the
- * encrypted secrets file. Nothing in it is call content.
+ * bulk queue state, the embedding model cache, the runtime packages of the single binary and,
+ * only when no OS keychain exists, the encrypted secrets file. Nothing in it is call content.
  */
 export function dataDir(env: NodeJS.ProcessEnv = process.env): string {
   return env.ASKCALLS_HOME || join(homedir(), '.askcalls');
@@ -31,6 +31,7 @@ export const paths = (dir: string) => ({
   secrets: join(dir, 'secrets.enc'),
   bulkState: join(dir, 'ingest-queue.json'),
   models: join(dir, 'models'),
+  runtime: join(dir, 'runtime'),
 });
 
 export async function ensureDataDir(dir: string): Promise<void> {

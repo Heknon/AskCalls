@@ -1,5 +1,6 @@
 import type { Embedder } from '@askcalls/client-core';
 import { DomainError } from '@askcalls/domain';
+import { type FeatureExtractor, isCompiledBinary, workerExtractor } from './runtime';
 
 /** The model the web app embeds with (EMBEDDING_MODEL default), so vectors are comparable. */
 export const EMBEDDING_MODEL = 'Xenova/multilingual-e5-small';
@@ -7,35 +8,42 @@ export const EMBEDDING_MODEL = 'Xenova/multilingual-e5-small';
 /** Texts per forward pass; padding to the longest text makes large batches costly. */
 const BATCH = 16;
 
-type FeatureExtractor = (
-  texts: string[],
-  opts: { pooling: 'mean'; normalize: true },
-) => Promise<{ data: Float32Array; dims: number[] }>;
+const DTYPE = 'q8';
+
+async function inProcess(modelsDir: string): Promise<FeatureExtractor> {
+  const { env, pipeline } = await import('@huggingface/transformers');
+  env.cacheDir = modelsDir;
+  return (await pipeline('feature-extraction', EMBEDDING_MODEL, {
+    dtype: DTYPE,
+  })) as unknown as FeatureExtractor;
+}
 
 /**
- * multilingual-e5-small through @huggingface/transformers on onnxruntime-node. The model is
- * downloaded once into the agent's data directory and loaded on first use, so commands that
- * never embed (login, link) never pay for it.
+ * multilingual-e5-small through @huggingface/transformers on onnxruntime-node, in this process
+ * or, for the single binary, in a worker process. The model is downloaded once into the agent's
+ * data directory and loaded on first use, so commands that never embed never pay for it.
  */
 export class TransformersEmbedder implements Embedder {
   readonly modelId = EMBEDDING_MODEL;
   readonly dimensions = 384 as const;
   #extractor: Promise<FeatureExtractor> | null = null;
 
-  constructor(private readonly cacheDir: string) {}
+  constructor(private readonly dirs: { models: string; runtime: string }) {}
 
   #load(): Promise<FeatureExtractor> {
-    this.#extractor ??= import('@huggingface/transformers').then(
-      async ({ env, pipeline }) => {
-        env.cacheDir = this.cacheDir;
-        return (await pipeline('feature-extraction', EMBEDDING_MODEL, {
-          dtype: 'q8',
-        })) as unknown as FeatureExtractor;
-      },
-      () => {
-        throw new DomainError('unsupported', 'the embedding runtime could not be loaded');
-      },
-    );
+    this.#extractor ??= (
+      isCompiledBinary()
+        ? workerExtractor({
+            runtimeDir: this.dirs.runtime,
+            modelsDir: this.dirs.models,
+            model: EMBEDDING_MODEL,
+            dtype: DTYPE,
+            log: (line) => console.error(line),
+          })
+        : inProcess(this.dirs.models)
+    ).catch(() => {
+      throw new DomainError('unsupported', 'the embedding runtime could not be loaded');
+    });
     this.#extractor.catch(() => {
       this.#extractor = null;
     });
