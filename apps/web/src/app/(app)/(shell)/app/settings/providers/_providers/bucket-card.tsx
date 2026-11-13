@@ -69,6 +69,11 @@ export function BucketCard({
   const id = useId();
   const saved = value.mode === 'own' ? value.bucket : null;
   const [choice, setChoice] = useState<ProviderChoice>(value.mode);
+  const [savedMode, setSavedMode] = useState(value.mode);
+  if (savedMode !== value.mode) {
+    setSavedMode(value.mode);
+    setChoice(value.mode);
+  }
   const [draft, setDraft] = useState<Draft>(() =>
     saved ? { ...saved, secretAccessKey: '' } : EMPTY,
   );
