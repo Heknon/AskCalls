@@ -170,6 +170,9 @@ export function UnlockGate() {
               {t.rich('account', { email: () => <bdi>{me.user.email ?? me.user.name}</bdi> })}
             </GateAccount>
             <GateNote>
+              <Link href="/app/link">{t('linkBrowser')}</Link>
+            </GateNote>
+            <GateNote>
               {t.rich('lost', { link: (c) => <Link href="/security">{c}</Link> })}
             </GateNote>
           </>

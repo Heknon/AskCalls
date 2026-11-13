@@ -1,5 +1,6 @@
 import { ApiError } from '@askcalls/api-contract';
 import { uploadInbox } from '@askcalls/api-contract/routes/inbox';
+import { listKeyring } from '@askcalls/api-contract/routes/keyring';
 import {
   addUnlockMethod,
   applyAutoLockSetting,
@@ -389,6 +390,52 @@ describe('client-core end to end against the route handlers', () => {
     expect(r.status).toBe('done');
     const viaBrowser = await getCall(browser.ctx, (r as { callId: string }).callId);
     expect(viaBrowser.signature).toMatchObject({ status: 'valid', deviceLabel: 'askcalls agent' });
+  });
+
+  it('links a second browser: RK in the session only, then protected by a passphrase', async () => {
+    const other = h.browser();
+    const started = await startDeviceLink(browser.ctx);
+    const joiner = await DeviceLinkJoiner.join({
+      api: other.ctx.api,
+      code: started.code,
+      deviceLabel: 'Firefox on Linux',
+      deviceKeys: other.deviceKeys,
+    });
+    const status = await checkDeviceLink(browser.ctx.api, started);
+    if (status.state !== 'waiting_for_confirmation') throw new Error(status.state);
+    expect(status.fingerprint).toBe(joiner.fingerprint);
+    await confirmDeviceLink(browser.ctx, started, status.devicePublicKey);
+    const pollOpts = { session: other.session, deviceKeys: other.deviceKeys };
+    expect((await joiner.poll({ ...pollOpts, storage: { kind: 'session' } })).state).toBe(
+      'completed',
+    );
+    expect(other.session.isUnlocked).toBe(true);
+    expect(sortedIds(await searchCalls(other.ctx, { text: 'photovoltaic' }))).toEqual([ids.en]);
+
+    const passphrases = async () =>
+      (await other.ctx.api.request(listKeyring, {})).entries.filter(
+        (e) => e.kind === 'passphrase' && !e.revokedAt,
+      ).length;
+    const before = await passphrases();
+    const passphrase = 'a long passphrase for the second browser';
+    expect(
+      await addUnlockMethod(other.ctx, { method: 'passphrase', passphrase, label: 'Passphrase' }),
+    ).toEqual({ added: true });
+    expect(await passphrases()).toBe(before + 1);
+    const { devices } = await other.ctx.api.request(listKeyring, {});
+    expect(devices.map((d) => d.label)).toContain('Firefox on Linux');
+    other.session.lock();
+    await unlock(
+      { method: 'passphrase', passphrase },
+      {
+        api: other.ctx.api,
+        session: other.session,
+        userId: h.userId,
+        deviceKeys: other.deviceKeys,
+        registerDeviceLabel: 'Firefox on Linux',
+      },
+    );
+    expect(other.session.isUnlocked).toBe(true);
   });
 
   it('exports everything decrypted as a ZIP', async () => {

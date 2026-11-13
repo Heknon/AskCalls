@@ -135,7 +135,11 @@ export async function confirmDeviceLink(
 
 // ---- Joining device ------------------------------------------------------------------------
 
-/** How the joiner keeps RK once it has it. */
+/**
+ * How the joiner keeps RK once it has it. `session` keeps it only in the unlocked session, for
+ * a browser that then protects it with `addUnlockMethod` (a passkey, or a passphrase when the
+ * passkey has no PRF) without losing RK to a failed passkey prompt.
+ */
 export type JoinerStorage =
   | { kind: 'device-secret'; secrets: SecretStore }
   | {
@@ -143,7 +147,8 @@ export type JoinerStorage =
       authenticator: PasskeyAuthenticator;
       userName: string;
       label: string;
-    };
+    }
+  | { kind: 'session' };
 
 export type JoinerPoll =
   | { state: 'waiting_for_device' | 'waiting_for_confirmation' | 'expired' }
@@ -192,8 +197,8 @@ export class DeviceLinkJoiner {
   }
 
   /**
-   * Polls once. On `completed`, decrypts RK, stores it wrapped by the local secret (agent) or a
-   * new passkey (browser), saves the signing key and unlocks `session`.
+   * Polls once. On `completed`, decrypts RK, stores it as `storage` says (wrapped by the local
+   * secret, by a new passkey, or not at all), saves the signing key and unlocks `session`.
    */
   async poll(opts: {
     session: KeySession;
@@ -238,6 +243,7 @@ async function storeLinkedRootKey(
   rootKey: Uint8Array,
   storage: JoinerStorage,
 ): Promise<void> {
+  if (storage.kind === 'session') return;
   if (storage.kind === 'device-secret') {
     const deviceSecret = generateDeviceSecret();
     try {

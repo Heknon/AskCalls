@@ -253,8 +253,21 @@ Mock: [`unlock.html`](mocks/unlock.html).
 | `unlock.pass.wrong` | Wrong passphrase. Try again. | משפט סיסמה שגוי. כדאי לנסות שוב. |
 | `unlock.passkey.failed` | Couldn't unlock with this passkey. Try again or use your recovery code. | לא ניתן לפתוח עם מפתח הגישה הזה. אפשר לנסות שוב או להשתמש בקוד השחזור. |
 | `unlock.cta` | Unlock | פתיחה |
-| `unlock.busy` | Unlocking… | מבטל נעילה… |
+| `unlock.busy` | Unlocking… | פותח… |
 | `unlock.signOut.confirm` | Signing out also removes this device's saved keys. You'll need your passkey or recovery code to unlock again. | היציאה מוחקת גם את המפתחות השמורים במכשיר הזה. כדי לפתוח שוב יידרשו מפתח גישה או קוד שחזור. |
+| `unlock.linkBrowser` | Link this browser from another device | קישור הדפדפן הזה ממכשיר אחר |
+
+## G2 Link this browser `/app/link`
+
+Signed in, outside the unlock gate: a browser with no unlock method of its own joins with a link code from D1 (spec 6.5). Same `GateLayout` as G1, reached from G1's "Link this browser from another device" or by scanning D1's QR code, which opens `/app/link#<code>`. The page reads the code from the fragment (never sent to the server) and removes it from the address bar.
+
+1. **Enter:** "Link code" field (paste the code or the link) and Continue. A code for another account is refused before anything is sent.
+2. **Compare:** `FingerprintCode` with "Check that your other device shows the same 6 digits, then confirm there." and a "Waiting for confirmation…" spinner line; polls every 5 s.
+3. **Protect:** RK is in memory only. "Create passkey" (primary) adds a passkey unlock method; without PRF, or by choice, "Use a passphrase instead" sets one (or, if the account has a passphrase, unlock with it). Then `/app`.
+
+**States:** unreadable code, other account, expired ("This code expired. Create a new one on your other device." + Enter another code), already unlocked ("This browser is already unlocked." + Go to my calls).
+
+Keys: `unlock.join.*`.
 
 ---
 
@@ -726,7 +739,7 @@ Mock: [`settings-security.html`](mocks/settings-security.html).
 Mock: dialog in `settings-security.html`.
 
 **Steps (`Stepper`):** 1 Connect, 2 Compare, 3 Done.
-1. **Connect:** `DeviceLinkCode`: QR (local SVG) and short code (`K7P-4QX`), countdown "Expires in 9:41", instructions for both device kinds: "On the new browser, open askcalls.com/link and enter the code." / "On a computer, run askcalls link and enter the code." Waiting state shows a spinner line "Waiting for the new device…".
+1. **Connect:** `DeviceLinkCode`: QR (local SVG) and short code (`K7P-4QX`), countdown "Expires in 9:41", instructions for both device kinds: "In another browser, open <instance>/app/link and paste this code, or scan the QR code with the new device." (the QR holds `/app/link#<code>`, see G2) / "On a computer, run askcalls link and enter the code." Waiting state shows a spinner line "Waiting for the new device…".
 2. **Compare:** the new device's name and kind, `FingerprintCode` (6 digits, 40 px mono), warning callout, "They don't match" / "They match, link this device" (primary).
 3. **Done:** "{device} is linked." + Close; the device appears in the list; an audit event is written.
 
@@ -738,13 +751,13 @@ Mock: dialog in `settings-security.html`.
 | --- | --- | --- |
 | `link.title` | Link a device | קישור מכשיר |
 | `link.steps` | Connect · Compare · Done | חיבור · השוואה · סיום |
-| `link.browser` | On the new browser, open askcalls.com/link and enter the code. | בדפדפן החדש יש לפתוח את askcalls.com/link ולהזין את הקוד. |
+| `link.browser` | In another browser, open {url} and paste this code, or scan the QR code with the new device. | בדפדפן אחר יש לפתוח את {url} ולהדביק את הקוד הזה, או לסרוק את קוד ה-QR במכשיר החדש. |
 | `link.agent` | On a computer, run askcalls link and enter the code. | במחשב יש להריץ askcalls link ולהזין את הקוד. |
 | `link.expires` | Expires in {t} | בתוקף עוד {t} |
 | `link.waiting` | Waiting for the new device… | ממתין למכשיר החדש… |
 | `link.connected` | A new device connected: {device}, {os} | מכשיר חדש התחבר: {device}, {os} |
 | `link.question` | Does the new device show this code? | האם המכשיר החדש מציג את הקוד הזה? |
-| `link.agentHint` | In the terminal, askcalls link prints the same 6 digits. | בטרמינל, askcalls link מדפיס את אותן 6 ספרות. |
+| `link.agentHint` | The new device shows the same 6 digits: on the link page in a browser, or printed by askcalls link. | המכשיר החדש מציג את אותן 6 ספרות: בדף הקישור בדפדפן, או בפלט של askcalls link. |
 | `link.warning` | Only link a device you are holding. AskCalls never asks for this code. | יש לקשר רק מכשיר שנמצא בידיים שלך. AskCalls אף פעם לא מבקשת את הקוד הזה. |
 | `link.match` / `noMatch` | They match, link this device / They don't match | הקודים תואמים, לקשר את המכשיר / הקודים לא תואמים |
 | `link.done` | {device} is linked. | {device} קושר. |
