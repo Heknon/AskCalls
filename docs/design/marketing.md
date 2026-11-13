@@ -110,7 +110,7 @@ Under it, "Where plaintext does go, only when you ask" becomes a three-row table
 
 ### 2.8 Motion plan
 
-- CSS only for animation; JS only swaps demo strings and toggles the mock controls.
+- The decrypt wipe, row entrances, caret and diagram shimmer are CSS (a registered `--p` custom property animated with keyframes). In the mock, a few lines of JS type the query, swap the two demo queries and rescramble the ciphertext glyphs every 70 ms during the wipe; production can keep that or move typing to CSS `steps()`.
 - Hero: typing with `steps()`, scramble-to-text with a `clip-path` wipe over a mono ciphertext layer, 1.2 s, `cubic-bezier(.2,0,0,1)`.
 - On scroll: none in the mock. In production, section titles may fade up 12 px once, 400 ms, via `animation-timeline: view()` where supported, never on body text.
 - Privacy diagram: the ciphertext column has a slow, 8 s shimmer of one byte group at a time; static under reduced motion.
@@ -135,3 +135,52 @@ Under it, "Where plaintext does go, only when you ask" becomes a three-row table
 - "View the source on GitHub" becomes "Source on GitHub".
 - The framed browser demo with grey dots.
 - Copy: "For people whose work happens on the phone." stays as the use-case title; "Upload calls, find any of them in seconds, ask about the one you need." is replaced by the three lines in 2.6.
+
+## 3. Build notes and review
+
+### 3.1 Mocks
+
+| Mock | What it shows |
+| --- | --- |
+| [`home.html`](mocks/home.html) | Hero with the live encrypted search, three lines + call view crop, the boundary diagram with the exceptions table and the leak-test numeral, four typed searches, the agent screen, five limits, FAQ, closer, footer |
+| [`pricing.html`](mocks/pricing.html) | "Free during beta." hero, the six limits as a spec sheet with 112 px numerals, What counts, the at-limit statement with a full meter, a self-host band with `docker compose up`, three pricing questions |
+| [`security.html`](mocks/security.html) | "We can't read your calls." hero over the same boundary diagram, then a 760 px reading column with a sticky table of contents: stores / never sees, the three plaintext routes with provider retention terms, the key hierarchy as a diagram, unlock methods, device linking with the 6-digit fingerprint, verifying served assets, the leak test, threat model and reporting |
+
+Review convention as in the other mocks: toggles in the bottom corner, or `?theme=light|dark&lang=en|he&shot=1`. `home.html` also takes `&demo=mid` to freeze the hero mid-decrypt. Under `shot=1` and `prefers-reduced-motion` the demo renders its end state. The dark chapters (`.ink`) stay dark in both themes; the theme toggle changes the light chapters only.
+
+`pricing.html` and `security.html` reuse the home page's tokens, header, footer, FAQ and diagram CSS verbatim; if those change in `home.html`, copy them across.
+
+### 3.2 Screenshots
+
+`screenshots/<page>--<desktop|mobile>-<light|dark>-<en|he>.png` is the first viewport at 2×. `…-full.png` is the full page at 1×. `…-NN.png` are the following viewports while scrolling (desktop light English for all three pages, plus desktop dark Hebrew for home). `home--desktop-dark-en-decrypting.png` and `home--mobile-dark-he-decrypting.png` freeze the hero mid-decrypt. All PNGs are palette-quantised to stay under 500 KB.
+
+Unlike the R1 set, the `home--*.png` base files are now the first viewport, not the full page; the full page is the `-full` file. The index in `README.md` should say so when it is next edited.
+
+The ones that best show the direction:
+
+- `home--desktop-light-en.png`: the hero
+- `home--desktop-dark-en-decrypting.png`: the decrypt wipe in progress
+- `home--desktop-light-en-02.png`: the call view crop
+- `home--desktop-light-en-03.png`: the boundary diagram
+- `home--desktop-light-en-06.png`: the agent screen
+- `home--desktop-dark-he.png`: the hero in Hebrew
+- `home--mobile-light-en.png`, `home--mobile-dark-he-decrypting.png`: the phone hero
+- `pricing--desktop-light-en-01.png`: the limits sheet
+- `security--desktop-light-en-03.png`: the key hierarchy
+
+### 3.3 What the review passes changed
+
+Each pass was screenshotted and compared against the reference contact sheets.
+
+1. **First build.** Hebrew result rows aligned to the end of a 1000 px box and floated mid-row: snippets now align to the UI direction, as in the app. The privacy title ran to three lines at 48 px: cut to "Your device encrypts. Our server keeps only what it can't read." Diagram rows were 132 px and spilled past one viewport: 112 px, with a node on the line for each row so the eye reads across.
+2. **Phone.** The hidden `<br>` glued "callsanything." together; the H1 went from 52 to 64 px on a 390 px screen so it reads as a statement in three lines; status lines wrapped into four rows and now keep one ("decrypted on this device · 31 ms"); the diagram's line labels moved onto the horizontal line.
+3. **Pricing and security.** "The limits." under "Free during beta." said the same thing twice: removed, the sheet now starts under a one-line caption. The security hero left the right half of the screen empty: the lead moved to the end column under the headline.
+4. **Agent chapter.** Text-left / terminal-right looked like every developer-tool page. Rebuilt as one dark screen: the question at 34 px, the tool call in mono on hairlines, the answer at 21 px, setup commands in a side panel.
+5. **Hebrew hero.** "לשאול את השיחות" is wider than "Ask your calls" and collided with the subline. The subline block now sits beside the second line only, which works in both languages. Headings use `text-wrap: balance` so the Hebrew closer no longer leaves "דבר." alone on a line.
+6. **Decrypt frame.** The ciphertext layer spanned the full row while a Hebrew snippet in the English UI was shorter, so bytes showed next to text. The encrypted layer now hugs the text box.
+
+### 3.4 Open points
+
+- The waveform mark next to the wordmark is still a placeholder (README open question 3).
+- Spec 11.1 asks for a recorded Playwright video in the hero. Section 2.4 recommends the HTML demo instead; the owner should confirm.
+- The 9,400 call, the names, numbers and ciphertext are illustrative. The production diagram should be generated from a real seeded call by the leak-test fixture, so the bytes on the page are real bytes.

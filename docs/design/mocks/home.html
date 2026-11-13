@@ -103,8 +103,9 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 .r .num{font-family:var(--font-mono);font-size:13px;color:var(--faint);font-weight:400}
 .r .when{font-size:14px;color:var(--muted);text-align:end}
 .r .snip{grid-column:1/-1;font-size:25px;line-height:36px;letter-spacing:-.012em;max-width:1040px}
-.r .snip .pt{text-align:left}:root[dir=rtl] .r .snip .pt{text-align:right}
-.r .who .pt{text-align:left}:root[dir=rtl] .r .who .pt{text-align:right}
+.r .snip{text-align:left}:root[dir=rtl] .r .snip{text-align:right}
+.r .snip .enc,.r .who .enc{display:inline-block;max-width:100%;vertical-align:top}
+.enc .pt{text-align:start}
 .r .st{grid-column:1/-1;font-family:var(--font-mono);font-size:12px;color:var(--faint);display:flex;align-items:center;gap:8px}
 .r .st i{width:6px;height:6px;border-radius:50%;background:var(--primary);display:inline-block}
 .r .st .b{transition:opacity .3s}
@@ -116,7 +117,7 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 .enc[data-dir=rtl] .ct{clip-path:inset(-6px calc(var(--p) * 100%) -6px 0)}
 .enc::after{content:"";position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--primary);box-shadow:0 0 18px 2px rgba(59,191,174,.55);left:calc(var(--p) * 100%);opacity:calc(min(var(--p), 1 - var(--p)) * 30)}
 .enc[data-dir=rtl]::after{left:auto;right:calc(var(--p) * 100%)}
-.who .enc .ct{font-size:13px;line-height:inherit}
+.who .enc .ct{font-size:13px;line-height:inherit;white-space:nowrap;word-break:normal;display:flex;align-items:center}
 .r.go{animation:resolve 1.25s cubic-bezier(.55,0,.25,1) forwards}
 @keyframes resolve{to{--p:1}}
 .r.done{--p:1}
