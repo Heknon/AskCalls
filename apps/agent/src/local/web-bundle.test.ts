@@ -16,7 +16,8 @@ async function archive(dir: string): Promise<Uint8Array> {
   return gzipSync(await readFile(tar));
 }
 
-const serve = (bytes: Uint8Array) => (async () => new Response(bytes)) as unknown as typeof fetch;
+const serve = (bytes: Uint8Array) =>
+  (async () => new Response(new Blob([Uint8Array.from(bytes)]))) as unknown as typeof fetch;
 
 describe('web bundle download (single binary)', () => {
   it('installs only bytes with the pinned SHA-256', async () => {
