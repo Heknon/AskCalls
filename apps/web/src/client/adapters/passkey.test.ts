@@ -80,18 +80,22 @@ describe('WebAuthnPasskeyAuthenticator.create', () => {
 });
 
 describe('WebAuthnPasskeyAuthenticator.assert', () => {
-  it('sends stored transports and omits them when unknown', async () => {
+  it('sends stored transports and omits missing or malformed ones', async () => {
     const { c, calls } = container(
       null,
       credential({ prf: { results: { first: PRF.buffer.slice(0) } } }),
     );
     const auth = new WebAuthnPasskeyAuthenticator({ rpId: 'askcalls.test', credentials: c });
     const r = await auth.assert({
-      credentials: [{ id: 'AQID', transports: ['usb', 'nfc'] }, { id: 'BAUG' }],
+      credentials: [
+        { id: 'AQID', transports: ['usb', 'nfc'] },
+        { id: 'BAUG' },
+        { id: 'BwgJ', transports: 'usb' },
+      ],
       prfSalt: new Uint8Array(32),
     });
     expect(r.prfOutput).toEqual(PRF);
     const allowed = calls.get[0]?.publicKey?.allowCredentials ?? [];
-    expect(allowed.map((a) => a.transports)).toEqual([['usb', 'nfc'], undefined]);
+    expect(allowed.map((a) => a.transports)).toEqual([['usb', 'nfc'], undefined, undefined]);
   });
 });

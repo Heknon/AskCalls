@@ -30,6 +30,10 @@ function prfResult(cred: PublicKeyCredential): PrfResults | undefined {
   return (cred.getClientExtensionResults() as { prf?: PrfResults }).prf;
 }
 
+function isTransports(t: unknown): t is AuthenticatorTransport[] {
+  return Array.isArray(t) && t.length > 0 && t.every((x) => typeof x === 'string');
+}
+
 function transportsOf(cred: PublicKeyCredential): string[] {
   const response = cred.response as Partial<AuthenticatorAttestationResponse>;
   try {
@@ -174,7 +178,7 @@ export class WebAuthnPasskeyAuthenticator implements PasskeyAuthenticator {
             allowCredentials: opts.credentials.map((c) => ({
               type: 'public-key' as const,
               id: fromBase64Url(c.id),
-              ...(c.transports && { transports: c.transports as AuthenticatorTransport[] }),
+              ...(isTransports(c.transports) && { transports: c.transports }),
             })),
             userVerification: 'required',
             timeout: this.timeout,

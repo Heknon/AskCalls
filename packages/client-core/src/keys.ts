@@ -43,29 +43,11 @@ async function passkeyEntry(
 ): Promise<PendingEntry> {
   try {
     const e = await createPasskeyEntry({ userId, rootKey, prfOutput: created.prfOutput });
-    const transports = created.transports.length > 0 ? { transports: created.transports } : {};
-    return {
-      kind: 'passkey',
-      label,
-      credentialId: created.credentialId,
-      wrappedRootKey: e.wrappedRootKey,
-      kdfParams: { ...e.kdfParams, ...transports },
-    };
+    const kdfParams = { ...e.kdfParams, transports: created.transports };
+    return { kind: 'passkey', label, credentialId: created.credentialId, ...e, kdfParams };
   } finally {
     wipeBytes(created.prfOutput);
   }
-}
-
-/** The credential and its stored transports, for `allowCredentials`. */
-function credentialRef(entry: {
-  credentialId: string | null;
-  kdfParams: Record<string, unknown>;
-}): PasskeyCredentialRef | null {
-  if (entry.credentialId === null) return null;
-  const t = entry.kdfParams.transports;
-  const transports =
-    Array.isArray(t) && t.length > 0 && t.every((x) => typeof x === 'string') ? t : undefined;
-  return transports ? { id: entry.credentialId, transports } : { id: entry.credentialId };
 }
 
 /** Inbox key pair version written at onboarding. */
@@ -291,9 +273,10 @@ async function unwrapRootKey(
   if (active.length === 0) throw new DomainError('not_found', 'no such unlock method');
 
   if (input.method === 'passkey') {
-    const credentials = active
-      .map(credentialRef)
-      .filter((c): c is PasskeyCredentialRef => c !== null);
+    // The adapter checks `transports`: it is a hint the server hands back.
+    const credentials: PasskeyCredentialRef[] = active.flatMap((e) =>
+      e.credentialId === null ? [] : [{ id: e.credentialId, transports: e.kdfParams.transports }],
+    );
     const assertion = await input.authenticator.assert({ credentials, prfSalt: PRF_SALT });
     const entry = active.find((e) => e.credentialId === assertion.credentialId);
     if (!entry) throw new DomainError('not_found', 'passkey is not registered');

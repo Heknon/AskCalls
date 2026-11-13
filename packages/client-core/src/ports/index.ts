@@ -66,10 +66,14 @@ export interface DeviceKeyStore {
  */
 export type NoPrfReason = 'unsupported' | 'passwordManager';
 
-/** A registered credential and the transports it reported, sent back as `allowCredentials`. */
+/**
+ * A registered credential and the transports it reported, sent back as `allowCredentials`.
+ * `transports` comes back from the server as stored; the authenticator uses it only when it is
+ * a non-empty array of strings.
+ */
 export interface PasskeyCredentialRef {
   id: string;
-  transports?: string[];
+  transports?: unknown;
 }
 
 /** WebAuthn with the PRF extension (browser only). The PRF salt is `PRF_SALT` from crypto. */
