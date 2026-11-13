@@ -23,4 +23,14 @@ export interface BlobStore extends HealthCheckable {
     opts: { expiresInSec: number; contentLength?: number; contentType?: string },
   ): Promise<PresignedRequest>;
   presignGet(key: string, opts: { expiresInSec: number }): Promise<PresignedRequest>;
+  /**
+   * Stores without a presigner of their own (local disk) presign URLs to `/api/blob/<key>` and
+   * check them here. S3-compatible stores leave it out: their URLs never reach our server.
+   */
+  verifyPresigned?(req: {
+    method: string;
+    blobKey: string;
+    query: URLSearchParams;
+    contentLength?: number | null;
+  }): Promise<{ ok: true } | { ok: false; reason: string }>;
 }
