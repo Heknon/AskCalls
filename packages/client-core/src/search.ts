@@ -1,6 +1,6 @@
 import { search as searchRoute } from '@askcalls/api-contract/routes/search';
 import { token, tokenSet } from '@askcalls/crypto';
-import { type CallMeta, type DurationBucket, dayFromDate } from '@askcalls/domain';
+import { type CallMeta, type DurationBucket, dayFromDate, type Transcript } from '@askcalls/domain';
 import {
   buildSynonymLookup,
   DEFAULT_PHONE_REGION,
@@ -50,6 +50,15 @@ export interface SearchResultItem {
   starred: boolean;
   hasRecording: boolean;
   snippet: string | null;
+  /**
+   * Language of the snippet: the chunk that matched best, from the original or a translation.
+   * Null when there is no snippet or the chunk predates translations.
+   */
+  snippetLang: string | null;
+  /** True when the snippet comes from a translation rather than the original. */
+  snippetTranslated: boolean;
+  /** The matched chunk's ord, for `locateChunk` in the call view. */
+  snippetOrd: number | null;
   /** Ranges in `snippet` (UTF-16 offsets) whose word matches a searched form. */
   highlights: HighlightRange[];
   score: number | null;
@@ -64,6 +73,50 @@ export interface SearchResponse {
   ignored: string[];
   /** Every word form searched, for highlighting the same words in a decrypted transcript. */
   forms: string[];
+}
+
+export interface TranscriptPassage {
+  /** The original's language or the translation's. */
+  lang: string | null;
+  translated: boolean;
+  segment: number;
+  text: string;
+  hits: string[];
+}
+
+/**
+ * The first segment whose words match `forms`, looking in the original and then in each
+ * translation, so a keyword result shows the language that matched.
+ */
+export function findPassage(
+  transcript: Transcript,
+  language: string | null,
+  forms: ReadonlySet<string>,
+): TranscriptPassage | null {
+  const versions: Array<{
+    lang: string | null;
+    translated: boolean;
+    segments: Transcript['segments'];
+  }> = [{ lang: language, translated: false, segments: transcript.segments }];
+  for (const [lang, t] of Object.entries(transcript.translations ?? {}).sort()) {
+    versions.push({ lang, translated: true, segments: t.segments });
+  }
+  for (const v of versions) {
+    for (let i = 0; i < v.segments.length; i++) {
+      const text = v.segments[i]!.text;
+      const ranges = highlightRanges(text, forms);
+      if (ranges.length) {
+        return {
+          lang: v.lang,
+          translated: v.translated,
+          segment: i,
+          text,
+          hits: ranges.map((r) => text.slice(r.start, r.end)),
+        };
+      }
+    }
+  }
+  return null;
 }
 
 /** `POST /api/search` accepts at most 32 terms. */
@@ -190,6 +243,10 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
         starred: hit.starred ?? directory.isStarred(hit.tagToks),
         hasRecording: hit.hasRecording,
         snippet,
+        snippetLang: snippet ? hit.bestChunkLang : null,
+        snippetOrd: snippet ? hit.bestChunkOrd : null,
+        snippetTranslated:
+          snippet !== null && hit.bestChunkLang !== null && hit.bestChunkLang !== meta.language,
         highlights: snippet ? highlightRanges(snippet, formSet) : [],
         score: hit.score,
       };

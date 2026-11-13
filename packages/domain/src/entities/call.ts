@@ -65,11 +65,29 @@ export interface CallSummary {
 export interface CallChunk {
   callId: CallId;
   userId: UserId;
+  /** Unique across the call's languages: the original's chunks first, then each translation's. */
   ord: number;
+  /**
+   * ISO 639-1 of the text this chunk was cut from: the original's language or a translation's.
+   * Null for chunks stored before translations existed.
+   */
+  lang: string | null;
   /** 384-dimension embedding of redacted text. */
   embedding: Float32Array;
   /** Redacted snippet encrypted with the call's DEK, AAD `userId‖callId‖snippet:<ord>`. */
   snippetCt: Bytes;
+}
+
+/**
+ * A re-index (translation backfill, synonym changes): everything the device derives from the
+ * transcript, replaced in one step. `contentTok`, tags and the recording stay as they are.
+ */
+export interface CallContentReplacement {
+  transcriptCt: Bytes;
+  /** Carries the device's new signature over the new transcript plaintext. */
+  metaCt: Bytes;
+  keywordToks: Token[];
+  chunks: Omit<CallChunk, 'userId' | 'callId'>[];
 }
 
 export interface CallListFilter {

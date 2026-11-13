@@ -6,10 +6,40 @@ export interface TranscriptSegment {
   text: string;
 }
 
+/** An ISO 639-1 code: the language of a transcript or of one of its translations. */
+export type TranslationLanguage = string;
+
+/**
+ * Most translations one call gets: each is a text to index, embed and store. Kept here, not with
+ * the language helpers, so the settings schema can use it without loading them.
+ */
+export const MAX_TRANSLATIONS_PER_CALL = 4;
+
+export const isTranslationLanguage = (v: string): v is TranslationLanguage => /^[a-z]{2}$/.test(v);
+
+/**
+ * A machine translation of the whole transcript, aligned with the original: the same number of
+ * segments with the same start, end and speaker, only `text` translated.
+ */
+export interface TranscriptTranslation {
+  segments: TranscriptSegment[];
+  text: string;
+  /** LlmProvider id and model that translated it. */
+  provider: string;
+  model: string;
+  /** ISO timestamp. */
+  createdAt: string;
+}
+
 /** Plaintext held in `transcriptCt` (spec 5). Only ever exists on a device or in transit to a provider. */
 export interface Transcript {
   segments: TranscriptSegment[];
   text: string;
+  /**
+   * Machine translations keyed by ISO 639-1, made by the user's translation rules; never the
+   * original's own language.
+   */
+  translations?: Record<TranslationLanguage, TranscriptTranslation>;
 }
 
 export type CallDirection = 'in' | 'out' | 'unknown';
@@ -25,7 +55,13 @@ export interface CallMeta {
   title: string | null;
   notes: string | null;
   sourceFileName: string | null;
+  /** ISO 639-1 code of the original transcript (`normalizeLanguage`), or null when unknown. */
   language: string | null;
   signature: { deviceKeyId: string; signature: string } | null;
   segmentsFormat: string | null;
+  /**
+   * Languages `transcriptCt` holds translations for, so the calls list can tell which calls
+   * still need one without decrypting transcripts. Absent on calls stored before translations.
+   */
+  translatedTo?: TranslationLanguage[];
 }

@@ -4,6 +4,7 @@ import {
   type DurationBucket,
   durationBucket,
   type Transcript,
+  type TranscriptSegment,
 } from '@askcalls/domain';
 import { type ChunkOptions, chunkSegments, makeSnippet } from './chunk';
 import { EMBEDDING_PASSAGE_PREFIX } from './constants';
@@ -14,7 +15,7 @@ import {
   type IntentMatch,
   type IntentPrototype,
 } from './intents';
-import { extractKeywords, MAX_KEYWORDS_PER_CALL } from './keywords';
+import { extractKeywords, type KeywordExtraction, MAX_KEYWORDS_PER_TEXT } from './keywords';
 import { tokenize } from './normalize';
 import { type CountryCode, DEFAULT_PHONE_REGION, parsePhone } from './phone';
 import { createRedactor, REDACTION_KINDS, type RedactionKind } from './redact';
@@ -38,7 +39,10 @@ export interface CallMetaInput {
 }
 
 export interface AnalyzeCallInput {
+  /** With `translations`, each is indexed too: keywords, chunks and rules see every language. */
   transcript: Transcript;
+  /** ISO 639-1 of the original, recorded on its chunks. */
+  language?: string | null;
   meta?: CallMetaInput;
   contacts?: readonly Contact[];
   /** Entries from `UserData:synonyms`, or a lookup built once with `buildSynonymLookup`. */
@@ -46,6 +50,7 @@ export interface AnalyzeCallInput {
   stopwords?: StopwordSet;
   /** Phone region for numbers without a country code (default IL). */
   region?: CountryCode;
+  /** Per text: the original and each translation are capped separately. */
   keywordCap?: number;
   chunking?: ChunkOptions;
 }
@@ -61,7 +66,12 @@ export interface IndexCallInput extends AnalyzeCallInput {
 }
 
 export interface PreparedChunk {
+  /** Unique across languages: the original's chunks first, then each translation's. */
   ord: number;
+  /** The original's language, or the translation's. */
+  lang: string | null;
+  /** True for chunks of a translation. */
+  translated: boolean;
   /** Redacted chunk text. */
   text: string;
   /** `passage: ` + redacted text: what gets embedded. */
@@ -78,13 +88,14 @@ export interface IndexedChunk extends PreparedChunk {
 
 /** Everything indexing derives without embeddings. */
 export interface AnalyzedCall {
-  /** Normal forms to hash with kind `w` (≤ 5,000). */
+  /** Normal forms to hash with kind `w`: ≤ 5,000 per text, the original's first. */
   keywords: string[];
   /** All forms with occurrence counts, before the cap (rules use these). */
   keywordCounts: Map<string, number>;
   /** Counts of the kept keywords: the call's vocabulary delta. */
   vocabularyDelta: Vocabulary;
   keywordsCapped: boolean;
+  /** Words in the original. */
   wordCount: number;
   /** E.164 to hash with kind `c`, or null. */
   contactE164: string | null;
@@ -120,6 +131,49 @@ function lookupOf(synonyms: AnalyzeCallInput['synonyms']): SynonymLookup | undef
     : buildSynonymLookup(synonyms as readonly SynonymEntry[]);
 }
 
+interface IndexedText {
+  lang: string | null;
+  translated: boolean;
+  text: string;
+  segments: readonly TranscriptSegment[];
+}
+
+/** The original, then each translation in code order, so ords are stable across devices. */
+export function indexedTexts(transcript: Transcript, language: string | null): IndexedText[] {
+  const out: IndexedText[] = [
+    { lang: language, translated: false, text: transcript.text, segments: transcript.segments },
+  ];
+  for (const lang of Object.keys(transcript.translations ?? {}).sort()) {
+    const t = transcript.translations![lang]!;
+    out.push({ lang, translated: true, text: t.text, segments: t.segments });
+  }
+  return out;
+}
+
+/**
+ * One call's keywords from several texts: the original's kept forms first, then each
+ * translation's new ones. Counts add up across texts.
+ */
+function mergeExtractions(list: KeywordExtraction[]): KeywordExtraction {
+  const counts = new Map<string, number>();
+  const keywords: string[] = [];
+  const kept = new Set<string>();
+  for (const e of list) {
+    for (const [form, n] of e.counts) counts.set(form, (counts.get(form) ?? 0) + n);
+    for (const k of e.keywords) {
+      if (kept.has(k)) continue;
+      kept.add(k);
+      keywords.push(k);
+    }
+  }
+  return {
+    keywords,
+    counts,
+    wordCount: list.reduce((n, e) => n + e.wordCount, 0),
+    capped: list.some((e) => e.capped),
+  };
+}
+
 /** E.164 numbers of a contact list. */
 export function contactPhoneSet(contacts: readonly Contact[], region: CountryCode): Set<string> {
   const set = new Set<string>();
@@ -140,10 +194,10 @@ export function analyzeCall(input: AnalyzeCallInput): AnalyzedCall {
   const contacts = input.contacts ?? [];
   const formOpts = { synonyms: lookupOf(input.synonyms), stopwords: input.stopwords };
 
-  const extraction = extractKeywords(transcript.text, {
-    ...formOpts,
-    cap: input.keywordCap ?? MAX_KEYWORDS_PER_CALL,
-  });
+  const cap = input.keywordCap ?? MAX_KEYWORDS_PER_TEXT;
+  const texts = indexedTexts(transcript, input.language ?? null);
+  const extractions = texts.map((t) => extractKeywords(t.text, { ...formOpts, cap }));
+  const extraction = mergeExtractions(extractions);
   const vocabularyDelta: Vocabulary = new Map();
   for (const k of extraction.keywords) vocabularyDelta.set(k, extraction.counts.get(k)!);
 
@@ -168,28 +222,34 @@ export function analyzeCall(input: AnalyzeCallInput): AnalyzedCall {
     RedactionKind,
     number
   >;
-  const redactedSegments = transcript.segments.map((s) => {
-    const r = redactor.redact(s.text);
-    for (const k of REDACTION_KINDS) redactionCounts[k] += r.counts[k];
-    return { start: s.start, end: s.end, text: r.text };
-  });
-  const chunks = chunkSegments(redactedSegments, input.chunking).map(
-    (c): PreparedChunk => ({
-      ord: c.ord,
-      text: c.text,
-      embedText: EMBEDDING_PASSAGE_PREFIX + c.text,
-      snippet: makeSnippet(c.text),
-      startSec: c.startSec,
-      endSec: c.endSec,
-    }),
-  );
+  const chunks: PreparedChunk[] = [];
+  for (const t of texts) {
+    const redactedSegments = t.segments.map((s) => {
+      const r = redactor.redact(s.text);
+      for (const k of REDACTION_KINDS) redactionCounts[k] += r.counts[k];
+      return { start: s.start, end: s.end, text: r.text };
+    });
+    const base = chunks.length;
+    for (const c of chunkSegments(redactedSegments, input.chunking)) {
+      chunks.push({
+        ord: base + c.ord,
+        lang: t.lang,
+        translated: t.translated,
+        text: c.text,
+        embedText: EMBEDDING_PASSAGE_PREFIX + c.text,
+        snippet: makeSnippet(c.text),
+        startSec: c.startSec,
+        endSec: c.endSec,
+      });
+    }
+  }
 
   return {
     keywords: extraction.keywords,
     keywordCounts: extraction.counts,
     vocabularyDelta,
     keywordsCapped: extraction.capped,
-    wordCount: extraction.wordCount,
+    wordCount: extractions[0]!.wordCount,
     contactE164,
     contactName: matchedContact?.name ?? meta.contactName ?? null,
     direction: meta.direction ?? 'unknown',
@@ -236,7 +296,7 @@ export async function indexCall(input: IndexCallInput): Promise<IndexedCall> {
       contactPhones: contactPhoneSet(input.contacts ?? [], region),
       durationBucket: analyzed.durationBucket,
       direction: analyzed.direction,
-      texts: input.transcript.segments.map((s) => s.text),
+      texts: indexedTexts(input.transcript, null).flatMap((t) => t.segments.map((s) => s.text)),
     },
     { synonyms, stopwords: input.stopwords, region },
   );

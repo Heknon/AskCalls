@@ -3,6 +3,7 @@ export {
   FixedClock,
   MemoryBlobStore,
   MemoryRateLimiter,
+  MOCK_DICTIONARY,
   MockLlmProvider,
   MockTranscriptionProvider,
   RecordingTelemetry,

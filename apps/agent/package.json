@@ -18,6 +18,7 @@
     "build:binary": "bun ../../scripts/build-agent-binary.ts"
   },
   "dependencies": {
+    "@askcalls/adapter-llm-ai-sdk": "workspace:*",
     "@askcalls/adapter-transcription-deepgram": "workspace:*",
     "@askcalls/adapter-transcription-elevenlabs": "workspace:*",
     "@askcalls/adapter-transcription-openai": "workspace:*",

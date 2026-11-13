@@ -23,6 +23,7 @@ AskCalls is a web app, an API, and a local agent around one rule: plaintext and 
 3. **Store**: the API receives ciphertext, tokens, the day number, a duration bucket and vectors, and stores them under the user's id. Recordings go straight from the device to the bucket with a presigned URL.
 4. **Search**: the device turns the query into tokens (with fuzzy and Hebrew-prefix variants from the encrypted vocabulary), sends them with the date range, tags and an embedded query vector; the Postgres adapter answers in one SQL query; the device decrypts the results.
 5. **Ask**: the device decrypts one call and, with the user's consent, sends it and the question through `POST /api/ask` (or directly to the user's own provider), wrapped as untrusted data.
+6. **Translate**: at ingest, after transcription and before indexing, the device detects the call's language and applies the user's translation rules (`UserData:providers`, `from → to[]`): each target language is translated segment by segment through `POST /api/translate` (or the user's own LLM), aligned with the original and stored inside `transcriptCt`. Keywords (5,000 per language), chunks and embeddings cover every language; `PUT /api/calls/:id/content` re-indexes an existing call in one transaction when the rules or synonyms change.
 
 ## Repository
 
@@ -88,7 +89,7 @@ Each area's routes are declared once in `packages/api-contract/src/routes/<area>
 - maps `DomainError` codes to HTTP statuses with content-free messages;
 - sets `Cache-Control: no-store`.
 
-Use cases in `packages/domain/src/use-cases` take an `Actor` (the user from the session or token, never from input), scope every query by `userId`, and write content-free audit events for call reads and writes. The routes that carry plaintext (`/api/transcribe`, `/api/ask`, `/api/inbox`) stream to the provider or encrypt at once and never store or log bodies.
+Use cases in `packages/domain/src/use-cases` take an `Actor` (the user from the session or token, never from input), scope every query by `userId`, and write content-free audit events for call reads and writes. The routes that carry plaintext (`/api/transcribe`, `/api/ask`, `/api/translate`, `/api/inbox`) stream to the provider or encrypt at once and never store or log bodies.
 
 The remote MCP endpoint (`/api/mcp`) holds no keys: it offers inbox upload and ciphertext-free listings. The full MCP server is the agent, which holds a linked device's keys and decrypts locally.
 

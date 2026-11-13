@@ -17,7 +17,14 @@ import {
 const CallIdParam = z.object({ id: z.string().min(1).max(64) });
 
 export const ChunkIn = z.object({
+  /** Unique across languages: the original's chunks, then each translation's. */
   ord: z.number().int().min(0).max(100_000),
+  /** ISO 639-1 of the chunk's text. Optional for clients that predate translations. */
+  lang: z
+    .string()
+    .regex(/^[a-z]{2}$/)
+    .nullable()
+    .optional(),
   embedding: EmbeddingCodec,
   snippetCt: BytesMax(4_096),
 });
@@ -32,7 +39,7 @@ export const CreateCallBody = z.object({
   transcriptCt: BytesMax(3 * 1024 * 1024),
   metaCt: BytesMax(64 * 1024),
   contactTok: TokCodec.nullable(),
-  keywordToks: z.array(TokCodec).max(5_000),
+  keywordToks: z.array(TokCodec).max(25_000),
   tagToks: z.array(TokCodec).max(256),
   audioTok: TokCodec.nullable(),
   contentTok: TokCodec,

@@ -1,4 +1,4 @@
-import type { TranscriptSegment } from '../entities/transcript';
+import type { TranscriptSegment, TranslationLanguage } from '../entities/transcript';
 import type { HealthCheckable } from './health';
 
 export interface TranscriptionCapabilities {
@@ -51,11 +51,25 @@ export interface LlmAskRequest {
   signal?: AbortSignal;
 }
 
+export interface LlmTranslateRequest {
+  /** Segment texts of one call, in order. */
+  segments: string[];
+  /** ISO 639-1 of the original, or null when unknown. */
+  source: string | null;
+  target: TranslationLanguage;
+  signal?: AbortSignal;
+}
+
 export interface LlmProvider extends HealthCheckable {
   readonly id: string;
   readonly model: string;
   /** Streams answer text chunks. */
   ask(req: LlmAskRequest): AsyncIterable<string>;
+  /**
+   * Exactly one translated string per input segment, in order. Adapters build on
+   * `translateAligned` (TRANSLATE_SYSTEM_PROMPT, transcript wrapped as untrusted data).
+   */
+  translate(req: LlmTranslateRequest): Promise<string[]>;
 }
 
 /** System prompt shared by every LlmProvider adapter (spec rule 2.6). */

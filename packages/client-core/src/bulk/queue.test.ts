@@ -67,6 +67,7 @@ const done = (callId: string): IngestResult => ({
   callId,
   recording: 'none',
   vocabulary: 'updated',
+  translation: 'done',
 });
 
 describe('Semaphore', () => {

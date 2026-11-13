@@ -112,6 +112,13 @@ export default async function SecurityPage() {
               </div>
             </div>
             <div className="route">
+              <span className="n">{p('translation')}</span>
+              <div>
+                <Path parts={[p('device'), 'AskCalls', 'Anthropic']} />
+                <p>{p('translationBody')}</p>
+              </div>
+            </div>
+            <div className="route">
               <span className="n">{p('inbox')}</span>
               <div>
                 <Path parts={[p('remoteTool'), 'AskCalls', p('sealed')]} />

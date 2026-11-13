@@ -17,6 +17,24 @@ export function transcriptionFlow(providers: Providers, me: Me): TranscriptionFl
   return { route: 'off', provider: null };
 }
 
+/**
+ * Where a transcript goes to be translated at upload (it follows the Ask provider), as the upload
+ * screen states it: there is no prompt per call.
+ */
+export type TranslationFlow =
+  | { route: 'managed' | 'direct'; provider: string }
+  | { route: 'off'; provider: null };
+
+export function translationFlow(providers: Providers, me: Me): TranslationFlow {
+  const { llm, translation } = providers;
+  if (translation.rules.length === 0 || llm.mode === 'off') return { route: 'off', provider: null };
+  if (llm.mode === 'own') return { route: 'direct', provider: llm.key.provider };
+  if (me.features.translation.enabled) {
+    return { route: 'managed', provider: me.features.llm.provider ?? 'managed' };
+  }
+  return { route: 'off', provider: null };
+}
+
 /** Managed minutes left this month; own keys are not counted. */
 export function minutesLeft(me: Me, flow: TranscriptionFlow): number | null {
   if (flow.route !== 'managed') return null;

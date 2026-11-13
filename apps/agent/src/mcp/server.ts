@@ -107,7 +107,12 @@ function parseDate(v: string | undefined, end = false): Date | undefined {
 
 function ingestOutcome(r: IngestResult) {
   if (r.status === 'done') {
-    return { status: 'done', call_id: r.callId, recording: r.recording };
+    return {
+      status: 'done',
+      call_id: r.callId,
+      recording: r.recording,
+      translation: r.translation,
+    };
   }
   if (r.status === 'duplicate') {
     return { status: 'duplicate', existing_call_id: r.existingId, matched_by: r.match };
@@ -248,6 +253,12 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
         signature,
         decrypt_budget_left: opts.decryptBudget - decrypted,
         transcript: untrusted(toTxt(call.transcript)),
+        translations: Object.fromEntries(
+          Object.entries(call.transcript.translations ?? {}).map(([lang, t]) => [
+            lang,
+            untrusted(toTxt(t)),
+          ]),
+        ),
       });
     }),
   );

@@ -5,9 +5,12 @@ import { EMBEDDING_DIMENSIONS } from '../entities/search';
 import type { Ports } from '../ports-bundle';
 import { type Actor, audit, blobKeys, HOUR_MS } from './context';
 
-/** Caps that keep one request bounded. Spec 7.5 caps keyword tokens at 5,000 per call. */
+/**
+ * Caps that keep one request bounded. Spec 7.5 caps keyword tokens at 5,000 per text; a call is
+ * indexed from its original and up to four translations, so 25,000 per call.
+ */
 export const CALL_LIMITS = {
-  keywordToks: 5_000,
+  keywordToks: 25_000,
   tagToks: 256,
   chunks: 2_000,
   wrappedDekBytes: 256,
@@ -18,9 +21,13 @@ export const CALL_LIMITS = {
 
 export interface NewChunkInput {
   ord: number;
+  /** ISO 639-1 of the chunk's text; absent or null from clients that predate translations. */
+  lang?: string | null;
   embedding: Float32Array;
   snippetCt: Bytes;
 }
+
+const LANG = /^[a-z]{2}$/;
 
 export interface CreateCallInput {
   /** Client-chosen UUIDv7: the AAD of every ciphertext binds it, so the client picks it. */
@@ -53,6 +60,9 @@ function validateChunks(chunks: NewChunkInput[]): void {
       throw new DomainError('invalid', 'chunk ord must be unique non-negative integers');
     }
     seen.add(c.ord);
+    if (c.lang != null && !LANG.test(c.lang)) {
+      throw new DomainError('invalid', 'chunk lang must be an ISO 639-1 code');
+    }
     if (c.embedding.length !== EMBEDDING_DIMENSIONS) {
       throw new DomainError('invalid', 'embedding must have 384 dimensions');
     }
@@ -131,7 +141,7 @@ export async function createCall(
   }
   if (input.chunks.length) {
     try {
-      await ports.search.upsertChunks(userId, input.id, input.chunks);
+      await ports.search.upsertChunks(userId, input.id, input.chunks.map(chunkRow));
     } catch (e) {
       await ports.calls.delete(userId, input.id);
       throw e;
@@ -139,6 +149,59 @@ export async function createCall(
   }
   await audit(ports, actor, userId, 'call.create', input.id, { chunks: input.chunks.length });
   return { id: input.id };
+}
+
+const chunkRow = (c: NewChunkInput) => ({
+  ord: c.ord,
+  lang: c.lang ?? null,
+  embedding: c.embedding,
+  snippetCt: c.snippetCt,
+});
+
+export interface ReplaceCallContentInput {
+  transcriptCt: Bytes;
+  metaCt: Bytes;
+  keywordToks: Token[];
+  chunks: NewChunkInput[];
+  /** The `updatedAt` the device read before re-indexing. */
+  expectedUpdatedAt: Date;
+}
+
+/**
+ * Re-index (translation backfill, synonym changes): the device re-derives everything from the
+ * decrypted transcript and replaces it in one transaction. The content token stays, so
+ * duplicate detection is unaffected; tags and the recording are untouched.
+ */
+export async function replaceCallContent(
+  ports: Ports,
+  actor: Actor,
+  id: CallId,
+  input: ReplaceCallContentInput,
+): Promise<{ id: CallId; updatedAt: Date }> {
+  const userId = actor.userId;
+  if (input.keywordToks.length > CALL_LIMITS.keywordToks) {
+    throw new DomainError('invalid', 'too many keyword tokens');
+  }
+  if (input.transcriptCt.length === 0 || input.metaCt.length === 0) {
+    throw new DomainError('invalid', 'ciphertext is empty');
+  }
+  validateChunks(input.chunks);
+  const updated = await ports.calls.replaceContent(
+    userId,
+    id,
+    {
+      transcriptCt: input.transcriptCt,
+      metaCt: input.metaCt,
+      keywordToks: [...new Set(input.keywordToks)],
+      chunks: input.chunks.map(chunkRow),
+    },
+    input.expectedUpdatedAt,
+  );
+  await audit(ports, actor, userId, 'call.reindex', id, {
+    chunks: input.chunks.length,
+    keywords: updated.keywordToks.length,
+  });
+  return { id, updatedAt: updated.updatedAt };
 }
 
 export interface ListCallsInput {

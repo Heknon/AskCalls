@@ -34,6 +34,7 @@ export interface MeResult {
     recordingBytes: number;
     transcriptionSecondsThisMonth: number;
     asksToday: number;
+    translationCharsThisMonth: number;
     apiTokens: number;
     inboxPending: number;
   };
@@ -46,6 +47,8 @@ export interface MeResult {
   features: {
     transcription: { enabled: boolean; provider: string | null; directTokens: boolean };
     llm: { enabled: boolean; provider: string | null; model: string | null };
+    /** Managed translation through /api/translate; needs the LLM. */
+    translation: { enabled: boolean };
   };
 }
 
@@ -54,12 +57,13 @@ export async function getMe(ports: Ports, actor: Actor): Promise<MeResult> {
   const user = await requireUser(ports, actor.userId);
   const now = ports.clock.now();
   const userId = user.id;
-  const [calls, recordingBytes, seconds, asks, tokens, inbox, entries, keys, devices] =
+  const [calls, recordingBytes, seconds, asks, chars, tokens, inbox, entries, keys, devices] =
     await Promise.all([
       ports.calls.count(userId),
       ports.calls.totalRecordingBytes(userId),
       ports.rateLimiter.usage(usageKeys.transcriptionSeconds(userId), monthStart(now)),
       ports.rateLimiter.usage(usageKeys.asks(userId), dayStart(now)),
+      ports.rateLimiter.usage(usageKeys.translationChars(userId), monthStart(now)),
       ports.apiTokens.countActive(userId, now),
       ports.inbox.count(userId),
       ports.keyring.list(userId),
@@ -86,6 +90,7 @@ export async function getMe(ports: Ports, actor: Actor): Promise<MeResult> {
       recordingBytes,
       transcriptionSecondsThisMonth: seconds,
       asksToday: asks,
+      translationCharsThisMonth: chars,
       apiTokens: tokens,
       inboxPending: inbox,
     },
@@ -106,6 +111,7 @@ export async function getMe(ports: Ports, actor: Actor): Promise<MeResult> {
         provider: ports.llm?.id ?? null,
         model: ports.llm?.model ?? null,
       },
+      translation: { enabled: ports.llm !== null && ports.translationEnabled },
     },
   };
 }

@@ -24,6 +24,8 @@ export interface SearchHit extends CallSummary {
   /** Snippet of the best-matching chunk, present when `vector` was given. */
   bestSnippetCt: Bytes | null;
   bestChunkOrd: number | null;
+  /** Language of the best chunk: the original's or a translation's (null for older chunks). */
+  bestChunkLang: string | null;
   /** Cosine similarity of the best chunk (0..1), present when `vector` was given. */
   score: number | null;
 }
