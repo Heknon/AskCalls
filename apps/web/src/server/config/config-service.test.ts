@@ -24,14 +24,42 @@ describe('ConfigService', () => {
     ]);
   });
 
-  it('uses working local defaults in local mode', async () => {
+  it('uses working local defaults in local mode, under the data directory', async () => {
+    const dir = await tempDir();
     const r = await new ConfigService({
       APP_MODE: 'local',
-      ASKCALLS_DATA_DIR: await tempDir(),
+      ASKCALLS_DATA_DIR: dir,
+      ASKCALLS_LOCAL_KEY: 'k'.repeat(43),
     }).load();
-    expect(r.config.db.driver).toBe('pglite');
-    expect(r.config.blob.driver).toBe('fs');
+    expect(r.config.db).toMatchObject({ driver: 'pglite', pgliteDir: join(dir, 'db') });
+    expect(r.config.blob).toMatchObject({ driver: 'fs', fsDir: join(dir, 'blobs') });
+    expect(r.config.auth.providers).toEqual([]);
+    expect(r.config.transcription.provider).toBe('none');
     expect(r.incomplete).toEqual([]);
+    expect(r.locked.has('local.key')).toBe(true);
+  });
+
+  it('refuses local mode without the key askcalls local sets, and on the hosted instance', async () => {
+    const dir = await tempDir();
+    await expect(
+      new ConfigService({ APP_MODE: 'local', ASKCALLS_DATA_DIR: dir }).load(),
+    ).rejects.toThrow('APP_MODE=local: start local mode with askcalls local');
+    await expect(
+      new ConfigService({
+        APP_MODE: 'local',
+        ASKCALLS_DATA_DIR: dir,
+        ASKCALLS_LOCAL_KEY: 'k'.repeat(43),
+        ASKCALLS_HOSTED: 'true',
+      }).load(),
+    ).rejects.toThrow('APP_MODE=local: not available on the hosted instance');
+    await expect(
+      new ConfigService({
+        APP_MODE: 'local',
+        ASKCALLS_DATA_DIR: dir,
+        ASKCALLS_LOCAL_KEY: 'k'.repeat(43),
+        ASKCALLS_LOCAL_AGENT_LINK_URL: 'http://example.com/link/x',
+      }).load(),
+    ).rejects.toThrow('ASKCALLS_LOCAL_AGENT_LINK_URL');
   });
 
   it('locks every setting given by env', async () => {

@@ -41,6 +41,11 @@ function embeddingModelOrigins(config: InstanceConfig): string[] {
   return url ? [new URL(url).origin] : [];
 }
 
+/** Local mode: the `askcalls local` link listener the browser hands a device link to. */
+export function localAgentLinkUrl(config: InstanceConfig): string | null {
+  return config.appMode === 'local' ? (config.local.agentLinkUrl ?? null) : null;
+}
+
 export function newNonce(): string {
   const b = globalThis.crypto.getRandomValues(new Uint8Array(16));
   return btoa(String.fromCharCode(...b));
@@ -55,7 +60,13 @@ export function appCsp(
   nonce: string,
   environment: 'production' | 'development' | 'test',
 ): string {
-  const connect = ["'self'", ...blobOrigins(config), ...embeddingModelOrigins(config)];
+  const agentLink = localAgentLinkUrl(config);
+  const connect = [
+    "'self'",
+    ...blobOrigins(config),
+    ...embeddingModelOrigins(config),
+    ...(agentLink ? [new URL(agentLink).origin] : []),
+  ];
   if (!config.offlineMode) connect.push(...DIRECT_PROVIDER_ORIGINS);
   const script = ["'self'", `'nonce-${nonce}'`, "'wasm-unsafe-eval'", "'strict-dynamic'"];
   // React Refresh in `next dev` needs eval; never in production.

@@ -11,6 +11,7 @@ import { GateFrame } from '../_gate/gate-frame';
 import { EmailSignIn, SentNotice } from './email-form';
 import { LocalAccountForm, PasskeySignIn } from './local-form';
 import { OneTap } from './one-tap';
+import { ThisComputerSignIn } from './this-computer';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,13 @@ export default async function LoginPage({
       redirectTo: safeCallback(String(formData.get('redirectTo'))),
     });
   }
+  async function localAction(formData: FormData) {
+    'use server';
+    await signIn('local', {
+      key: String(formData.get('key') ?? ''),
+      redirectTo: safeCallback(String(formData.get('redirectTo'))),
+    });
+  }
   async function testAction(formData: FormData) {
     'use server';
     await signIn('test', {
@@ -61,7 +69,18 @@ export default async function LoginPage({
 
   return (
     <GateFrame end={<LanguageControl />}>
-      {sp.check === 'email' ? (
+      {has('local') ? (
+        <>
+          <ThisComputerSignIn
+            action={localAction}
+            redirectTo={redirectTo}
+            failed={error === 'CredentialsSignin'}
+          />
+          {has('test') ? (
+            <EmailSignIn action={testAction} redirectTo={redirectTo} kind="test" />
+          ) : null}
+        </>
+      ) : sp.check === 'email' ? (
         <SentNotice />
       ) : (
         <>

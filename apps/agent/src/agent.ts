@@ -21,13 +21,16 @@ import { fetchBlobTransport } from './adapters/http';
 import { openSecretStore, type SecretStoreKind } from './adapters/secret-store';
 import { transcriberFor } from './adapters/transcriber';
 import { type AgentConfig, dataDir, loadConfig, paths } from './config';
+import { isLoopbackOrigin } from './local/layout';
 
 /** The personal access token, next to the device secrets of `DEVICE_SECRETS`. */
 export const API_TOKEN_SECRET = 'api-token';
 
 export class NotLoggedInError extends Error {
   constructor() {
-    super('not logged in. Run: bunx askcalls login --url <your AskCalls server>');
+    super(
+      'not logged in. Run: bunx askcalls login --url <your AskCalls server>. With AskCalls on this computer, start askcalls local and unlock in the browser instead.',
+    );
     this.name = 'NotLoggedInError';
   }
 }
@@ -114,6 +117,16 @@ export interface UnlockedAgent extends AgentAccount {
 }
 
 /**
+ * Where the embedding model files come from: ASKCALLS_MODEL_URL, else, for the local instance,
+ * the files it serves itself (so local mode never downloads them), else the default host.
+ */
+function modelSource(origin: string, deps: AgentDeps): { modelUrl?: string } {
+  const env = deps.env ?? process.env;
+  if (env.ASKCALLS_MODEL_URL) return { modelUrl: env.ASKCALLS_MODEL_URL };
+  return isLoopbackOrigin(origin) ? { modelUrl: `${origin}/models` } : {};
+}
+
+/**
  * Unlocks with the RK wrapped under the keychain's device secret (spec 6.5 step 5) and builds the
  * client context: Node adapters, and the transcriber chosen in Settings → Providers. The agent
  * never auto-locks (idle timeout 0); its keys live as long as the process.
@@ -136,7 +149,7 @@ export async function unlockAgent(
   const base = createClientContext({
     api: account.api,
     session,
-    embedder: deps.embedder ?? new TransformersEmbedder(dirs),
+    embedder: deps.embedder ?? new TransformersEmbedder(dirs, modelSource(account.origin, deps)),
     ...(audio && { audio }),
     ...(deps.clock && { clock: deps.clock }),
     uploader: blobs,

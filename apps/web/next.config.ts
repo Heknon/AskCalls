@@ -1,8 +1,12 @@
+import { join } from 'node:path';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const config: NextConfig = {
   output: 'standalone',
+  // The monorepo root, so the standalone output is laid out as `apps/web/server.js` wherever
+  // the checkout sits (Docker and the `askcalls local` bundle copy it as is).
+  outputFileTracingRoot: join(import.meta.dirname, '..', '..'),
   reactStrictMode: true,
   poweredByHeader: false,
   // Put generateMetadata output in <head> for every client, not only known bots: marketing

@@ -5,7 +5,8 @@ import { EMBEDDING_MODEL_URL_META } from '../../client/runtime-config';
 import { AppSessionProvider } from '../../client/session/session';
 import { testEmbedderEnabled } from '../../server/auth/config';
 import { getContainer } from '../../server/container';
-import { embeddingModelUrl } from '../../server/http/csp';
+import { embeddingModelUrl, localAgentLinkUrl } from '../../server/http/csp';
+import { LocalAgentLink } from './_gate/local-agent-link';
 import { SessionGate } from './_gate/session-gate';
 
 /**
@@ -18,11 +19,13 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
   await headers();
   const { config } = await getContainer();
   const modelUrl = embeddingModelUrl(config.config);
+  const agentLinkUrl = localAgentLinkUrl(config.config);
   return (
     <NoticesProvider>
       {modelUrl ? <meta name={EMBEDDING_MODEL_URL_META} content={modelUrl} /> : null}
       <AppSessionProvider testEmbedder={testEmbedderEnabled(config)}>
         <SessionGate>{children}</SessionGate>
+        {agentLinkUrl ? <LocalAgentLink url={agentLinkUrl} /> : null}
       </AppSessionProvider>
     </NoticesProvider>
   );

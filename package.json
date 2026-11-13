@@ -22,6 +22,7 @@
     "test": "bun --bun vitest run --project unit",
     "test:integration": "bun --bun vitest run --project integration",
     "test:e2e": "bun run --cwd apps/web test:e2e",
+    "test:e2e:local": "bun run --cwd apps/web test:e2e:local",
     "models:derive": "bun scripts/models/derive-keep-set.ts",
     "models:build": "bun scripts/models/build-e5.ts",
     "models:publish": "bun scripts/models/publish.ts"

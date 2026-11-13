@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { addAuthenticator, saveAndConfirmRecoveryCode, signIn, uniqueEmail } from './helpers';
+import {
+  addAuthenticator,
+  loginHeading,
+  saveAndConfirmRecoveryCode,
+  signIn,
+  uniqueEmail,
+} from './helpers';
 
 test('the language switch sets dir=rtl and persists in the cookie across reloads', async ({
   page,
@@ -7,12 +13,12 @@ test('the language switch sets dir=rtl and persists in the cookie across reloads
   await page.goto('/login');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   await page.getByRole('button', { name: 'Language: עברית' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('כניסה ל-AskCalls');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(loginHeading('he'));
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('lang', 'he');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('כניסה ל-AskCalls');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(loginHeading('he'));
   await page.getByRole('button', { name: 'שפה: English' }).click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 });

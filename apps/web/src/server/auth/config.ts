@@ -10,11 +10,12 @@ import type { Container } from '../container';
 import { createAuthAdapter, findOrCreateUser } from './adapter';
 import { verifyGoogleIdToken } from './google-one-tap';
 import { passwordSignIn, passwordSignUp, redeemSetupClaim } from './local-accounts';
+import { localKeyMatches, localUser } from './local-mode';
 import { authSecret } from './secret';
 
 export interface ProviderInfo {
   id: string;
-  kind: 'oauth' | 'email' | 'one-tap' | 'test' | 'password' | 'passkey' | 'setup';
+  kind: 'oauth' | 'email' | 'one-tap' | 'test' | 'password' | 'passkey' | 'setup' | 'local';
 }
 
 /**
@@ -38,6 +39,12 @@ export function testEmbedderEnabled(resolved: ResolvedConfig): boolean {
 export function enabledProviders(resolved: ResolvedConfig): ProviderInfo[] {
   const { auth } = resolved.config;
   const out: ProviderInfo[] = [];
+  if (resolved.config.appMode === 'local') {
+    // No sign-in: the URL `askcalls local` opens carries this start's key (spec 11.2c).
+    out.push({ id: 'local', kind: 'local' });
+    if (testProviderEnabled(resolved)) out.push({ id: 'test', kind: 'test' });
+    return out;
+  }
   const wants = new Set(auth.providers);
   if (wants.has('google') && auth.google.id && auth.google.secret) {
     out.push({ id: 'google', kind: 'oauth' });
@@ -128,6 +135,20 @@ export function buildAuthConfig(container: Container): NextAuthConfig {
         );
         break;
       }
+      case 'local':
+        providers.push(
+          Credentials({
+            id: 'local',
+            name: 'This computer',
+            credentials: { key: { type: 'password' } },
+            async authorize(credentials) {
+              if (!localKeyMatches(resolved, credentials?.key)) return null;
+              const user = await localUser(ports);
+              return { id: user.id, email: user.email, name: user.name, image: user.image };
+            },
+          }),
+        );
+        break;
       case 'setup-claim':
         providers.push(
           Credentials({

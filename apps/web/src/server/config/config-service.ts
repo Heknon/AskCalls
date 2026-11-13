@@ -69,10 +69,12 @@ export const expandHome = (p: string) => (p.startsWith('~/') ? join(homedir(), p
 /** Mode-dependent defaults applied under the file and env layers. */
 function modeDefaults(env: Record<string, string | undefined>): Json {
   if (env.APP_MODE === 'local') {
+    const dataDir = env.ASKCALLS_DATA_DIR || '~/.askcalls';
     return {
-      dataDir: '~/.askcalls',
-      db: { driver: 'pglite' },
-      blob: { driver: 'fs', fsDir: '~/.askcalls/blobs' },
+      dataDir,
+      auth: { providers: [] },
+      db: { driver: 'pglite', pgliteDir: join(dataDir, 'db') },
+      blob: { driver: 'fs', fsDir: join(dataDir, 'blobs') },
       transcription: { provider: 'none' },
       llm: { provider: 'none' },
     };
@@ -347,6 +349,18 @@ export function validateCombination(c: InstanceConfig): CombinationProblem[] {
     out.push({
       paths: ['offlineMode', 'auth.localAccounts'],
       message: 'AUTH_LOCAL_ACCOUNTS: must be true when OFFLINE_MODE=true',
+    });
+  }
+  if (c.appMode === 'local' && !c.local.key) {
+    out.push({
+      paths: ['appMode', 'local.key'],
+      message: 'APP_MODE=local: start local mode with askcalls local',
+    });
+  }
+  if (c.appMode === 'local' && c.hosted) {
+    out.push({
+      paths: ['appMode', 'hosted'],
+      message: 'APP_MODE=local: not available on the hosted instance',
     });
   }
   if (c.hosted && c.offlineMode) {

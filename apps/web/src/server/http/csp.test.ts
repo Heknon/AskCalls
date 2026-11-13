@@ -6,6 +6,7 @@ import {
   DIRECT_PROVIDER_ORIGINS,
   embeddingModelUrl,
   GOOGLE_ONE_TAP_ORIGIN,
+  localAgentLinkUrl,
   publicCsp,
 } from './csp';
 
@@ -44,6 +45,23 @@ describe('app CSP', () => {
     expect(
       blobOrigins(config({ BLOB_DRIVER: 's3', S3_BUCKET: 'b', S3_REGION: 'eu-central-1' })),
     ).toEqual(['https://b.s3.eu-central-1.amazonaws.com', 'https://s3.eu-central-1.amazonaws.com']);
+  });
+
+  it('lets local mode reach the askcalls local link listener, and nothing else on loopback', () => {
+    const url = `http://127.0.0.1:41234/link/${'n'.repeat(43)}`;
+    const c = config({
+      APP_MODE: 'local',
+      BLOB_DRIVER: 'memory',
+      ASKCALLS_LOCAL_KEY: 'k'.repeat(43),
+      ASKCALLS_LOCAL_AGENT_LINK_URL: url,
+    });
+    expect(localAgentLinkUrl(c)).toBe(url);
+    expect(directive(appCsp(c, 'n', 'production'), 'connect-src')).toContain(
+      'http://127.0.0.1:41234',
+    );
+    const server = config({ BLOB_DRIVER: 'memory' });
+    expect(localAgentLinkUrl(server)).toBeNull();
+    expect(directive(appCsp(server, 'n', 'production'), 'connect-src')).not.toContain('127.0.0.1');
   });
 
   const LOCAL_ONLY = {

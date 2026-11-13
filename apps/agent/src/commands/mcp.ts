@@ -21,7 +21,13 @@ import { describeError } from './run';
 export async function startAgentState(
   deps: AgentDeps,
   log: (line: string) => void,
-): Promise<{ state: AgentState; decryptBudget: number; configPath: string }> {
+): Promise<{
+  state: AgentState;
+  decryptBudget: number;
+  configPath: string;
+  /** The server could not be reached: worth trying again on the next tool call. */
+  unreachable: boolean;
+}> {
   const dir = deps.dir ?? dataDir(deps.env);
   const configPath = paths(dir).config;
   let decryptBudget = DEFAULT_DECRYPT_BUDGET;
@@ -38,16 +44,27 @@ export async function startAgentState(
       },
       (e) => log(`askcalls: inbox not processed: ${describeError(e)}`),
     );
-    return { state: { ctx: agent.ctx }, decryptBudget, configPath };
+    return { state: { ctx: agent.ctx }, decryptBudget, configPath, unreachable: false };
   } catch (e) {
     const reason =
       e instanceof NotLoggedInError || e instanceof NotLinkedError
         ? `AskCalls: ${e.message}`
         : `AskCalls could not unlock: ${describeError(e)}`;
     log(reason);
-    return { state: { unavailable: reason }, decryptBudget, configPath };
+    return {
+      state: { unavailable: reason },
+      decryptBudget,
+      configPath,
+      unreachable: isUnreachable(e),
+    };
   }
 }
+
+/** A failed fetch (connection refused): the server, typically `askcalls local`, is not running. */
+const isUnreachable = (e: unknown) => e instanceof TypeError;
+
+const LOCAL_DOWN =
+  'AskCalls: the AskCalls server is not reachable. If it runs on this computer, start it with askcalls local.';
 
 export function registerMcp(program: Command) {
   program
@@ -55,8 +72,22 @@ export function registerMcp(program: Command) {
     .description('Run the stdio MCP server for Claude, Cursor and other MCP clients')
     .action(async () => {
       const log = (line: string) => console.error(line);
-      const { state, decryptBudget, configPath } = await startAgentState({}, log);
-      const server = createAgentMcpServer({ state, decryptBudget, configPath, version: VERSION });
+      const first = await startAgentState({}, log);
+      const { decryptBudget, configPath } = first;
+      const retry = async (): Promise<AgentState> => {
+        const next = await startAgentState({}, log);
+        return 'unavailable' in next.state && next.unreachable
+          ? { unavailable: LOCAL_DOWN }
+          : next.state;
+      };
+      const state = first.unreachable ? { unavailable: LOCAL_DOWN } : first.state;
+      const server = createAgentMcpServer({
+        state,
+        ...(first.unreachable && { retry }),
+        decryptBudget,
+        configPath,
+        version: VERSION,
+      });
       await server.connect(new StdioServerTransport());
     });
 }

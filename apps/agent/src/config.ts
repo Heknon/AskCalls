@@ -20,7 +20,8 @@ export type AgentConfig = z.output<typeof AgentConfigSchema>;
 /**
  * The agent's data directory: `~/.askcalls`, or `ASKCALLS_HOME`. It holds `config.json`, the
  * bulk queue state, the embedding model cache, the runtime packages of the single binary and,
- * only when no OS keychain exists, the encrypted secrets file. Nothing in it is call content.
+ * only when no OS keychain exists, the encrypted secrets file. Local mode (`askcalls local`)
+ * keeps its encrypted database and recordings here too (local/layout.ts).
  */
 export function dataDir(env: NodeJS.ProcessEnv = process.env): string {
   return env.ASKCALLS_HOME || join(homedir(), '.askcalls');
@@ -38,16 +39,26 @@ export async function ensureDataDir(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true, mode: 0o700 });
 }
 
-export async function loadConfig(dir: string): Promise<AgentConfig> {
-  let raw: unknown = {};
+/**
+ * config.json is shared with the local-mode instance (`askcalls local`), whose settings sit next
+ * to the agent's; each side reads its own keys and keeps the other's.
+ */
+async function readConfigFile(dir: string): Promise<Record<string, unknown>> {
   try {
-    raw = JSON.parse(await readFile(paths(dir).config, 'utf8'));
+    const raw: unknown = JSON.parse(await readFile(paths(dir).config, 'utf8'));
+    return raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw new Error(`${paths(dir).config} is not valid JSON`);
-    }
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    throw new Error(`${paths(dir).config} is not valid JSON`);
   }
-  const parsed = AgentConfigSchema.safeParse(raw);
+}
+
+export const AGENT_CONFIG_KEYS = Object.keys(AgentConfigSchema.shape);
+
+export async function loadConfig(dir: string): Promise<AgentConfig> {
+  const parsed = AgentConfigSchema.safeParse(await readConfigFile(dir));
   if (!parsed.success) {
     const fields = parsed.error.issues.map((i) => i.path.join('.')).join(', ');
     throw new Error(`${paths(dir).config} has invalid settings: ${fields}`);
@@ -65,8 +76,9 @@ export async function writePrivateFile(path: string, data: string | Uint8Array):
 
 export async function saveConfig(dir: string, patch: Partial<AgentConfig>): Promise<AgentConfig> {
   await ensureDataDir(dir);
-  const next = AgentConfigSchema.parse({ ...(await loadConfig(dir)), ...patch });
-  await writePrivateFile(paths(dir).config, `${JSON.stringify(next, null, 2)}\n`);
+  const file = await readConfigFile(dir);
+  const next = AgentConfigSchema.parse({ ...file, ...patch });
+  await writePrivateFile(paths(dir).config, `${JSON.stringify({ ...file, ...next }, null, 2)}\n`);
   return next;
 }
 

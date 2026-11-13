@@ -73,9 +73,12 @@ export function UnlockGate() {
         registerDeviceLabel: t('deviceLabel', { browser, os }),
       });
     } catch (e) {
-      if (!navigator.onLine) setFailure('offline');
-      else if (isCryptoError(e) || method === 'passkey') setFailure(method);
+      // A wrong code is wrong whatever the network: `navigator.onLine` is false on a computer
+      // with no network at all, where local mode still reaches its server on loopback.
+      if (isCryptoError(e)) setFailure(method);
       else if (isDomainError(e) && e.code === 'not_found') setFailure(method);
+      else if (!navigator.onLine) setFailure('offline');
+      else if (method === 'passkey') setFailure(method);
       else setFailure('other');
       setBusy(null);
     }
