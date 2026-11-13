@@ -4,7 +4,8 @@ import { NextRequest } from 'next/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DIRECT_COOKIE_SECURE, encodeDirectCookie } from './client/direct-origins';
 import { middleware } from './middleware';
-import { sessionCookie, startTestApp, type TestApp } from './server/testing/http';
+import { signDirectCookie } from './server/http/direct-access';
+import { AUTH_SECRET, sessionCookie, startTestApp, type TestApp } from './server/testing/http';
 
 /**
  * The CSP check (spec 2.4, 13): every /app and /admin page, as the real middleware answers it,
@@ -51,10 +52,13 @@ afterEach(() => {
   app = null;
 });
 
+let userId = '';
+
 async function signedIn(env: Record<string, string> = {}) {
   app = startTestApp({ env });
   const user = await app.ports.users.create({ email: 'csp@example.test' });
   await app.ports.users.setRole(user.id, 'admin');
+  userId = user.id;
   return sessionCookie(user.id);
 }
 
@@ -127,20 +131,34 @@ describe('CSP check: app routes', () => {
     expect(a.nonce).not.toBe(b.nonce);
   });
 
-  it('keeps own-key origins in connect-src, even from a tampered cookie', async () => {
+  it('adds only signed own-key origins, and only to connect-src', async () => {
     const session = await signedIn();
-    const direct = encodeDirectCookie({
+    const value = encodeDirectCookie({
       providers: ['openai'],
       origins: ['https://bucket.example.org'],
     });
     const forged = `o=${encodeURIComponent('https://evil.example; script-src *')}&p=openai`;
-    for (const value of [direct, forged]) {
-      const cookie = `${session}; ${DIRECT_COOKIE_SECURE}=${encodeURIComponent(value)}`;
+    const other = await app!.ports.users.create({ email: 'other@example.test' });
+    const cookies = {
+      signed: await signDirectCookie(AUTH_SECRET, userId, value),
+      signedHostile: await signDirectCookie(AUTH_SECRET, userId, forged),
+      unsigned: value,
+      otherUser: await signDirectCookie(AUTH_SECRET, other.id, value),
+    };
+    const connect: Record<string, string[]> = {};
+    for (const [name, direct] of Object.entries(cookies)) {
+      const cookie = `${session}; ${DIRECT_COOKIE_SECURE}=${direct}`;
       const { csp, nonce } = await cspFor('/app/upload', cookie);
-      expectStrictScripts('/app/upload', csp, nonce);
-      expect(directives(csp).get('connect-src')).toContain('https://api.openai.com');
+      expectStrictScripts(`/app/upload (${name})`, csp, nonce);
       expect(csp).not.toContain('evil.example');
+      connect[name] = directives(csp).get('connect-src') ?? [];
     }
+    expect(connect.signed).toEqual(
+      expect.arrayContaining(['https://api.openai.com', 'https://bucket.example.org']),
+    );
+    expect(connect.signedHostile).toContain('https://api.openai.com');
+    expect(connect.unsigned).toEqual(["'self'"]);
+    expect(connect.otherUser).toEqual(["'self'"]);
   });
 });
 
