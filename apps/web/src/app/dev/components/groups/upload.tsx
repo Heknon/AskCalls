@@ -1,7 +1,10 @@
 'use client';
 
+import { ContactLabel } from '@askcalls/ui/components/ContactLabel';
 import { DataFlowNote } from '@askcalls/ui/components/DataFlowNote';
 import { FileDropZone } from '@askcalls/ui/components/FileDropZone';
+import { ImportFormatGuide } from '@askcalls/ui/components/ImportFormatGuide';
+import { ImportGroup } from '@askcalls/ui/components/ImportGroup';
 import { JobProgress } from '@askcalls/ui/components/JobProgress';
 import { PreflightSummary } from '@askcalls/ui/components/PreflightSummary';
 import { QueueItemStatus, type QueueState } from '@askcalls/ui/components/QueueItemStatus';
@@ -11,6 +14,11 @@ import { Button } from '@askcalls/ui/primitives/button';
 import { Card } from '@askcalls/ui/primitives/card';
 import { TableHead } from '@askcalls/ui/primitives/table';
 import { useState } from 'react';
+import {
+  EXAMPLE_MANIFEST,
+  EXAMPLE_TREE,
+  MANIFEST_COLUMNS,
+} from '../../../(app)/(shell)/app/upload/_upload/import-example';
 import { common } from '../copy';
 import { Specimen, State, useCopy, useEnv } from '../shell';
 
@@ -59,6 +67,30 @@ const copy = {
     paused: 'Import paused: 38 of 138 done.',
     rules: 'Applying to existing calls: 136 of 212',
     jobLabels: { pause: 'Pause', resume: 'Resume', stop: 'Stop', progress: 'Import progress' },
+    review: {
+      count: '3 calls',
+      countOf: '1 of 3',
+      noContact: 'No contact',
+      include: 'Include',
+      queued: 'Queued',
+      excluded: 'Left out',
+    },
+    guide: {
+      title: 'Folder layout and manifest.csv',
+      pairing:
+        'A recording and a transcript with the same name in the same folder are one call. The transcript name may end in .transcript or _tx.',
+      manifest:
+        "manifest.csv is optional and sets each call's number, date, direction, contact and tags. Only the file column is required.",
+      col: [
+        'Recording or transcript file name',
+        'With country code',
+        'ISO 8601, or YYYY-MM-DD HH:MM read as UTC',
+        'in, out or unknown',
+        'Contact name',
+        'Separated by ;',
+      ],
+      labels: { copy: 'Copy', copied: 'Copied', download: 'Download example' },
+    },
     meters: [
       ['Managed transcription this month', 41, 300, 'min'],
       ['Recording storage', 1.7, 2, 'GB'],
@@ -104,6 +136,30 @@ const copy = {
     paused: 'הייבוא הושהה: 38 מתוך 138 הושלמו.',
     rules: 'מחיל על שיחות קיימות: 136 מתוך 212',
     jobLabels: { pause: 'השהיה', resume: 'המשך', stop: 'עצירה', progress: 'התקדמות הייבוא' },
+    review: {
+      count: '3 שיחות',
+      countOf: '1 מתוך 3',
+      noContact: 'ללא איש קשר',
+      include: 'לכלול את',
+      queued: 'בתור',
+      excluded: 'לא נכלל',
+    },
+    guide: {
+      title: 'מבנה התיקייה ו-manifest.csv',
+      pairing:
+        'הקלטה ותמלול עם אותו שם באותה תיקייה הם שיחה אחת. שם קובץ התמלול יכול להסתיים ב-.transcript או ב-_tx.',
+      manifest:
+        'הקובץ manifest.csv אינו חובה, והוא קובע לכל שיחה מספר, תאריך, כיוון, איש קשר ותגיות. רק העמודה file נדרשת.',
+      col: [
+        'שם קובץ ההקלטה או התמלול',
+        'עם קידומת מדינה',
+        'ISO 8601, או YYYY-MM-DD HH:MM לפי UTC',
+        'in, out או unknown',
+        'שם איש הקשר',
+        'מופרדות ב-;',
+      ],
+      labels: { copy: 'העתקה', copied: 'הועתק', download: 'הורדת דוגמה' },
+    },
     meters: [
       ['תמלול מנוהל החודש', 41, 300, 'דק׳'],
       ['אחסון הקלטות', 1.7, 2, 'GB'],
@@ -118,6 +174,20 @@ export function UploadGroup() {
   const { locale, lang } = useEnv();
   const [backup, setBackup] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [left, setLeft] = useState<ReadonlySet<string>>(new Set(['b2']));
+  const [open, setOpen] = useState(true);
+  const groupRows = ['b1', 'b2', 'b3'];
+  const flip = (keys: string[], v: boolean) =>
+    setLeft((prev) => {
+      const next = new Set(prev);
+      for (const key of keys) {
+        if (v) next.delete(key);
+        else next.add(key);
+      }
+      return next;
+    });
+  const groupChecked =
+    left.size === 0 ? true : groupRows.every((r) => left.has(r)) ? false : 'indeterminate';
   const rows: {
     file: string;
     parts: string[];
@@ -231,6 +301,64 @@ export function UploadGroup() {
             </tbody>
           </table>
         </Card>
+      </Specimen>
+      <Specimen name="ImportGroup" note="by contact; one call left out" wide>
+        <Card className="overflow-hidden">
+          <table className="w-full border-collapse text-sm">
+            <ImportGroup
+              label={<ContactLabel name="Dana Levi" phone="+972501234567" />}
+              count={left.size === 0 ? c.review.count : c.review.countOf}
+              checked={groupChecked}
+              onCheckedChange={(v) => flip(groupRows, v)}
+              selectLabel={`${c.review.include} Dana Levi`}
+              open={open}
+              onOpenChange={setOpen}
+              columns={4}
+            >
+              {groupRows.map((r, i) => (
+                <QueueRow
+                  key={r}
+                  fileName={`2026-03-0${i + 1} Dana.mp3`}
+                  parts={[c.parts.audio]}
+                  contact={{ name: 'Dana Levi', phone: '+972501234567' }}
+                  status={{
+                    state: 'queued',
+                    label: left.has(r) ? c.review.excluded : c.review.queued,
+                  }}
+                  select={{
+                    checked: !left.has(r),
+                    onCheckedChange: (v) => flip([r], v),
+                    label: `${c.review.include} ${r}`,
+                  }}
+                />
+              ))}
+            </ImportGroup>
+            <ImportGroup
+              label={<span>{c.review.noContact}</span>}
+              count={c.review.count}
+              checked={false}
+              onCheckedChange={() => {}}
+              selectLabel={`${c.review.include} ${c.review.noContact}`}
+              open={false}
+              onOpenChange={() => {}}
+              columns={4}
+            >
+              {null}
+            </ImportGroup>
+          </table>
+        </Card>
+      </Specimen>
+      <Specimen name="ImportFormatGuide" note="closed until opened">
+        <ImportFormatGuide
+          title={c.guide.title}
+          pairing={c.guide.pairing}
+          tree={EXAMPLE_TREE}
+          manifest={c.guide.manifest}
+          csv={EXAMPLE_MANIFEST}
+          columns={MANIFEST_COLUMNS.map((name, i) => ({ name, note: c.guide.col[i]! }))}
+          labels={c.guide.labels}
+          onDownload={() => {}}
+        />
       </Specimen>
       <Specimen name="QueueItemStatus" note="every state">
         <div className="flex flex-wrap gap-3">

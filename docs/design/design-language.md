@@ -583,7 +583,19 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### QueueRow
 - **Purpose:** one file (or audio + transcript pair) in the import queue.
-- **Composes:** `QueueItemStatus`, `ContactLabel`, `Button` (retry), `CallRow` link for duplicates. **Screens:** U2.
+- **Props:** `select` (before the import starts: a checkbox that puts the call in or leaves it out; a left-out row is dimmed).
+- **Composes:** `QueueItemStatus`, `ContactLabel`, `Button` (retry), `Checkbox`, `CallRow` link for duplicates. **Screens:** U2.
+
+#### ImportGroup
+- **Purpose:** the calls of a bulk import that share a contact, folder or month, put in the import or left out together before it starts.
+- **Props:** `label` (a `ContactLabel`, folder path or month), `count`, `checked` (`true`, `false` or `"indeterminate"`), `onCheckedChange`, `open`, `onOpenChange`, `columns`; children are `QueueRow`s with `select`.
+- **Composes:** `Checkbox`, a disclosure button. A `tbody` of the queue table. **Screens:** U2.
+- **A11y:** the checkbox is labelled "Include {name}"; the toggle button carries `aria-expanded` and is named by the group label.
+
+#### ImportFormatGuide
+- **Purpose:** the folder layout and `manifest.csv` a bulk import reads, with an example of each, under the drop zone. Closed until opened.
+- **Props:** `title`, `pairing`, `tree`, `manifest`, `csv`, `columns`, `labels`, `onDownload` (saves the example `manifest.csv`).
+- **Composes:** `Accordion`, `CopyableCode`, `Button`. **Screens:** U2. **RTL:** the tree, the CSV and column names stay LTR.
 
 #### JobProgress
 - **Purpose:** progress of a long job running on this device (import, applying rules to existing calls, export, inbox processing).
@@ -781,7 +793,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
 | U1 | Upload: single | FileDropZone, PhoneNumber, CallDirection, DataFlowNote, QueueItemStatus, ErrorState |
-| U2 | Upload: bulk | FileDropZone, PreflightSummary, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
+| U2 | Upload: bulk | FileDropZone, ImportFormatGuide, PreflightSummary, ImportGroup, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
 | T1 | Tags | TagManagerRow, TagChip, ConfirmDialog, SaveStatus, EmptyState |
 | T2 | Intents | IntentEditor, SaveStatus |
 | T3 | Rules | RuleListItem, RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |
