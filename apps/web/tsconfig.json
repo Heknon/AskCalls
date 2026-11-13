@@ -7,6 +7,6 @@
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["next-env.d.ts", "src", "e2e", ".next/types/**/*.ts", "*.ts"],
+  "include": ["next-env.d.ts", "src", "e2e", "e2e-local", ".next/types/**/*.ts", "*.ts"],
   "exclude": ["node_modules"]
 }

@@ -131,6 +131,28 @@ export const InstanceConfigSchema = z.object({
     })
     .default({ backends: [], otel: {}, posthog: {}, umami: {} }),
 
+  /** Local mode (spec 11.2c), set by `askcalls local` for each start. */
+  local: z
+    .object({
+      /**
+       * Signs the browser in as the single local user: `askcalls local` opens
+       * `/login#key=<key>`. A new random key on every start.
+       */
+      key: z.string().min(32).max(128).optional(),
+      /**
+       * The `askcalls local` process's link listener (`http://127.0.0.1:<port>/link/<nonce>`).
+       * After unlock the browser hands it a token and a device link (spec 6.5), so `askcalls mcp`
+       * works without `login` and `link`. Unset once the agent is linked.
+       */
+      agentLinkUrl: z
+        .string()
+        .regex(/^http:\/\/127\.0\.0\.1:\d{2,5}\/link\/[A-Za-z0-9_-]{43}$/, {
+          message: 'must be the loopback link URL printed by askcalls local',
+        })
+        .optional(),
+    })
+    .default({}),
+
   billing: z.object({ provider: z.enum(['none']).default('none') }).default({ provider: 'none' }),
 
   scheduler: z.enum(['vercel-cron', 'in-process']).default('in-process'),
@@ -147,6 +169,7 @@ export const SECRET_PATHS = new Set([
   'auth.github.secret',
   'auth.email.server',
   'cronSecret',
+  'local.key',
   'db.url',
   'blob.s3.secretAccessKey',
   'transcription.keys.elevenlabs',
@@ -232,6 +255,8 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['UMAMI_WEBSITE_ID', 'telemetry.umami.websiteId', str],
   ['UMAMI_HOST', 'telemetry.umami.host', str],
   ['BILLING_PROVIDER', 'billing.provider', str],
+  ['ASKCALLS_LOCAL_KEY', 'local.key', str],
+  ['ASKCALLS_LOCAL_AGENT_LINK_URL', 'local.agentLinkUrl', str],
   ['SCHEDULER', 'scheduler', str],
   ['CRON_SECRET', 'cronSecret', str],
 ];

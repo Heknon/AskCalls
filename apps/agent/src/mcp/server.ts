@@ -66,6 +66,8 @@ export type AgentState = { ctx: ClientContext } | { unavailable: string };
 
 export interface AgentMcpOptions {
   state: AgentState;
+  /** Tries to unlock again while `state` is unavailable (the local instance was not running). */
+  retry?: () => Promise<AgentState>;
   /** `get_call` reads allowed in this MCP session (agent config `decryptBudget`). */
   decryptBudget: number;
   /** Where the budget is configured, for the error that tells the user how to raise it. */
@@ -130,13 +132,15 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
     { instructions: INSTRUCTIONS },
   );
   let decrypted = 0;
+  let state = opts.state;
 
   const handle =
     <A>(fn: (ctx: ClientContext, args: A) => Promise<CallToolResult>) =>
     async (args: A): Promise<CallToolResult> => {
-      if ('unavailable' in opts.state) return failure(opts.state.unavailable);
+      if ('unavailable' in state && opts.retry) state = await opts.retry();
+      if ('unavailable' in state) return failure(state.unavailable);
       try {
-        return await fn(opts.state.ctx, args);
+        return await fn(state.ctx, args);
       } catch (e) {
         return failure(errorText(e));
       }

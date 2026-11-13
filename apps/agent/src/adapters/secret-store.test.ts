@@ -62,6 +62,24 @@ describe('encrypted-file secret store (no OS keychain)', () => {
     expect(await other.get('api-token')).toBeNull();
   });
 
+  it('keeps every secret when several are set at once', async () => {
+    const path = join(dir, 'concurrent.enc');
+    const store = await EncryptedFileSecretStore.open({
+      path,
+      scope: 's',
+      passphrase: PASSPHRASE,
+      params: FAST,
+    });
+    const names = Array.from({ length: 8 }, (_, i) => `k${i}`);
+    await Promise.all(names.map((n) => store.set(n, utf8(n))));
+    const reopened = await EncryptedFileSecretStore.open({
+      path,
+      scope: 's',
+      passphrase: PASSPHRASE,
+    });
+    for (const n of names) expect(new TextDecoder().decode((await reopened.get(n))!)).toBe(n);
+  });
+
   it('refuses a wrong passphrase and a short new one', async () => {
     const path = join(dir, 'b.enc');
     const store = await EncryptedFileSecretStore.open({

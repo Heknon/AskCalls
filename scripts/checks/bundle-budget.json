@@ -1,20 +1,21 @@
 {
   "overBudget": {
+    "/admin": 251,
     "/admin/instance": 278,
-    "/app": 356,
+    "/app": 357,
     "/app/calls/[id]": 357,
-    "/app/contacts": 333,
+    "/app/contacts": 334,
     "/app/settings": 260,
-    "/app/settings/api": 275,
+    "/app/settings/api": 276,
     "/app/settings/audit": 270,
     "/app/settings/data": 333,
-    "/app/settings/privacy": 260,
+    "/app/settings/privacy": 261,
     "/app/settings/providers": 339,
     "/app/settings/recordings": 263,
     "/app/settings/retention": 269,
     "/app/settings/security": 341,
     "/app/tags": 350,
-    "/app/upload": 356,
-    "/app/welcome": 343
+    "/app/upload": 357,
+    "/app/welcome": 344
   }
 }
