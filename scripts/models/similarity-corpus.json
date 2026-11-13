@@ -1,0 +1,186 @@
+{
+  "calls": {
+    "kitchen_en": "Hi, it's Daniel Brooks. We met at the showroom on Thursday about the kitchen. Of course. The oak cabinets with the long island, right? Exactly. My partner and I measured again, the wall is four metres twenty, not four. Does that change the price much? A little. The extra twenty centimetres means one more narrow unit. I can send an updated price by tomorrow. Great. And the price includes installation and the stone worktop? Installation yes. The worktop is separate, about eleven thousand for quartz. Granite is a bit more. Quartz is fine. If the quote is in by Sunday we'd like to put the deposit down next week. I'll have it to you before Sunday, with the delivery date. Speak soon.",
+    "kitchen_he": "שלום, מדברת נועה לוי. היינו אצלכם באולם התצוגה ביום חמישי בקשר למטבח. כן, בטח. ארונות האלון עם האי הארוך, נכון? בדיוק. מדדנו שוב, הקיר הוא ארבעה מטר ועשרים ולא ארבעה. זה משנה הרבה את המחיר? קצת. עשרים הסנטימטרים הנוספים הם עוד יחידה צרה. אני יכול לשלוח מחיר מעודכן עד מחר. מצוין. והמחיר כולל התקנה ומשטח אבן? התקנה כן. המשטח בנפרד, בערך אחד עשר אלף לקוורץ. גרניט קצת יותר. קוורץ מתאים לנו. אם ההצעה תגיע עד יום ראשון, נשאיר מקדמה בשבוע הבא. זה יגיע לפני יום ראשון, יחד עם תאריך האספקה. נדבר.",
+    "moto_en": "Hello, I'm calling about the used Yamaha you listed. Is it still available? Yes, it's a 2019 model, about twenty thousand kilometres. Has it had any accidents? No, never dropped. New tyres and chain last spring. Can I come for a test ride on Saturday? Sure, bring your licence and a helmet. What's the lowest you'd take? I'm asking thirty two thousand, maybe a little flexible if you pay cash.",
+    "dentist_en": "Good morning, this is the clinic calling to confirm your appointment with Doctor Cohen tomorrow at nine. Oh, I need to move it, I have a work meeting. We have Wednesday afternoon at four or Friday morning. Wednesday at four works. Please arrive ten minutes early and bring your insurance card. Will the cleaning be covered? Yes, the cleaning is covered, the filling may have a copay.",
+    "internet_en": "I've had no internet since yesterday evening. The router light is blinking red. Did you try restarting it? Three times. Okay, I see an outage in your area, a technician is working on the line. When will it be fixed? Estimated by this evening. Can I get a credit on my bill for the downtime? I'll add a credit for two days to your next invoice.",
+    "lawyer_he": "שלום, אני מתקשר מהמשרד של עורך הדין. קיבלנו את החוזה ששלחתם ויש כמה סעיפים שצריך לתקן. איזה סעיפים? סעיף הפיצוי המוסכם וסעיף הבוררות. אנחנו מבקשים שהבוררות תהיה בתל אביב. אני אעביר למנהל ונחזור אליכם עד יום שלישי.",
+    "car_he": "היי, האוטו שלי עשה רעש מוזר מהבלמים. מתי אפשר להביא למוסך? יש לנו מקום מחר בשמונה בבוקר. כמה זה יעלה בערך? החלפת רפידות זה בערך שש מאות שקל, אם צריך גם דיסקים זה יותר. אוקיי, אני אביא מחר.",
+    "delivery_en": "Hi, my order was supposed to arrive Monday and it's Thursday now. Let me check the tracking. It looks like the package is stuck at the regional depot. This is the second time. I want a refund for the shipping. I'm sorry, I'll refund the shipping fee and escalate the delivery."
+  },
+  "queries": [
+    {
+      "text": "motorcycle",
+      "related": ["moto_en"]
+    },
+    {
+      "text": "motorbike for sale",
+      "related": ["moto_en"]
+    },
+    {
+      "text": "test ride",
+      "related": ["moto_en"]
+    },
+    {
+      "text": "אופנוע",
+      "related": ["moto_en"]
+    },
+    {
+      "text": "banana",
+      "related": []
+    },
+    {
+      "text": "football match",
+      "related": []
+    },
+    {
+      "text": "wedding",
+      "related": []
+    },
+    {
+      "text": "weather forecast",
+      "related": []
+    },
+    {
+      "text": "חתונה",
+      "related": []
+    },
+    {
+      "text": "vacation in Greece",
+      "related": []
+    },
+    {
+      "text": "birthday party",
+      "related": []
+    },
+    {
+      "text": "cat food",
+      "related": []
+    },
+    {
+      "text": "kitchen",
+      "related": ["kitchen_en", "kitchen_he"]
+    },
+    {
+      "text": "countertop price",
+      "related": ["kitchen_en", "kitchen_he"]
+    },
+    {
+      "text": "quartz",
+      "related": ["kitchen_en", "kitchen_he"]
+    },
+    {
+      "text": "מטבח",
+      "related": ["kitchen_en", "kitchen_he"]
+    },
+    {
+      "text": "cabinets",
+      "related": ["kitchen_en", "kitchen_he"]
+    },
+    {
+      "text": "deposit",
+      "related": ["kitchen_en", "kitchen_he"]
+    },
+    {
+      "text": "dentist",
+      "related": ["dentist_en"]
+    },
+    {
+      "text": "reschedule appointment",
+      "related": ["dentist_en"]
+    },
+    {
+      "text": "תור לרופא שיניים",
+      "related": ["dentist_en"]
+    },
+    {
+      "text": "internet outage",
+      "related": ["internet_en"]
+    },
+    {
+      "text": "bill credit",
+      "related": ["internet_en"]
+    },
+    {
+      "text": "אין אינטרנט",
+      "related": ["internet_en"]
+    },
+    {
+      "text": "contract clauses",
+      "related": ["lawyer_he"]
+    },
+    {
+      "text": "arbitration",
+      "related": ["lawyer_he"]
+    },
+    {
+      "text": "עורך דין",
+      "related": ["lawyer_he"]
+    },
+    {
+      "text": "brakes noise",
+      "related": ["car_he"]
+    },
+    {
+      "text": "garage",
+      "related": ["car_he"]
+    },
+    {
+      "text": "מוסך",
+      "related": ["car_he"]
+    },
+    {
+      "text": "car repair",
+      "related": ["car_he"]
+    },
+    {
+      "text": "late delivery",
+      "related": ["delivery_en"]
+    },
+    {
+      "text": "refund",
+      "related": ["delivery_en"]
+    },
+    {
+      "text": "משלוח באיחור",
+      "related": ["delivery_en"]
+    },
+    {
+      "text": "price",
+      "related": ["kitchen_en", "kitchen_he", "moto_en", "car_he"]
+    },
+    {
+      "text": "complaint",
+      "related": ["delivery_en", "internet_en"]
+    },
+    {
+      "text": "wants to buy a used motorbike",
+      "related": ["moto_en"]
+    },
+    {
+      "text": "customer unhappy about a late package",
+      "related": ["delivery_en"]
+    },
+    {
+      "text": "הלקוחה רוצה הצעת מחיר למטבח",
+      "related": ["kitchen_he", "kitchen_en"]
+    },
+    {
+      "text": "moving the dentist appointment",
+      "related": ["dentist_en"]
+    },
+    {
+      "text": "lawyer wants changes to the contract",
+      "related": ["lawyer_he"]
+    },
+    {
+      "text": "planning a trip to the beach",
+      "related": []
+    },
+    {
+      "text": "מתכון לעוגת שוקולד",
+      "related": []
+    }
+  ]
+}

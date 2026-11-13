@@ -7,6 +7,11 @@ const MAX_PHRASE_WORDS = 12;
 const PIECE_WORDS = 8;
 /** At most this many phrases per snippet are embedded. */
 const MAX_PHRASES = 12;
+/**
+ * Shorter phrases are never marked: filler like "right? Exactly" sits near every query, so it
+ * would win whenever nothing in the snippet is related.
+ */
+const MIN_MARK_WORDS = 3;
 
 const WORD = /[^\s]+/gu;
 const BREAK = /[.!?…;:,\n]/u;
@@ -74,24 +79,28 @@ function cosine(a: Float32Array, b: Float32Array): number {
 /**
  * For a meaning search: the phrase of each snippet closest to the query, found on the device by
  * embedding the decrypted phrases. A snippet of one phrase gets none, since marking all of it
- * says nothing.
+ * says nothing, and only phrases of `MIN_MARK_WORDS` or more are candidates.
  */
 export async function meaningHighlights(
   embedder: Embedder,
   query: Float32Array,
   snippets: readonly (string | null)[],
 ): Promise<(HighlightRange | null)[]> {
-  const phrases = snippets.map((s) => (s ? phraseRanges(s).slice(0, MAX_PHRASES) : []));
-  const texts = phrases.flatMap((ps, i) =>
-    ps.length < 2
-      ? []
-      : ps.map((r) => EMBEDDING_PASSAGE_PREFIX + snippets[i]!.slice(r.start, r.end)),
+  const candidates = snippets.map((s) => {
+    if (!s) return [];
+    const all = phraseRanges(s);
+    if (all.length < 2) return [];
+    return all
+      .filter((r) => wordCount(s.slice(r.start, r.end)) >= MIN_MARK_WORDS)
+      .slice(0, MAX_PHRASES);
+  });
+  const texts = candidates.flatMap((ps, i) =>
+    ps.map((r) => EMBEDDING_PASSAGE_PREFIX + snippets[i]!.slice(r.start, r.end)),
   );
   if (texts.length === 0) return snippets.map(() => null);
   const vectors = await embedder.embed(texts);
   let at = 0;
-  return phrases.map((ps) => {
-    if (ps.length < 2) return null;
+  return candidates.map((ps) => {
     let best: HighlightRange | null = null;
     let bestScore = -Infinity;
     for (const r of ps) {
@@ -103,4 +112,8 @@ export async function meaningHighlights(
     }
     return best;
   });
+}
+
+function wordCount(text: string): number {
+  return text.match(WORD)?.length ?? 0;
 }
