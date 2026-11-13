@@ -35,7 +35,11 @@ import { createAgentMcpServer } from './mcp/server';
 const SERVER = 'http://localhost:3000';
 
 /** The API route handlers plus the CLI login page. */
+/** Requests the agent sent to the server. */
+let sent = 0;
+
 function dispatch(req: Request): Promise<Response> {
+  sent++;
   if (new URL(req.url).pathname !== '/cli/login') return dispatchApi(req);
   return req.method === 'POST' ? cliLogin.POST(req) : cliLogin.GET(req);
 }
@@ -161,6 +165,74 @@ describe('askcalls agent against the route handlers', () => {
     await c.close();
   });
 
+  it('explains the import format and dry-runs a folder before login, sending nothing', async () => {
+    const { state } = await startAgentState(deps, () => {});
+    const server = createAgentMcpServer({
+      state,
+      decryptBudget: 10,
+      configPath: 'x',
+      version: '0',
+    });
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const c = new Client({ name: 'test', version: '0' });
+    await Promise.all([server.connect(a), c.connect(b)]);
+    const guide = (await c.callTool({ name: 'import_format', arguments: {} })) as ToolResult;
+    expect(guide.isError).toBeFalsy();
+    expect(guide.content[0]!.text).toContain('| started_at |');
+
+    const folder = join(dir, 'dry');
+    await mkdir(folder);
+    await writeFile(join(folder, 'a.mp3'), 'not really audio');
+    await writeFile(join(folder, 'a.transcript.txt'), 'Dana: The Okapix order is ready.');
+    await writeFile(join(folder, 'notes.pdf'), 'x');
+    await writeFile(
+      join(folder, 'manifest.csv'),
+      'file,phone,started_at,direction,contact_name\na.mp3,+972501234567,2026-03-01 10:00,sideways,Dana\nmissing.mp3,,,,\n',
+    );
+    const sentBefore = sent;
+    const r = (await c.callTool({
+      name: 'ingest_batch',
+      arguments: { folder_path: folder, dry_run: true },
+    })) as ToolResult;
+    expect(r.isError).toBeFalsy();
+    const plan = JSON.parse(r.content[0]!.text);
+    expect(plan.summary).toMatchObject({
+      calls: 1,
+      with_audio: 1,
+      with_transcript: 1,
+      skipped_files: 1,
+      manifest_issues: 1,
+      manifest_rows_without_file: 1,
+      calls_without_manifest_row: 0,
+    });
+    expect(plan.calls[0]).toMatchObject({
+      audio: 'a.mp3',
+      transcript: 'a.transcript.txt',
+      manifest_line: 2,
+      phone: '+972501234567',
+      started_at: '2026-03-01T10:00:00.000Z',
+      direction: null,
+      contact_name: 'Dana',
+    });
+    expect(plan.skipped).toEqual([{ file: 'notes.pdf', reason: 'unsupported' }]);
+    expect(plan.manifest.issues).toEqual([{ line: 2, code: 'bad_direction' }]);
+    expect(plan.manifest.rows_without_file).toEqual([{ line: 3, file: 'missing.mp3' }]);
+
+    lines.length = 0;
+    await runIngest(
+      folder,
+      { transcribe: 'auto', dryRun: true },
+      { ...deps, io: io(), tty: false },
+    );
+    expect(lines[0]).toBe('Would import 1 call: 1 with a recording, 1 with a transcript.');
+    expect(lines).toContain('  notes.pdf: not audio or a transcript');
+    expect(lines).toContain('  line 2: bad_direction');
+    expect(lines).toContain('  line 3: missing.mp3 matches no file');
+    expect(lines.at(-1)).toBe('Nothing was imported. Run again without --dry-run to import.');
+    expect(sent).toBe(sentBefore);
+    await c.close();
+  });
+
   it('logs in through the browser loopback and stores the token in the keychain', async () => {
     await runLogin({ url: SERVER }, { ...deps, io: io(browserLogin) });
     expect((await loadConfig(dir)).server).toBe(SERVER);
@@ -207,6 +279,7 @@ describe('askcalls agent against the route handlers', () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       'get_call',
+      'import_format',
       'ingest_batch',
       'ingest_call',
       'list_contacts',
