@@ -17,7 +17,7 @@ import {
 } from '../local/layout';
 import { type LocalServer, localServerEnv, sessionSecret, startLocalServer } from '../local/server';
 import { resolveWebBundle } from '../local/web-bundle';
-import { fail } from './run';
+import { describeError, fail } from './run';
 
 export interface LocalOptions {
   port: number;
@@ -125,7 +125,10 @@ export async function startLocal(
   } else
     link?.linked.then(
       () => io.out('askcalls mcp is now connected to this AskCalls. Add it to your AI client.'),
-      () => io.err('askcalls: connecting askcalls mcp did not complete; start again to retry.'),
+      (e: unknown) =>
+        io.err(
+          `askcalls: connecting askcalls mcp did not complete (${describeError(e)}); start again to retry.`,
+        ),
     );
 
   const signInUrl = `${origin}/login#key=${key}`;

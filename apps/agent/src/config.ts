@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -68,7 +69,7 @@ export async function loadConfig(dir: string): Promise<AgentConfig> {
 
 /** Writes atomically with owner-only permissions. */
 export async function writePrivateFile(path: string, data: string | Uint8Array): Promise<void> {
-  const tmp = `${path}.${process.pid}.tmp`;
+  const tmp = `${path}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   await writeFile(tmp, data, { mode: 0o600 });
   await chmod(tmp, 0o600);
   await rename(tmp, path);

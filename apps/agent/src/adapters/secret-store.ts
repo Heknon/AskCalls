@@ -159,7 +159,16 @@ export class EncryptedFileSecretStore implements SecretStore {
     await this.#flush();
   }
 
-  async #flush(): Promise<void> {
+  #flushing: Promise<void> = Promise.resolve();
+
+  /** One write at a time, each with the contents as they are when it starts. */
+  #flush(): Promise<void> {
+    const next = this.#flushing.catch(() => {}).then(() => this.#write());
+    this.#flushing = next;
+    return next;
+  }
+
+  async #write(): Promise<void> {
     const ct = await encryptJson(this.key, this.contents, FILE_AAD);
     const file: z.input<typeof FileSchema> = {
       v: 1,

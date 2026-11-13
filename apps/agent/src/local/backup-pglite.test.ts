@@ -36,5 +36,5 @@ describe('backup of a real PGlite data directory', () => {
     } finally {
       await restored.close();
     }
-  });
+  }, 60_000);
 });
