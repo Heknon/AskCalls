@@ -534,6 +534,7 @@
   .mk .tbl, .mk .tbl tbody, .mk .tbl tr, .mk .tbl td { display: block; width: 100%; }
   .mk .tbl tr { padding-block: 18px; border-bottom: 1px solid var(--line); }
   .mk .tbl td { padding: 0; border: 0; }
+  .mk .tbl td + td { margin-top: 8px; }
   .mk .tbl td:first-child, .mk .ret td:first-child { width: auto; margin-bottom: 6px; font-size: 17px; }
   .mk .zero { font-size: 140px; }
   .mk .leak p { font-size: 20px; }
