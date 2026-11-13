@@ -17,6 +17,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import type { EmbedderStatus } from '../../../../../../client/adapters/embedder/embedder';
 import type { BrowserClient } from '../../../../../../client/browser-client';
+import { useAppSession } from '../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../i18n/locales';
 import { SAMPLE_CALLS, sampleStartedAt } from './sample-calls';
 import { reportActivation } from './telemetry';
@@ -38,6 +39,7 @@ function useEmbedderStatus(client: BrowserClient): EmbedderStatus | null {
 export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () => void }) {
   const { ctx } = client;
   const model = useEmbedderStatus(client);
+  const { refreshMe } = useAppSession();
   const t = useTranslations('onboarding.try');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -67,6 +69,7 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
     });
     setImporting(false);
     if (r.status === 'failed') return setImportFailed(true);
+    refreshMe().catch(() => {});
     setText(sample.query);
     setImported({ callId: r.status === 'done' ? r.callId : r.existingId });
   };

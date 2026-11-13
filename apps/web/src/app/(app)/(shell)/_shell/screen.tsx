@@ -29,7 +29,12 @@ export type ScreenProps = {
   children?: ReactNode;
 };
 
-const WIDTH = { wide: 'max-w-280', reading: 'max-w-transcript', form: 'max-w-160' } as const;
+/** Settings sections sit beside their 208 px list on desktop, so the form column starts there. */
+const WIDTH = {
+  wide: 'max-w-280',
+  reading: 'max-w-transcript',
+  form: 'max-w-160 lg:mx-0',
+} as const;
 
 /**
  * One app page inside the shell: top bars for every breakpoint, the page title, and the content

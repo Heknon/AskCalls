@@ -21,6 +21,18 @@ test('sign up, onboard with a PRF passkey, try the sample, lock and unlock both 
     if (u.protocol === 'data:' || u.protocol === 'blob:') return;
     if (u.origin !== origin) foreign.push(u.origin);
   });
+  // zod probes `new Function` once and catches the refusal: that `eval` report is expected.
+  const violations: string[] = [];
+  await context.exposeFunction('reportCsp', (v: string) => violations.push(v));
+  await context.addInitScript(() =>
+    document.addEventListener('securitypolicyviolation', (e) => {
+      if (e.blockedURI !== 'eval') {
+        (window as unknown as { reportCsp: (v: string) => void }).reportCsp(
+          `${e.violatedDirective} ${e.blockedURI} ${location.pathname}`,
+        );
+      }
+    }),
+  );
   await addAuthenticator(context, page, true);
 
   await signIn(page, uniqueEmail('passkey'));
@@ -73,6 +85,7 @@ test('sign up, onboard with a PRF passkey, try the sample, lock and unlock both 
   await expect(page.getByRole('heading', { name: 'Unlock your calls' })).toBeVisible();
 
   expect(foreign, 'requests to other origins').toEqual([]);
+  expect(violations, 'CSP violations').toEqual([]);
 });
 
 test('without PRF the passkey step offers a passphrase, which then unlocks', async ({
