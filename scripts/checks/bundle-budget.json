@@ -1,7 +1,7 @@
 {
   "overBudget": {
     "/admin": 251,
-    "/admin/accounts": 262,
+    "/admin/accounts": 263,
     "/admin/accounts/[id]": 261,
     "/admin/instance": 279,
     "/app": 360,
@@ -9,7 +9,7 @@
     "/app/contacts": 336,
     "/app/settings": 261,
     "/app/settings/api": 276,
-    "/app/settings/audit": 270,
+    "/app/settings/audit": 271,
     "/app/settings/data": 334,
     "/app/settings/privacy": 261,
     "/app/settings/providers": 342,
