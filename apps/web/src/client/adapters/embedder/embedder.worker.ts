@@ -13,7 +13,8 @@ declare const self: DedicatedWorkerGlobalScope;
 const origin = self.location.origin;
 env.allowRemoteModels = false;
 env.allowLocalModels = true;
-env.localModelPath = new URL(MODEL_BASE_PATH, origin).href;
+// A path, not a URL: transformers.js only probes local files for non-URL paths.
+env.localModelPath = MODEL_BASE_PATH;
 // Model files persist in Cache Storage (public weights, no user data). The ORT factory is
 // imported by URL rather than as a blob, so a worker CSP without `blob:` still works.
 env.useBrowserCache = true;
