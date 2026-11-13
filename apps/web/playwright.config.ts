@@ -40,17 +40,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /admin.*\.spec\.ts$/,
+      testIgnore: /\/admin-[^/]*\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'admin-setup',
-      testMatch: /admin-setup\.spec\.ts$/,
+      testMatch: /\/admin-setup\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], baseURL: ADMIN_URL },
     },
     {
       name: 'admin',
-      testMatch: /admin-(?!setup).*\.spec\.ts$/,
+      testMatch: /\/admin-(?!setup)[^/]*\.spec\.ts$/,
       dependencies: ['admin-setup'],
       use: { ...devices['Desktop Chrome'], baseURL: ADMIN_URL },
     },

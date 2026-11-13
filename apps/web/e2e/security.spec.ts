@@ -19,12 +19,12 @@ test('the sign-in page has its own nonce CSP', async ({ page }) => {
   expect(csp).not.toContain('unsafe-inline');
 });
 
-test('no request leaves the origin on app pages', async ({ page, context }) => {
+test('no request leaves the origin on app pages', async ({ page, context, baseURL }) => {
+  const host = new URL(baseURL!).host;
   const foreign: string[] = [];
   context.on('request', (r) => {
     const u = new URL(r.url());
-    if (!['data:', 'blob:'].includes(u.protocol) && u.host !== 'localhost:3417')
-      foreign.push(u.origin);
+    if (!['data:', 'blob:'].includes(u.protocol) && u.host !== host) foreign.push(u.origin);
   });
   await signIn(page, uniqueEmail('origins'));
   await expect(page.getByRole('heading', { name: 'Welcome to AskCalls' })).toBeVisible();
