@@ -1,0 +1,115 @@
+name: Deploy
+
+# dev    → the dev environment on every push (dev Neon branch, askcalls-dev under dev/, DEV_DOMAIN)
+# master → production, only when started by hand: Actions → Deploy → Run workflow → master.
+#          Merging into master deploys nothing; that click is the approval (environment
+#          reviewers need a paid GitHub plan on private repos). The production environment
+#          only accepts master.
+#
+# Order matters: migrations run before the code that needs them is live, so every migration
+# must be backward compatible with the version still serving (docs/deployment.md).
+#
+# Before the one-time setup (docs/deployment.md) the secrets are empty: dev still runs the fast
+# checks, nothing is migrated or deployed, and the run says so.
+on:
+  push:
+    branches: [dev]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+  workflow_dispatch:
+
+# A deploy that started finishes: cancelling between the migration and the app deploy would
+# leave the database ahead of the code for no reason.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# dev: the fast checks run in the deploy job itself, before anything is deployed (one runner,
+# not two: GitHub bills each job rounded up to a whole minute); integration and E2E tests have
+# run locally (CLAUDE.md).
+# production: waits for the full suite (ci.yml, which includes the fast checks).
+jobs:
+  full-suite:
+    if: github.ref_name == 'master'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy ${{ github.ref_name == 'master' && 'production' || 'dev' }}
+    needs: full-suite
+    # Runs when the full suite passed, or was skipped because this is dev.
+    if: >-
+      !cancelled() && !failure()
+      && (github.ref_name == 'dev' || github.ref_name == 'master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
+      url: ${{ steps.app.outputs.url }}
+    env:
+      TARGET: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - if: env.TARGET == 'dev'
+        uses: ./.github/actions/checks
+
+      - name: Check the environment can deploy
+        id: cfg
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEV_DOMAIN: ${{ vars.DEV_DOMAIN }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$VERCEL_TOKEN" ]; then
+            echo "::notice::The $TARGET environment is not set up yet (DATABASE_URL or VERCEL_TOKEN missing; docs/deployment.md, One-time setup). Nothing was migrated or deployed."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The secrets are in, so a missing variable is a setup mistake, not a fresh repo.
+          required="VERCEL_ORG_ID VERCEL_PROJECT_ID"
+          if [ "$TARGET" = dev ]; then required="$required DEV_DOMAIN"; fi
+          missing=""
+          for v in $required; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Repository variables missing:$missing (docs/deployment.md, GitHub)"
+            exit 1
+          fi
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - name: Apply database migrations
+        if: steps.cfg.outputs.deploy == 'true'
+        run: bun run --cwd packages/adapters/db-postgres migrate
+        env:
+          # The direct (unpooled) URL; the app's pooled URL lives in Vercel.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy the app
+        id: app
+        if: steps.cfg.outputs.deploy == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEV_DOMAIN: ${{ vars.DEV_DOMAIN }}
+        run: |
+          vercel() { bunx vercel "$@" --token="$VERCEL_TOKEN"; }
+          if [ "$TARGET" = production ]; then
+            vercel pull --yes --environment=production
+            vercel build --prod
+            url=$(vercel deploy --prebuilt --prod)
+          else
+            # Preview-scoped variables, narrowed to the dev branch where set.
+            vercel pull --yes --environment=preview --git-branch=dev
+            vercel build
+            # DEV_DOMAIN is a project domain assigned to the dev branch in Vercel, so this
+            # deployment (built from a dev checkout) takes it over automatically.
+            vercel deploy --prebuilt
+            url="https://$DEV_DOMAIN"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"

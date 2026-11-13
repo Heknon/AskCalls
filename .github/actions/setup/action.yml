@@ -1,5 +1,8 @@
 name: Setup
-description: Bun with a cached package store, then a frozen install.
+description: >-
+  Bun at the version in package.json (packageManager), a cached package store, and a frozen
+  install. The install also brings the pinned Vercel and Neon CLIs (root devDependencies), so
+  every workflow runs `bunx vercel` / `bunx neonctl` at the versions in bun.lock.
 runs:
   using: composite
   steps:
