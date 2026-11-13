@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-he="אבטחה · AskCalls">Security · AskCalls</title>
+<!-- AskCalls marketing mock: security. Self-contained: no external fonts, scripts or images.
+     Intended typeface: IBM Plex Sans / Plex Sans Hebrew / Plex Mono. Art direction: docs/design/marketing.md.
+     Review toggles: bottom corner, or ?theme=dark&lang=he&shot=1 -->
+<style>
+
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+:root{
+  --font-sans:"IBM Plex Sans","IBM Plex Sans Hebrew",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,0,0,1);
+  --track-xl:-.045em;--track-l:-.035em;--track-m:-.02em;
+  --wrap:1200px;--gut:40px;
+
+  color-scheme:light;
+  --bg:#FFFFFF;--bg-2:#F4F6F6;--fg:#131A1C;--muted:#566265;--faint:#7C888B;--line:#E3E8E9;--line-2:#D3DADB;
+  --primary:#0B7A71;--primary-hover:#086A62;--primary-fg:#FFFFFF;
+  --card:#FFFFFF;--mark:#FDE68A;--mark-fg:#131A1C;
+}
+:root:lang(he){--font-sans:"IBM Plex Sans Hebrew","IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--track-xl:0;--track-l:0;--track-m:0}
+.dark{color-scheme:dark;--bg:#0E1213;--bg-2:#121819;--fg:#E7ECED;--muted:#9BA7AA;--faint:#7D898C;--line:#20292C;--line-2:#2B3538;
+  --primary:#3BBFAE;--primary-hover:#5ACFC0;--primary-fg:#03201C;--card:#151A1C;--mark:#5B4A0E;--mark-fg:#F3E7C2}
+/* the always-dark chapters */
+.ink{color-scheme:dark;--bg:#070B0C;--bg-2:#0D1314;--fg:#ECF1F2;--muted:#8E9B9E;--faint:#647174;--line:rgba(236,241,242,.09);--line-2:rgba(236,241,242,.16);
+  --primary:#3BBFAE;--primary-hover:#5ACFC0;--primary-fg:#03201C;--card:#0E1415;--mark:rgba(229,174,74,.30);--mark-fg:#FFF3D6;
+  background:var(--bg);color:var(--fg)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+h1,h2,h3,.state,.lines .t,.qs .qt{text-wrap:balance}
+html{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);font-size:16px;line-height:1.6;background:var(--bg);color:var(--fg);overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+mark{background:var(--mark);color:var(--mark-fg);border-radius:3px;padding:0 .08em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+bdi,.ltr{direction:ltr;unicode-bidi:isolate}
+.mono{font-family:var(--font-mono)}
+.tab{font-variant-numeric:tabular-nums}
+.wrap{max-width:calc(var(--wrap) + 2*var(--gut));margin-inline:auto;padding-inline:var(--gut)}
+.muted{color:var(--muted)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+
+/* ---------- buttons and links ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:52px;padding-inline:26px;border-radius:999px;font-weight:500;font-size:17px;letter-spacing:-.005em;transition:background .12s var(--ease),color .12s var(--ease)}
+.btn-primary{background:var(--primary);color:var(--primary-fg)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-sm{height:36px;padding-inline:16px;font-size:14px}
+.btn-line{box-shadow:inset 0 0 0 1px var(--line-2);color:var(--fg)}
+.link{display:inline-flex;align-items:center;gap:.4rem;font-weight:500;color:var(--fg)}
+.link .arr{transition:transform .18s var(--ease)}
+.link:hover .arr{transform:translateX(3px)}
+:root[dir=rtl] .arr{transform:scaleX(-1)}
+:root[dir=rtl] .link:hover .arr{transform:scaleX(-1) translateX(3px)}
+
+/* ---------- header ---------- */
+.hdr{position:absolute;inset-inline:0;top:0;z-index:5}
+.hdr .wrap{display:flex;align-items:center;height:72px;gap:28px}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:18px;letter-spacing:-.01em}
+.brand svg{color:var(--primary)}
+.nav{display:flex;gap:28px;font-size:14px;color:var(--muted)}
+.nav a:hover,.hdr .quiet:hover{color:var(--fg)}
+.hdr .grow{flex:1}
+.hdr .quiet{font-size:14px;color:var(--muted)}
+.menu-btn{display:none;width:40px;height:40px;align-items:center;justify-content:center;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2)}
+
+
+.hero{position:relative;overflow:hidden;padding-block:200px 120px;isolation:isolate}
+.hero::before{content:"";position:absolute;z-index:-1;inset-inline:0;top:0;height:900px;background:radial-gradient(45% 50% at 50% 0%,rgba(59,191,174,.10),transparent 70%)}
+.h1{font-size:112px;line-height:.95;font-weight:500;letter-spacing:var(--track-xl)}
+:root:lang(he) .h1{line-height:1.04}
+.hero .lead{margin-top:40px;font-size:21px;line-height:1.5;color:var(--muted);max-width:620px}
+/* privacy */
+.priv .state{max-width:980px}
+.dia{margin-top:72px;display:grid;grid-template-columns:1fr 1px 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.side{padding-block:28px 8px}
+.side .lab{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-bottom:20px}
+:root:lang(he) .side .lab{letter-spacing:0;text-transform:none;font-family:var(--font-sans);font-size:13px}
+.side.dev{padding-inline-end:48px}
+.side.srv{padding-inline-start:48px}
+.item{position:relative;min-height:112px;padding-block:20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;justify-content:flex-start}
+.item .k{font-family:var(--font-mono);font-size:12px;color:var(--faint)}
+.dev .item .v{font-size:22px;line-height:1.4;letter-spacing:-.01em}
+.srv .item .v{font-family:var(--font-mono);font-size:14px;line-height:1.7;color:#A9B5B8;word-break:break-all;direction:ltr;text-align:left}
+:root[dir=rtl] .srv .item .k{text-align:right}
+.srv .item .v .hl{color:var(--fg);animation:shim 9s linear infinite}
+@keyframes shim{0%,100%{color:#A9B5B8}50%{color:var(--primary)}}
+.srv .item::before{content:"";position:absolute;inset-inline-start:-52px;top:50%;width:9px;height:9px;margin-top:-4px;border-radius:50%;background:var(--bg);box-shadow:0 0 0 2px var(--primary)}
+.line{position:relative;background:var(--primary);box-shadow:0 0 24px rgba(59,191,174,.5)}
+.line span{position:absolute;top:0;left:50%;transform:translate(-50%,-50%);white-space:nowrap;background:var(--bg);color:var(--primary);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(59,191,174,.5)}
+.exc{margin-top:120px;display:grid;grid-template-columns:1fr 2fr;gap:40px}
+.exc h3{font-size:32px;line-height:1.15;font-weight:500;letter-spacing:var(--track-m);max-width:340px}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{font-weight:400;font-size:12px;font-family:var(--font-mono);color:var(--faint);text-align:start;padding:0 0 14px;border-bottom:1px solid var(--line-2)}
+:root:lang(he) .tbl th{font-family:var(--font-sans);font-size:13px}
+.tbl td{padding:20px 24px 20px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--muted);line-height:1.5}
+:root[dir=rtl] .tbl td{padding:20px 0 20px 24px}
+.tbl td:first-child{color:var(--fg);font-weight:500;width:26%}
+.tbl td:last-child{padding-inline-end:0}
+.leak{margin-top:120px;display:grid;grid-template-columns:1fr 2fr;gap:40px;align-items:end;padding-top:48px;border-top:1px solid var(--line)}
+.zero{font-size:200px;line-height:.8;font-weight:400;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.leak p{font-size:24px;line-height:1.4;letter-spacing:-.01em;max-width:640px}
+.leak p .muted{color:var(--muted)}
+.proof{margin-top:56px;display:flex;flex-wrap:wrap;gap:16px 40px;font-size:16px}
+.proof .link{color:var(--fg)}
+
+
+.dia{margin-top:120px}
+.state{font-size:48px;line-height:1.12;font-weight:400;letter-spacing:var(--track-m)}
+.state .muted{color:var(--muted)}
+.cap{margin-top:20px;font-size:14px;color:var(--muted);font-family:var(--font-mono)}
+:root:lang(he) .cap{font-family:var(--font-sans)}
+
+/* document layout */
+.doc{display:grid;grid-template-columns:240px minmax(0,760px);gap:120px;padding-block:140px 80px}
+.toc{position:sticky;top:40px;align-self:start;font-size:14px}
+.toc ol{list-style:none;display:grid;gap:2px;border-inline-start:1px solid var(--line)}
+.toc a{display:block;padding:7px 16px;margin-inline-start:-1px;border-inline-start:1px solid transparent;color:var(--muted)}
+.toc a[aria-current]{color:var(--fg);border-inline-start-color:var(--fg)}
+.toc .lbl{font-family:var(--font-mono);font-size:12px;color:var(--faint);margin-bottom:14px}
+:root:lang(he) .toc .lbl{font-family:var(--font-sans);font-size:13px}
+.sec{padding-bottom:120px}
+.sec+.sec{padding-top:0}
+.h2{font-size:44px;line-height:1.08;font-weight:500;letter-spacing:var(--track-l);margin-bottom:28px}
+:root:lang(he) .h2{line-height:1.15}
+.sec>p{font-size:18px;line-height:1.65;color:var(--muted);max-width:640px}
+.sec>p+p{margin-top:16px}
+.sec>p b{color:var(--fg);font-weight:500}
+.sec code{font-family:var(--font-mono);font-size:.88em;color:var(--fg)}
+
+/* two-column stores table */
+.two{display:grid;grid-template-columns:1fr 1fr;margin-top:40px;border-top:1px solid var(--fg)}
+.two h3{font-size:14px;font-weight:500;padding-block:16px;border-bottom:1px solid var(--line)}
+.two ul{list-style:none}
+.two li{padding-block:16px;border-bottom:1px solid var(--line);font-size:17px;line-height:1.45;display:flex;gap:12px}
+.two li::before{content:"";flex:none;width:7px;height:7px;margin-top:.55em;border-radius:50%}
+.two .yes li::before{background:var(--fg)}
+.two .no li::before{box-shadow:inset 0 0 0 1.5px var(--muted)}
+.two .no li{color:var(--muted)}
+.two>div+div{padding-inline-start:32px;border-inline-start:1px solid var(--line)}
+.two>div:first-child{padding-inline-end:32px}
+
+/* routes */
+.routes{margin-top:40px;border-top:1px solid var(--fg)}
+.route{display:grid;grid-template-columns:200px 1fr;gap:24px;padding-block:24px;border-bottom:1px solid var(--line)}
+.route .n{font-size:17px;font-weight:500}
+.route .path{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);font-size:13px;color:var(--fg);margin-bottom:10px}
+.route .path i{display:inline-block;width:28px;height:1px;background:var(--line-2);position:relative}
+.route .path i::after{content:"";position:absolute;inset-inline-end:0;top:-3px;border:3.5px solid transparent;border-inline-start:5px solid var(--line-2);border-inline-end:0}
+.route .path .x{color:var(--muted);text-decoration:line-through}
+.route p{font-size:15px;line-height:1.55;color:var(--muted)}
+
+/* key hierarchy */
+.keys{margin-top:44px;font-family:var(--font-mono);font-size:13px;direction:ltr}
+.krow{display:grid;gap:12px}
+.k4{grid-template-columns:repeat(4,1fr)}
+.k2{grid-template-columns:1fr 1fr;gap:24px}
+.kb{border-radius:12px;box-shadow:inset 0 0 0 1px var(--line-2);padding:14px 16px;line-height:1.5;background:var(--bg)}
+.kb b{display:block;font-family:var(--font-sans);font-weight:500;font-size:15px;color:var(--fg);margin-bottom:2px}
+.kb span{color:var(--muted)}
+.kb.root{box-shadow:inset 0 0 0 1.5px var(--primary),0 0 0 6px color-mix(in srgb,var(--primary) 10%,transparent);padding:20px 22px}
+.kb.root b{font-size:20px}
+.kv{position:relative;height:56px;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12px}
+.kv::before{content:"";position:absolute;left:50%;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.kv span{position:relative;background:var(--bg);padding:2px 10px}
+.kv2{display:grid;grid-template-columns:1fr 1fr;gap:24px;height:44px}
+.kv2 div{position:relative}
+.kv2 div::before{content:"";position:absolute;left:50%;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.leaf{margin-top:0;color:var(--muted);line-height:1.8;padding-inline-start:16px}
+.leaf div::before{content:"└ ";color:var(--faint)}
+.ktxt{direction:inherit}
+
+/* unlock list */
+.ul4{margin-top:36px;border-top:1px solid var(--fg)}
+.ul4 div{display:grid;grid-template-columns:200px 1fr;gap:24px;padding-block:18px;border-bottom:1px solid var(--line);font-size:15px;line-height:1.55}
+.ul4 b{font-weight:500;font-size:16px}
+.ul4 span{color:var(--muted)}
+.ul4 code{color:var(--muted)}
+
+/* device link */
+.link-fig{margin-top:40px;display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;padding:36px;border-radius:20px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.ldev{text-align:center}
+.ldev .fp{font-family:var(--font-mono);font-size:40px;letter-spacing:.04em;font-variant-numeric:tabular-nums;direction:ltr}
+.ldev .w{font-size:13px;color:var(--muted);margin-top:6px}
+.eq{font-size:13px;color:var(--primary);font-family:var(--font-mono);display:flex;flex-direction:column;align-items:center;gap:6px}
+.eq::before{content:"=";font-size:28px;line-height:1;font-family:var(--font-sans)}
+.steps{margin-top:32px;list-style:none;counter-reset:s;display:grid;gap:0;border-top:1px solid var(--line)}
+.steps li{counter-increment:s;display:grid;grid-template-columns:40px 1fr;padding-block:14px;border-bottom:1px solid var(--line);font-size:15px;line-height:1.55;color:var(--muted)}
+.steps li::before{content:counter(s,decimal-leading-zero);font-family:var(--font-mono);font-size:12px;color:var(--faint);padding-top:3px}
+
+/* terminal */
+.term{margin-top:36px;direction:ltr;text-align:left;border-radius:16px;background:#070B0C;box-shadow:0 0 0 1px var(--line);font-family:var(--font-mono);font-size:14px;line-height:1.8;color:#D6DEE0;overflow:hidden}
+.term .bar{height:40px;display:flex;align-items:center;padding-inline:18px;border-bottom:1px solid rgba(236,241,242,.08);font-size:12px;color:#647174}
+.term pre{font:inherit;padding:20px 24px;white-space:pre-wrap;word-break:break-all}
+.term .p{color:#647174}.term .c{color:#ECF1F2}.term .ok{color:#3BBFAE}.term .dim{color:#7D898C}
+.big0{display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:end;margin-block:8px 32px}
+.big0 b{font-size:160px;line-height:.8;font-weight:400;letter-spacing:-.06em}
+.big0 p{font-size:20px;line-height:1.4;max-width:420px}
+.refs{margin-top:28px;display:flex;flex-wrap:wrap;gap:14px 36px}
+
+/* faq */
+.faq-g{display:grid;grid-template-columns:5fr 7fr;gap:72px}
+.faq{border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:24px;padding-block:28px;font-size:22px;letter-spacing:-.01em;cursor:pointer}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pm{position:relative;width:16px;height:16px;flex:none;color:var(--muted)}
+.faq summary .pm::before,.faq summary .pm::after{content:"";position:absolute;inset:7px 0 auto;height:2px;background:currentColor;border-radius:2px;transition:transform .2s var(--ease)}
+.faq summary .pm::after{transform:rotate(90deg)}
+.faq details[open] .pm::after{transform:rotate(0)}
+.faq p{padding-bottom:30px;margin-top:-8px;color:var(--muted);font-size:17px;line-height:1.6;max-width:600px}
+
+/* closer + footer */
+.closer{padding-block:180px 140px;text-align:center}
+.closer .h1{font-size:96px}
+.closer .sub{margin-top:28px;color:var(--muted)}
+.closer .ctas{justify-content:center;margin-top:40px}
+.foot{border-top:1px solid var(--line);padding-block:48px 56px;font-size:14px}
+.foot .wrap{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:32px}
+.foot h4{font-size:13px;font-weight:500;color:var(--fg);margin-bottom:14px}
+.foot ul{list-style:none;display:grid;gap:10px;color:var(--muted)}
+.foot a:hover{color:var(--fg)}
+.foot .fine{color:var(--faint);margin-top:12px;font-size:13px;line-height:1.6}
+
+
+.closer{padding-block:140px 110px;text-align:center}
+.closer .h1{font-size:88px}
+.closer .ctas{display:flex;align-items:center;gap:28px;justify-content:center;margin-top:40px}
+.ctas .link{color:var(--muted)}
+
+@media (max-width:1100px){
+  :root{--gut:32px}
+  .nav{display:none}
+  .h1{font-size:88px}.state{font-size:40px}
+  .doc{grid-template-columns:1fr;gap:0;padding-top:96px}
+  .toc{display:none}
+}
+@media (max-width:640px){
+  :root{--gut:20px}
+  .hdr .wrap{height:60px;gap:12px}.hdr .quiet{display:none}.menu-btn{display:inline-flex}
+  .hero{padding-block:128px 72px}
+  .h1{font-size:clamp(3rem,16.4vw,7rem);line-height:.96}
+  :root:lang(he) .h1{line-height:1.08}
+  .h1 br{display:none}
+  .hero .lead{font-size:18px;margin-top:24px}
+  .dia{grid-template-columns:1fr;grid-template-rows:auto 1px auto;margin-top:64px}
+  .side.dev{padding-inline-end:0;padding-bottom:28px}
+  .side.srv{padding-inline-start:0;padding-top:36px}
+  .srv .item::before{display:none}
+  .line span{top:50%}
+  .item{min-height:0;padding-block:16px}
+  .dev .item .v{font-size:18px}
+  .srv .item .v{font-size:12.5px}
+  .doc{padding-block:72px 40px}
+  .sec{padding-bottom:80px}
+  .h2{font-size:32px}
+  .sec>p{font-size:17px}
+  .two{grid-template-columns:1fr}
+  .two>div+div{padding-inline-start:0;border-inline-start:0;margin-top:28px}
+  .two>div:first-child{padding-inline-end:0}
+  .route,.ul4 div{grid-template-columns:1fr;gap:6px}
+  .k4{grid-template-columns:1fr 1fr}
+  .k2,.kv2{gap:12px}
+  .keys{font-size:12px}
+  .kb{padding:12px}
+  .link-fig{grid-template-columns:1fr;padding:24px;gap:16px}
+  .eq{flex-direction:row}
+  .ldev .fp{font-size:32px}
+  .term{font-size:12px}
+  .big0{grid-template-columns:1fr;gap:20px}
+  .big0 b{font-size:120px}
+  .refs{flex-direction:column}
+  .closer{padding-block:96px 80px}
+  .closer .h1{font-size:clamp(2.75rem,12vw,6rem)}
+  .closer .ctas{flex-wrap:wrap}
+  .foot .wrap{grid-template-columns:1fr 1fr;gap:32px 20px}
+  .foot .wrap>div:first-child{grid-column:1/-1}
+}
+/* ---- mock-only review toggle ---- */
+.mock-toggle{position:fixed;z-index:100;inset-block-end:12px;inset-inline-end:12px;display:flex;gap:4px;padding:4px;background:#fff;border:1px solid #E0E5E6;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:11px;direction:ltr;font-family:var(--font-sans)}
+.mock-toggle button{border:0;background:none;padding:4px 10px;border-radius:999px;cursor:pointer;font-weight:600;color:#566265}
+.mock-toggle button[aria-pressed=true]{background:#E5F3F1;color:#065A53}
+
+</style>
+</head>
+<body>
+<div class="ink">
+<header class="hdr" data-component="MarketingHeader">
+  <div class="wrap">
+    <a class="brand" href="#" aria-label="AskCalls home" data-he-aria-label="AskCalls, דף הבית">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="6.5" y="4" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="1" width="3" height="20" rx="1.5" fill="currentColor"/><rect x="17.5" y="6" width="3" height="10" rx="1.5" fill="currentColor"/></svg>AskCalls</a>
+    <nav class="nav" aria-label="Site" data-he-aria-label="האתר"><a href="security.html"><span data-he="אבטחה">Security</span></a><a href="pricing.html"><span data-he="תמחור">Pricing</span></a><a href="#"><span data-he="אירוח עצמי">Self-host</span></a><a href="#faq"><span data-he="שאלות">FAQ</span></a><a href="#">GitHub</a></nav>
+    <span class="grow"></span>
+    <a class="quiet" href="#" lang="he" data-he="English">עברית</a>
+    <a class="quiet" href="#"><span data-he="כניסה">Sign in</span></a>
+    <a class="btn btn-sm btn-line" href="#"><span data-he="להתחיל בחינם">Start free</span></a>
+    <button class="menu-btn" aria-label="Menu" data-he-aria-label="תפריט"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg></button>
+  </div>
+</header>
+<section class="hero" aria-labelledby="t">
+  <div class="wrap">
+    <h1 class="h1" id="t"><span data-he="אנחנו לא יכולים <br>לקרוא את השיחות שלך.">We can't read <br>your calls.</span></h1>
+    <p class="lead" data-he="זה כל מודל הפרטיות: מה אנחנו שומרים, מה לא רואים אף פעם, לאן יוצא טקסט גלוי כשמבקשים, ואיך לבדוק את כל זה בעצמך.">This is the whole privacy model: what we store, what we never see, where plaintext goes when you ask, and how to check all of it yourself.</p>
+    <figure class="dia" data-component="TrustDiagram" aria-label="The same call on your device and on our server" data-he-aria-label="אותה שיחה במכשיר שלך ובשרת שלנו">
+      <div class="side dev">
+        <div class="lab" data-he="במכשיר שלך">On your device</div>
+        <div class="item"><span class="k">transcript</span><span class="v" dir="auto" data-he="„אז אני יכול לעשות 9,400 על הסט, כולל הובלה, אם מאשרים עד יום ראשון.”">“Then I can do 9,400 for the set, delivery included, if you confirm by Sunday.”</span></div>
+        <div class="item"><span class="k">contact</span><span class="v"><span data-he="דנה לוי">Dana Levi</span> · <bdi class="tab">+972 50-555-0112</bdi></span></div>
+        <div class="item"><span class="k">tag</span><span class="v" data-he="ליד חם">Hot lead</span></div>
+        <div class="item"><span class="k">when</span><span class="v"><span data-he="היום, 14:32 · 8 דק׳ 14 שנ׳">Today, 14:32 · 8 min 14 s</span></span></div>
+      </div>
+      <div class="line" aria-hidden="true"><span data-he="מוצפן כאן">Encrypted here</span></div>
+      <div class="side srv">
+        <div class="lab" data-he="בשרת שלנו">On our server</div>
+        <div class="item"><span class="k">transcriptCt · AES-256-GCM</span><span class="v">01 <span class="hl">9f3c7a10</span> e2b45d88 0c61aa3f 19e7c4b2 6f05d913 2e8a7b40 c1d8e650 93fa0b2e 7d4c18a6 55e9f201 b3c07e4d <span>…</span> 4 812 bytes</span></div>
+        <div class="item"><span class="k">contactTok · HMAC-SHA256, 64 bit</span><span class="v">-4417203365117839012</span></div>
+        <div class="item"><span class="k">tagTok</span><span class="v">7730851120941766205</span></div>
+        <div class="item"><span class="k">day · durationBucket</span><span class="v">2026-11-13 · 5–10 min</span></div>
+      </div>
+    </figure>
+    <p class="cap" data-he="אותה שיחה, בשני צדי הקו. השדות בצד ימין הם השמות האמיתיים בסכמה.">The same call on both sides of the line. Field names on the server side are the real column names.</p>
+  </div>
+</section>
+</div>
+
+<main class="wrap doc">
+  <nav class="toc" aria-label="On this page" data-he-aria-label="בעמוד הזה">
+    <p class="lbl" data-he="בעמוד הזה">On this page</p>
+    <ol>
+      <li><a href="#stores" aria-current="true" data-he="מה נשמר">What we store</a></li>
+      <li><a href="#plaintext" data-he="לאן יוצא טקסט גלוי">Where plaintext goes</a></li>
+      <li><a href="#keys" data-he="המפתחות">Your keys</a></li>
+      <li><a href="#unlock" data-he="פתיחה">Unlocking</a></li>
+      <li><a href="#link" data-he="קישור מכשיר">Linking a device</a></li>
+      <li><a href="#verify" data-he="אימות הקוד">Verify what you run</a></li>
+      <li><a href="#leak" data-he="בדיקת הדליפה">The leak test</a></li>
+      <li><a href="#report" data-he="דיווח על חולשה">Reporting</a></li>
+    </ol>
+  </nav>
+  <div>
+    <section class="sec" id="stores">
+      <h2 class="h2" data-he="מה אנחנו שומרים, ומה לא רואים אף פעם.">What we store, and what we never see.</h2>
+      <p data-he="המכשיר שלך מתמלל, מאנדקס ומצפין לפני שמשהו עוזב אותו. השרת מקבל טקסט מוצפן וטוקנים, ומחזיר אותם כשמחפשים.">Your device indexes and encrypts before anything leaves it. The server receives ciphertext and tokens, and returns them when you search.</p>
+      <div class="two">
+        <div class="yes"><h3 data-he="השרת שומר">The server stores</h3><ul>
+          <li data-he="תמלולים, מטא-דאטה, הערות והקלטות, מוצפנים">Encrypted transcripts, metadata, notes and recordings</li>
+          <li data-he="טוקני HMAC למילים, אנשי קשר ותגיות">HMAC tokens for keywords, contacts and tags</li>
+          <li data-he="וקטורים של טקסט אחרי הסרת פרטים מזהים">Embeddings of redacted text</li>
+          <li data-he="היום של כל שיחה וטווח משך">The day of each call and a duration bucket</li>
+          <li data-he="מפתחות עטופים ומפתחות ציבוריים">Wrapped keys and public keys</li></ul></div>
+        <div class="no"><h3 data-he="השרת לא רואה אף פעם">The server never sees</h3><ul>
+          <li data-he="טקסט של תמלול או מילים בודדות">Transcript text or individual words</li>
+          <li data-he="מספרי טלפון או שמות אנשי קשר">Phone numbers or contact names</li>
+          <li data-he="שמות תגיות, הערות או הגדרות כללים">Tag names, notes or rule definitions</li>
+          <li data-he="המפתחות שלך, לא עטופים">Your keys, unwrapped</li>
+          <li data-he="הקלטות מפוענחות">Decrypted recordings</li></ul></div>
+      </div>
+    </section>
+
+    <section class="sec" id="plaintext">
+      <h2 class="h2" data-he="לאן יוצא טקסט גלוי.">Where plaintext goes.</h2>
+      <p data-he="רק כשמבקשים, בקשה אחת בכל פעם. המסלולים האלה מזרימים ישירות, ולא כותבים לדיסק, לאחסון או ללוגים.">Only when you ask, one request at a time. These routes stream straight through and never write to disk, storage or logs.</p>
+      <div class="routes" data-component="DataFlowNote">
+        <div class="route"><span class="n" data-he="תמלול">Transcription</span><div><div class="path"><span data-he="המכשיר">device</span><i></i><span>AskCalls</span><i></i><span>ElevenLabs</span></div><p data-he="השמע של שיחה שמעלים. ElevenLabs עשויה לשמור לוגים של בקשות לפי המדיניות הרגילה שלה, עד שמצב ללא שמירה (Zero Retention) יופעל. עם מפתח משלך, המכשיר שולח ישירות ואנחנו לא בדרך.">Audio of a call you upload. ElevenLabs may keep request logs under its standard policy until Zero Retention Mode is in place. With your own key, your device sends it directly and we are not in the path.</p></div></div>
+        <div class="route"><span class="n" data-he="שאלה על שיחה">Ask about a call</span><div><div class="path"><span data-he="המכשיר">device</span><i></i><span>AskCalls</span><i></i><span>Anthropic</span></div><p data-he="השיחה הזו והשאלה שלך, אחרי שאישרת בחלון ששם את הנמען. Anthropic פועלת ללא שמירת נתונים. התמלול נעטף כמידע לא אמין, כך שהוראות בתוכו לא מבוצעות.">That one call and your question, after you agree in a dialog that names the receiver. Anthropic operates under zero data retention. The transcript is wrapped as untrusted data, so instructions inside it aren't followed.</p></div></div>
+        <div class="route"><span class="n" data-he="העלאות לתיבה">Inbox uploads</span><div><div class="path"><span data-he="כלי AI מרוחק">remote AI tool</span><i></i><span>AskCalls</span><i></i><span data-he="מוצפן למפתח שלך">sealed to your key</span></div><p data-he="תמלול שכלי AI מרוחק שלח בשמך גלוי לשרת בזמן ההעברה, מוצפן מיד למפתח הציבורי של התיבה שלך, והטקסט הגלוי נזרק. האפליקציה מציינת את זה ליד כל פריט כזה.">A transcript a remote AI tool sends for you is visible to our server in transit, sealed at once to your inbox public key, and the plaintext is discarded. The app says so next to each such item.</p></div></div>
+      </div>
+    </section>
+
+    <section class="sec" id="keys">
+      <h2 class="h2" data-he="המפתחות שלך.">Your keys.</h2>
+      <p data-he="מפתח שורש אחד נוצר במכשיר הראשון שלך ולא יוצא ממנו לא עטוף. כל שאר המפתחות נגזרים ממנו.">One root key is created on your first device and never leaves a device unwrapped. Every other key comes from it.</p>
+      <div class="keys" aria-label="Key hierarchy" data-he-aria-label="היררכיית המפתחות">
+        <div class="krow k4">
+          <div class="kb"><b>Passkey</b><span>WebAuthn PRF</span></div>
+          <div class="kb"><b data-he="קוד שחזור">Recovery code</b><span>128-bit</span></div>
+          <div class="kb"><b data-he="סיסמה">Passphrase</b><span>Argon2id</span></div>
+          <div class="kb"><b data-he="מכשיר מקושר">Linked device</b><span>ECDH P-256</span></div>
+        </div>
+        <div class="kv"><span data-he="כל אחד פותח עותק עטוף">each unwraps its own copy</span></div>
+        <div class="kb root"><b data-he="מפתח שורש">Root key</b><span data-he="32 בתים אקראיים · נמחק מהזיכרון בנעילה">32 random bytes · wiped from memory on lock</span></div>
+        <div class="kv"><span>HKDF-SHA256</span></div>
+        <div class="krow k2">
+          <div class="kb"><b>kek</b><span>AES-256-GCM</span></div>
+          <div class="kb"><b>index</b><span>HMAC-SHA256</span></div>
+        </div>
+        <div class="kv2"><div></div><div></div></div>
+        <div class="krow k2">
+          <div class="kb"><b data-he="מפתח לכל שיחה">Per-call key</b><span data-he="תמלול, מטא-דאטה, קטעים, הקלטה">transcript, meta, snippets, recording</span></div>
+          <div class="kb"><b data-he="טוקנים">Tokens</b><span data-he="מילים, אנשי קשר, תגיות · 64 ביט">words, contacts, tags · 64-bit</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="unlock">
+      <h2 class="h2" data-he="פתיחה.">Unlocking.</h2>
+      <p data-he="כל שיטה שומרת עותק עטוף משלה של מפתח השורש. אי אפשר לסיים את ההרשמה בלי ליצור קוד שחזור ולהקליד חלק ממנו בחזרה.">Each method keeps its own wrapped copy of the root key. Sign-up can't finish until you create a recovery code and type part of it back.</p>
+      <div class="ul4">
+        <div><b>Passkey</b><span data-he="Face ID, Touch ID, Windows Hello או מפתח אבטחה. הרחבת PRF נותנת 32 בתים שהשרת לא רואה.">Face ID, Touch ID, Windows Hello or a security key. The PRF extension yields 32 bytes the server never sees.</span></div>
+        <div><b data-he="קוד שחזור">Recovery code</b><span data-he="8 קבוצות של 4 תווים, מוצג פעם אחת. 128 ביט של אקראיות, אז לא צריך גזירה איטית.">8 groups of 4 characters, shown once. 128 bits of randomness, so no slow derivation is needed.</span></div>
+        <div><b data-he="סיסמה">Passphrase</b><span data-he="רק כשהדפדפן לא תומך ב-PRF. Argon2id עם 64 MiB, לפחות 12 תווים.">Only where the browser lacks PRF. Argon2id at 64 MiB, at least 12 characters.</span></div>
+        <div><b data-he="נעילה">Locking</b><span data-he="אחרי 15 דקות ללא פעילות ובסגירת הלשונית. המפתחות והטקסט המפוענח נמחקים מהזיכרון.">After 15 idle minutes and on tab close. Keys and decrypted text are dropped from memory.</span></div>
+      </div>
+    </section>
+
+    <section class="sec" id="link">
+      <h2 class="h2" data-he="קישור מכשיר.">Linking a device.</h2>
+      <p data-he="הסוכן המקומי או דפדפן נוסף מקבלים את מפתח השורש ישירות מהמכשיר הקיים, מוצפן למפתח שנוצר עבורם. השרת רק מעביר.">The local agent or another browser receives the root key straight from your existing device, encrypted to a key made for it. The server only relays.</p>
+      <div class="link-fig" aria-hidden="true">
+        <div class="ldev"><div class="fp">418 602</div><div class="w" data-he="במכשיר החדש">on the new device</div></div>
+        <div class="eq" data-he="להשוות">compare</div>
+        <div class="ldev"><div class="fp">418 602</div><div class="w" data-he="במכשיר המהימן">on your trusted device</div></div>
+      </div>
+      <ol class="steps">
+        <li data-he="ב&quot;הגדרות › מכשירים&quot; בוחרים לקשר מכשיר, ומקבלים קוד קצר וקוד QR.">In Settings › Devices, choose Link a device to get a short code and a QR code.</li>
+        <li data-he="המכשיר החדש יוצר זוג מפתחות ושולח את המפתח הציבורי.">The new device makes a key pair and posts its public key.</li>
+        <li data-he="שני המכשירים מציגים טביעה בת 6 ספרות. מאשרים שהן זהות.">Both devices show a 6-digit fingerprint. You confirm they match.</li>
+        <li data-he="המכשיר המהימן שולח את מפתח השורש מוצפן למפתח הציבורי החדש.">The trusted device sends the root key encrypted to the new public key.</li>
+        <li data-he="הקישור פג אחרי 10 דקות, נרשם ביומן הביקורת ואפשר לבטל אותו.">The link expires in 10 minutes, is written to the audit log and can be revoked.</li>
+      </ol>
+    </section>
+
+    <section class="sec" id="verify">
+      <h2 class="h2" data-he="לבדוק מה רץ אצלך.">Verify what you run.</h2>
+      <p data-he="AskCalls נבנה באופן משוחזר. כל גרסה מפרסמת SHA-256 לכל קובץ JavaScript של הלקוח, כך שאפשר לוודא ש-askcalls.com מגיש בדיוק את הקוד שבמאגר. נתיבי האפליקציה לא טוענים סקריפטים של צד שלישי ורצים תחת CSP קשיח.">AskCalls builds reproducibly. Every release publishes the SHA-256 of each client JavaScript asset, so you can check that askcalls.com serves exactly the code in the repository. App routes load no third-party scripts and run under a strict CSP.</p>
+      <div class="term" data-component="CopyableCode"><div class="bar">~ zsh</div>
+<pre><span class="p">$</span> <span class="c">curl -s https://askcalls.com/_next/static/chunks/app-7f3e2a.js | shasum -a 256</span>
+<span class="dim">9c1f4e0b7a2d…e81b  -</span>
+<span class="p">$</span> <span class="c">grep app-7f3e2a.js SHA256SUMS-v1.0.0.txt</span>
+<span class="ok">9c1f4e0b7a2d…e81b  app-7f3e2a.js</span></pre></div>
+    </section>
+
+    <section class="sec" id="leak">
+      <h2 class="h2" data-he="בדיקת הדליפה.">The leak test.</h2>
+      <div class="big0"><b class="tab">0</b><p data-he="מילים ומספרי טלפון שהזרענו ונמצאו ב-dump מלא של מסד הנתונים והאחסון.">seeded words and phone numbers found in a full dump of the database and the storage bucket.</p></div>
+      <p data-he="כל pull request מריץ אותה: מזריעים שיחות עם מילים ומספרים ידועים, מוציאים dump של כל מסד הנתונים והאחסון, ומחפשים אותם בכל קידוד. אם משהו נמצא, הבנייה נכשלת.">Every pull request runs it: seed calls with known words and numbers, dump the entire database and bucket, and search for them in every encoding. If anything turns up, the build fails.</p>
+    </section>
+
+    <section class="sec" id="report">
+      <h2 class="h2" data-he="מודל האיומים ודיווח.">Threat model and reporting.</h2>
+      <p data-he="מודל האיומים המלא מפרט ממה AskCalls מגן, וממה לא: מכשיר פרוץ שפתוח, למשל, יכול לקרוא את מה שמוצג עליו. חולשות מדווחים כמתואר ב-SECURITY.md.">The full threat model sets out what AskCalls protects against and what it doesn't: a compromised device that is unlocked, for example, can read what it shows. Report vulnerabilities as described in SECURITY.md.</p>
+      <div class="refs">
+        <a class="link" href="#"><span data-he="מודל האיומים">Threat model</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="link" href="#">SECURITY.md <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="link" href="#"><span data-he="ספקי משנה">Subprocessors</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="ink">
+  <section class="closer" aria-labelledby="close-t">
+    <div class="wrap">
+      <h2 class="h1" id="close-t" data-he="לשאול את השיחות שלך כל דבר.">Ask your calls anything.</h2>
+      <div class="ctas"><a class="btn btn-primary" href="#"><span data-he="להתחיל בחינם">Start free</span></a><a class="link" href="#"><span data-he="קוד המקור ב-GitHub">Source on GitHub</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+    </div>
+  </section>
+  <footer class="foot" data-component="MarketingFooter">
+    <div class="wrap">
+      <div><a class="brand" href="#"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="6.5" y="4" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="1" width="3" height="20" rx="1.5" fill="currentColor"/><rect x="17.5" y="6" width="3" height="10" rx="1.5" fill="currentColor"/></svg>AskCalls</a><p class="fine" data-he="קוד פתוח, רישיון MIT. <br>© 2026 AskCalls">Open source, MIT licensed. <br>© 2026 AskCalls</p></div>
+      <div><h4 data-he="מוצר">Product</h4><ul><li><a href="pricing.html" data-he="תמחור">Pricing</a></li><li><a href="#">MCP</a></li><li><a href="#" data-he="אירוח עצמי">Self-host</a></li><li><a href="#">GitHub</a></li></ul></div>
+      <div><h4 data-he="אמון">Trust</h4><ul><li><a href="security.html" data-he="אבטחה">Security</a></li><li><a href="#" data-he="ספקי משנה">Subprocessors</a></li><li><a href="#" data-he="סטטוס">Status</a></li></ul></div>
+      <div><h4 data-he="משפטי">Legal</h4><ul><li><a href="#" data-he="מדיניות פרטיות">Privacy policy</a></li><li><a href="#" data-he="תנאי שימוש">Terms</a></li><li><a href="#">DPA</a></li></ul></div>
+    </div>
+  </footer>
+</div>
+<div class="mock-toggle" role="group" aria-label="Mock review controls">
+  <button type="button" data-mock-theme="light">Light</button><button type="button" data-mock-theme="dark">Dark</button>
+  <button type="button" data-mock-lang="en">EN</button><button type="button" data-mock-lang="he">עב</button>
+</div>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search), root=document.documentElement;
+  function theme(t){root.classList.toggle('dark',t==='dark');mark('theme',t)}
+  function lang(l){
+    root.lang=l;root.dir=(l==='he')?'rtl':'ltr';
+    document.querySelectorAll('[data-he]').forEach(function(el){
+      if(!el.hasAttribute('data-en'))el.setAttribute('data-en',el.innerHTML);
+      el.innerHTML=(l==='he')?el.getAttribute('data-he'):el.getAttribute('data-en');});
+    ['placeholder','aria-label','title','value'].forEach(function(a){
+      document.querySelectorAll('[data-he-'+a+']').forEach(function(el){
+        if(!el.hasAttribute('data-en-'+a))el.setAttribute('data-en-'+a,el.getAttribute(a)||'');
+        el.setAttribute(a,(l==='he')?el.getAttribute('data-he-'+a):el.getAttribute('data-en-'+a));});});
+    var t=document.querySelector('title');if(t&&t.dataset.he){if(!t.dataset.en)t.dataset.en=t.textContent;t.textContent=(l==='he')?t.dataset.he:t.dataset.en}
+    if(window.__demo)window.__demo(l);
+    mark('lang',l)}
+  function mark(k,v){document.querySelectorAll('[data-mock-'+k+']').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-mock-'+k)===v)})}
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-mock-theme],[data-mock-lang]');if(!b)return;
+    if(b.dataset.mockTheme)theme(b.dataset.mockTheme);if(b.dataset.mockLang)lang(b.dataset.mockLang)});
+  theme(q.get('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+  lang(q.get('lang')||'en');
+  if(q.get('shot')==='1'){var m=document.querySelector('.mock-toggle');if(m)m.remove()}
+})();</script>
+</body>
+</html>
+

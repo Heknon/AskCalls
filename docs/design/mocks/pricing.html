@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-he="תמחור · AskCalls">Pricing · AskCalls</title>
+<!-- AskCalls marketing mock: pricing. Self-contained: no external fonts, scripts or images.
+     Intended typeface: IBM Plex Sans / Plex Sans Hebrew / Plex Mono. Art direction: docs/design/marketing.md.
+     Review toggles: bottom corner, or ?theme=dark&lang=he&shot=1 -->
+<style>
+
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+:root{
+  --font-sans:"IBM Plex Sans","IBM Plex Sans Hebrew",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,0,0,1);
+  --track-xl:-.045em;--track-l:-.035em;--track-m:-.02em;
+  --wrap:1200px;--gut:40px;
+
+  color-scheme:light;
+  --bg:#FFFFFF;--bg-2:#F4F6F6;--fg:#131A1C;--muted:#566265;--faint:#7C888B;--line:#E3E8E9;--line-2:#D3DADB;
+  --primary:#0B7A71;--primary-hover:#086A62;--primary-fg:#FFFFFF;
+  --card:#FFFFFF;--mark:#FDE68A;--mark-fg:#131A1C;
+}
+:root:lang(he){--font-sans:"IBM Plex Sans Hebrew","IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--track-xl:0;--track-l:0;--track-m:0}
+.dark{color-scheme:dark;--bg:#0E1213;--bg-2:#121819;--fg:#E7ECED;--muted:#9BA7AA;--faint:#7D898C;--line:#20292C;--line-2:#2B3538;
+  --primary:#3BBFAE;--primary-hover:#5ACFC0;--primary-fg:#03201C;--card:#151A1C;--mark:#5B4A0E;--mark-fg:#F3E7C2}
+/* the always-dark chapters */
+.ink{color-scheme:dark;--bg:#070B0C;--bg-2:#0D1314;--fg:#ECF1F2;--muted:#8E9B9E;--faint:#647174;--line:rgba(236,241,242,.09);--line-2:rgba(236,241,242,.16);
+  --primary:#3BBFAE;--primary-hover:#5ACFC0;--primary-fg:#03201C;--card:#0E1415;--mark:rgba(229,174,74,.30);--mark-fg:#FFF3D6;
+  background:var(--bg);color:var(--fg)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+h1,h2,h3,.state,.lines .t,.qs .qt{text-wrap:balance}
+html{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);font-size:16px;line-height:1.6;background:var(--bg);color:var(--fg);overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+mark{background:var(--mark);color:var(--mark-fg);border-radius:3px;padding:0 .08em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+bdi,.ltr{direction:ltr;unicode-bidi:isolate}
+.mono{font-family:var(--font-mono)}
+.tab{font-variant-numeric:tabular-nums}
+.wrap{max-width:calc(var(--wrap) + 2*var(--gut));margin-inline:auto;padding-inline:var(--gut)}
+.muted{color:var(--muted)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+
+/* ---------- buttons and links ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:52px;padding-inline:26px;border-radius:999px;font-weight:500;font-size:17px;letter-spacing:-.005em;transition:background .12s var(--ease),color .12s var(--ease)}
+.btn-primary{background:var(--primary);color:var(--primary-fg)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-sm{height:36px;padding-inline:16px;font-size:14px}
+.btn-line{box-shadow:inset 0 0 0 1px var(--line-2);color:var(--fg)}
+.link{display:inline-flex;align-items:center;gap:.4rem;font-weight:500;color:var(--fg)}
+.link .arr{transition:transform .18s var(--ease)}
+.link:hover .arr{transform:translateX(3px)}
+:root[dir=rtl] .arr{transform:scaleX(-1)}
+:root[dir=rtl] .link:hover .arr{transform:scaleX(-1) translateX(3px)}
+
+/* ---------- header ---------- */
+.hdr{position:absolute;inset-inline:0;top:0;z-index:5}
+.hdr .wrap{display:flex;align-items:center;height:72px;gap:28px}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:18px;letter-spacing:-.01em}
+.brand svg{color:var(--primary)}
+.nav{display:flex;gap:28px;font-size:14px;color:var(--muted)}
+.nav a:hover,.hdr .quiet:hover{color:var(--fg)}
+.hdr .grow{flex:1}
+.hdr .quiet{font-size:14px;color:var(--muted)}
+.menu-btn{display:none;width:40px;height:40px;align-items:center;justify-content:center;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2)}
+
+
+/* ---------- page ---------- */
+.hero{position:relative;overflow:hidden;padding-block:200px 140px;isolation:isolate}
+.hero::before{content:"";position:absolute;z-index:-1;inset-inline:0;top:0;height:100%;background:radial-gradient(50% 60% at 80% 100%,rgba(59,191,174,.10),transparent 70%)}
+:root[dir=rtl] .hero::before{background:radial-gradient(50% 60% at 20% 100%,rgba(59,191,174,.10),transparent 70%)}
+.h1{font-size:112px;line-height:.95;font-weight:500;letter-spacing:var(--track-xl)}
+:root:lang(he) .h1{line-height:1.04}
+.hero .lead{margin-top:36px;color:var(--muted)}
+.hero .row{display:grid;grid-template-columns:1fr 380px;gap:40px;align-items:end}
+.hero .ctas{display:flex;align-items:center;gap:28px}
+.ch{padding-block:160px}
+.h2{font-size:72px;line-height:1;font-weight:500;letter-spacing:var(--track-l)}
+:root:lang(he) .h2{line-height:1.08}
+.state{font-size:48px;line-height:1.12;font-weight:400;letter-spacing:var(--track-m)}
+.state .muted{color:var(--muted)}
+.lead{font-size:21px;line-height:1.5;color:var(--muted);max-width:560px}
+.ctas{display:flex;align-items:center;gap:28px;margin-top:28px}
+.ctas .link{font-size:16px;color:var(--muted)}
+
+/* limits sheet */
+.sheet{list-style:none;border-top:1px solid var(--fg)}
+.sheet li{display:grid;grid-template-columns:360px 1fr 1fr;gap:40px;align-items:baseline;padding-block:36px 34px;border-bottom:1px solid var(--line)}
+.sheet b{font-size:112px;line-height:.9;font-weight:400;letter-spacing:-.055em;font-variant-numeric:tabular-nums}
+.sheet b small{font-size:.36em;letter-spacing:-.01em;margin-inline-start:8px;color:var(--muted)}
+.sheet .k{font-size:28px;line-height:1.2;letter-spacing:var(--track-m)}
+.sheet .v{font-size:16px;line-height:1.55;color:var(--muted);max-width:400px}
+.sheet .v code{font-family:var(--font-mono);font-size:14px;color:var(--fg)}
+.sheet-h{margin-bottom:20px}
+.sheet-h p{font-size:15px;color:var(--muted);font-family:var(--font-mono)}
+:root:lang(he) .sheet-h p{font-family:var(--font-sans)}
+
+/* what counts */
+.counts{display:grid;grid-template-columns:5fr 7fr;gap:72px}
+.rules{list-style:none;border-top:1px solid var(--line)}
+.rules li{padding-block:28px 30px;border-bottom:1px solid var(--line)}
+.rules .t{font-size:26px;line-height:1.25;letter-spacing:var(--track-m)}
+.rules .d{margin-top:10px;font-size:16px;color:var(--muted);max-width:560px}
+
+/* at the limit */
+.limit{border-top:1px solid var(--line);padding-top:64px}
+.limit .state{max-width:1040px}
+.meter{margin-top:64px;max-width:820px}
+.meter .bar{height:10px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
+.meter .bar i{display:block;height:100%;width:100%;background:var(--fg)}
+.meter .lbl{display:flex;justify-content:space-between;margin-top:14px;font-size:14px;color:var(--muted)}
+.meter .lbl b{color:var(--fg);font-weight:500}
+.meter .note{margin-top:28px;display:flex;gap:12px 32px;flex-wrap:wrap;font-size:16px}
+.meter .note span{display:inline-flex;align-items:center;gap:8px}
+.meter .note i{width:8px;height:8px;border-radius:50%}
+.on{background:var(--primary)}.off{background:var(--faint)}
+
+/* self-host band */
+.self{display:grid;grid-template-columns:6fr 6fr;gap:72px;align-items:center}
+.self .lead{margin-top:28px}
+.self .link{margin-top:32px}
+.term{direction:ltr;text-align:left;border-radius:20px;background:#0D1314;box-shadow:inset 0 0 0 1px rgba(236,241,242,.10);font-family:var(--font-mono);font-size:15px;line-height:1.8;color:#D6DEE0;overflow:hidden}
+.term .bar{height:44px;display:flex;align-items:center;padding-inline:20px;border-bottom:1px solid rgba(236,241,242,.08);font-size:12px;color:#647174}
+.term pre{font:inherit;padding:24px 28px;white-space:pre-wrap}
+.term .p{color:#647174}.term .c{color:#ECF1F2}.term .ok{color:#3BBFAE}.term .dim{color:#7D898C}
+
+/* faq */
+.faq-g{display:grid;grid-template-columns:5fr 7fr;gap:72px}
+.faq{border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:24px;padding-block:28px;font-size:22px;letter-spacing:-.01em;cursor:pointer}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pm{position:relative;width:16px;height:16px;flex:none;color:var(--muted)}
+.faq summary .pm::before,.faq summary .pm::after{content:"";position:absolute;inset:7px 0 auto;height:2px;background:currentColor;border-radius:2px;transition:transform .2s var(--ease)}
+.faq summary .pm::after{transform:rotate(90deg)}
+.faq details[open] .pm::after{transform:rotate(0)}
+.faq p{padding-bottom:30px;margin-top:-8px;color:var(--muted);font-size:17px;line-height:1.6;max-width:600px}
+
+/* closer + footer */
+.closer{padding-block:180px 140px;text-align:center}
+.closer .h1{font-size:96px}
+.closer .sub{margin-top:28px;color:var(--muted)}
+.closer .ctas{justify-content:center;margin-top:40px}
+.foot{border-top:1px solid var(--line);padding-block:48px 56px;font-size:14px}
+.foot .wrap{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:32px}
+.foot h4{font-size:13px;font-weight:500;color:var(--fg);margin-bottom:14px}
+.foot ul{list-style:none;display:grid;gap:10px;color:var(--muted)}
+.foot a:hover{color:var(--fg)}
+.foot .fine{color:var(--faint);margin-top:12px;font-size:13px;line-height:1.6}
+
+
+.closer{padding-block:160px 120px;text-align:center}
+.closer .h1{font-size:88px}
+.closer .ctas{justify-content:center;margin-top:40px}
+
+@media (max-width:1100px){
+  :root{--gut:32px}
+  .h1{font-size:88px}.h2{font-size:56px}.state{font-size:40px}
+  .nav{display:none}
+  .hero .row{grid-template-columns:1fr}
+  .sheet li{grid-template-columns:240px 1fr}.sheet .v{grid-column:2}
+  .sheet b{font-size:88px}
+  .counts,.self,.faq-g{grid-template-columns:1fr;gap:40px}
+}
+@media (max-width:640px){
+  :root{--gut:20px}
+  .hdr .wrap{height:60px;gap:12px}.hdr .quiet{display:none}.menu-btn{display:inline-flex}
+  .hero{padding-block:128px 80px}
+  .h1{font-size:clamp(3rem,16.4vw,7rem);line-height:.96}
+  :root:lang(he) .h1{line-height:1.08}
+  .h1 br,.h2 br{display:none}
+  .hero .lead{margin-top:20px}
+  .lead{font-size:18px}
+  .btn{height:50px;font-size:16px}
+  .ch{padding-block:88px}
+  .h2{font-size:40px;line-height:1.04}
+  .state{font-size:28px;line-height:1.2}
+  .sheet-h{grid-template-columns:1fr;gap:12px;margin-bottom:32px}
+  .sheet li{grid-template-columns:1fr auto;gap:6px 16px;padding-block:24px 22px;align-items:end}
+  .sheet b{font-size:64px;grid-row:1/3;grid-column:1}
+  .sheet .k{font-size:17px;grid-column:2;text-align:end}
+  .sheet .v{grid-column:1/-1;font-size:15px;margin-top:10px}
+  .rules .t{font-size:20px}
+  .meter{margin-top:40px}
+  .term{font-size:12.5px;border-radius:16px}
+  .term pre{padding:16px 18px}
+  .faq summary{font-size:18px;padding-block:22px}
+  .closer{padding-block:96px 80px}
+  .closer .h1{font-size:clamp(2.75rem,12vw,6rem)}
+  .foot .wrap{grid-template-columns:1fr 1fr;gap:32px 20px}
+  .foot .wrap>div:first-child{grid-column:1/-1}
+}
+/* ---- mock-only review toggle ---- */
+.mock-toggle{position:fixed;z-index:100;inset-block-end:12px;inset-inline-end:12px;display:flex;gap:4px;padding:4px;background:#fff;border:1px solid #E0E5E6;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:11px;direction:ltr;font-family:var(--font-sans)}
+.mock-toggle button{border:0;background:none;padding:4px 10px;border-radius:999px;cursor:pointer;font-weight:600;color:#566265}
+.mock-toggle button[aria-pressed=true]{background:#E5F3F1;color:#065A53}
+
+</style>
+</head>
+<body>
+<div class="ink">
+<header class="hdr" data-component="MarketingHeader">
+  <div class="wrap">
+    <a class="brand" href="#" aria-label="AskCalls home" data-he-aria-label="AskCalls, דף הבית">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="6.5" y="4" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="1" width="3" height="20" rx="1.5" fill="currentColor"/><rect x="17.5" y="6" width="3" height="10" rx="1.5" fill="currentColor"/></svg>AskCalls</a>
+    <nav class="nav" aria-label="Site" data-he-aria-label="האתר"><a href="security.html"><span data-he="אבטחה">Security</span></a><a href="pricing.html"><span data-he="תמחור">Pricing</span></a><a href="#"><span data-he="אירוח עצמי">Self-host</span></a><a href="#faq"><span data-he="שאלות">FAQ</span></a><a href="#">GitHub</a></nav>
+    <span class="grow"></span>
+    <a class="quiet" href="#" lang="he" data-he="English">עברית</a>
+    <a class="quiet" href="#"><span data-he="כניסה">Sign in</span></a>
+    <a class="btn btn-sm btn-line" href="#"><span data-he="להתחיל בחינם">Start free</span></a>
+    <button class="menu-btn" aria-label="Menu" data-he-aria-label="תפריט"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg></button>
+  </div>
+</header>
+<section class="hero" aria-labelledby="t">
+  <div class="wrap row">
+    <div>
+      <h1 class="h1" id="t"><span data-he="חינם <br>בתקופת הבטא.">Free during <br>beta.</span></h1>
+    </div>
+    <div style="padding-bottom:12px">
+      <p class="sub" style="font-size:21px;line-height:1.45"><span data-he="בלי כרטיס אשראי.">No card needed.</span> <span class="muted" style="display:block" data-he="אלה המגבלות של הבטא ב-askcalls.com. מופע באירוח עצמי קובע מגבלות משלו.">These are the beta limits on askcalls.com. A self-hosted instance sets its own.</span></p>
+      <div class="ctas"><a class="btn btn-primary" href="#"><span data-he="להתחיל בחינם">Start free</span></a></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<main>
+<section class="ch" style="padding-top:120px" aria-labelledby="lim-t">
+  <div class="wrap">
+    <div class="sheet-h">
+      <h2 class="vh" id="lim-t" data-he="המגבלות">The limits</h2>
+      <p data-he="מגבלות הבטא, לכל חשבון ב-askcalls.com">Beta limits, per account on askcalls.com</p>
+    </div>
+    <ul class="sheet" data-component="LimitsTable">
+      <li><b class="tab">500</b><span class="k" data-he="שיחות">calls</span><span class="v" data-he="שיחה היא תמלול אחד, עם או בלי הקלטה. מחיקת שיחה מפנה מקום.">A call is one transcript, with or without a recording. Deleting a call frees its place.</span></li>
+      <li><b class="tab">300</b><span class="k" data-he="דקות תמלול בחודש">transcription minutes a month</span><span class="v" data-he="נספר לפי אורך השמע. תמלולים שמעלים מוכנים לא נספרים.">Counted by audio length. Transcripts you upload ready-made don't count.</span></li>
+      <li><b class="tab">2<small>GB</small></b><span class="k" data-he="גיבוי הקלטות">of recording backups</span><span class="v" data-he="מוצפן ודחוס במכשיר. עם דלי משלך, אין מגבלה מצדנו.">Encrypted and compressed on your device. With your own bucket, there is no limit from us.</span></li>
+      <li><b class="tab">50</b><span class="k" data-he="שאלות ביום">questions a day</span><span class="v" data-he="שאלה אחת על שיחה אחת. מתאפס בחצות לפי שעון UTC.">One question about one call. Resets at midnight UTC.</span></li>
+      <li><b class="tab">5</b><span class="k" data-he="טוקנים לגישה">access tokens</span><span class="v" data-he="לסוכן המקומי, ל-MCP מרוחק ולסקריפטים. כל טוקן מוגבל בהרשאות.">For the local agent, remote MCP and scripts. Each token has its own scopes.</span></li>
+      <li><b class="tab">60</b><span class="k" data-he="שליפות MCP לשעה, לכל טוקן">MCP fetches an hour, per token</span><span class="v" data-he="שליפות של טקסט מוצפן דרך MCP מרוחק. הסוכן המקומי מפענח אצלך.">Ciphertext fetches over remote MCP. The local agent decrypts on your machine.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="ch" style="padding-top:0" aria-labelledby="cnt-t">
+  <div class="wrap counts">
+    <h2 class="h2" id="cnt-t" data-he="מה נספר.">What counts.</h2>
+    <ul class="rules">
+      <li><p class="t" data-he="מפתחות משלך לא נספרים.">Your own keys don't count.</p><p class="d" data-he="תמלול ושאלות עם מפתח ספק משלך יוצאים ישירות מהמכשיר לספק, ולא נספרים במגבלות.">Transcription and questions with your own provider key go straight from your device to the provider and don't count toward the limits.</p></li>
+      <li><p class="t" data-he="כפילויות לא מתומללות פעמיים.">Duplicates aren't transcribed twice.</p><p class="d" data-he="אותה שיחה, גם בקידוד אחר, מזוהה לפי טביעת שמע ומדולגת לפני שנספרות דקות.">The same call, even re-encoded, is recognised by its audio fingerprint and skipped before any minutes count.</p></li>
+      <li><p class="t" data-he="חיפוש וקריאה תמיד חינם.">Search and reading are always free.</p><p class="d" data-he="הם רצים במכשיר שלך, אז אין להם מגבלה.">They run on your device, so they have no limit.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="ch" style="padding-top:0" aria-label="At the limit" data-he-aria-label="כשמגיעים למגבלה">
+  <div class="wrap limit">
+    <p class="state"><span data-he="כשמגיעים למגבלה, ההעלאות נעצרות עד שמוחקים שיחות או שהחודש מתחדש.">At the limit, uploads pause until you delete calls or the month resets.</span> <span class="muted" data-he="חיפוש וקריאה ממשיכים לעבוד.">Search and reading keep working.</span></p>
+    <div class="meter" aria-hidden="true">
+      <div class="bar"><i></i></div>
+      <div class="lbl"><span data-he="שיחות">Calls</span><span class="tab"><b>500</b> / 500</span></div>
+      <div class="note"><span><i class="off"></i><span data-he="העלאה מושהית">Upload paused</span></span><span><i class="on"></i><span data-he="חיפוש">Search</span></span><span><i class="on"></i><span data-he="קריאה והאזנה">Reading and playback</span></span><span><i class="on"></i><span data-he="ייצוא">Export</span></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ink ch" aria-labelledby="self-t">
+  <div class="wrap self">
+    <div>
+      <h2 class="h2" id="self-t"><span data-he="אירוח עצמי. <br>המגבלות שלך.">Self-hosted. <br>Your limits.</span></h2>
+      <p class="lead" data-he="AskCalls בקוד פתוח ברישיון MIT. במופע משלך, מנהל המערכת קובע את המגבלות, את הספקים ואת מקום האחסון, וגם אפשר לנתק אותו מהאינטרנט.">AskCalls is open source under MIT. On your own instance the admin sets the limits, the providers and where data lives, and it can run with no internet at all.</p>
+      <a class="link" href="#"><span data-he="מדריך האירוח העצמי">The self-hosting guide</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="term" data-component="CopyableCode"><div class="bar">~/askcalls</div>
+<pre><span class="p">$</span> <span class="c">git clone https://github.com/askcalls/askcalls</span>
+<span class="p">$</span> <span class="c">docker compose up -d</span>
+<span class="dim">  postgres   </span><span class="ok">healthy</span>
+<span class="dim">  minio      </span><span class="ok">healthy</span>
+<span class="dim">  web        </span><span class="ok">ready</span><span class="dim"> on http://localhost:3000</span>
+<span class="dim">  Open /setup to finish in the browser.</span></pre></div>
+  </div>
+</section>
+
+<section class="ch" aria-labelledby="faq-t">
+  <div class="wrap faq-g">
+    <h2 class="h2" id="faq-t"><span data-he="שאלות על <br>תמחור.">Pricing <br>questions.</span></h2>
+    <div class="faq" data-component="FaqList">
+      <details open><summary><span data-he="מה קורה כשמגיעים למגבלה?">What happens at the limit?</span><span class="pm"></span></summary><p data-he="ההעלאות נעצרות עד שמוחקים שיחות או שהחודש מתחדש. חיפוש, קריאה, האזנה וייצוא ממשיכים לעבוד, ושום דבר לא נמחק.">Uploads pause until you delete calls or the month resets. Search, reading, playback and export keep working, and nothing is deleted.</p></details>
+      <details><summary><span data-he="ומה עם המפתחות שלי?">What about my own keys?</span><span class="pm"></span></summary><p data-he="תמלול ושאלות עם מפתח משלך לא נספרים במגבלות. המפתח מוצפן במפתחות שלך ומשמש רק במכשיר.">Transcription and questions with your own key don't count toward the limits. The key is encrypted with your keys and used only on your device.</p></details>
+      <details><summary><span data-he="אירוח עצמי הוא בחינם?">Is self-hosting free?</span><span class="pm"></span></summary><p data-he="כן. הקוד ברישיון MIT. משלמים רק על השרת, האחסון והספקים שבוחרים, או על כלום אם הכול רץ מקומית.">Yes. The code is MIT-licensed. You pay only for the server, storage and providers you choose, or nothing if it all runs locally.</p></details>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="ink">
+  <section class="closer" aria-labelledby="close-t">
+    <div class="wrap">
+      <h2 class="h1" id="close-t" data-he="לשאול את השיחות שלך כל דבר.">Ask your calls anything.</h2>
+      <div class="ctas"><a class="btn btn-primary" href="#"><span data-he="להתחיל בחינם">Start free</span></a><a class="link" href="#"><span data-he="קוד המקור ב-GitHub">Source on GitHub</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+    </div>
+  </section>
+  <footer class="foot" data-component="MarketingFooter">
+    <div class="wrap">
+      <div><a class="brand" href="#"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="6.5" y="4" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="1" width="3" height="20" rx="1.5" fill="currentColor"/><rect x="17.5" y="6" width="3" height="10" rx="1.5" fill="currentColor"/></svg>AskCalls</a><p class="fine" data-he="קוד פתוח, רישיון MIT. <br>© 2026 AskCalls">Open source, MIT licensed. <br>© 2026 AskCalls</p></div>
+      <div><h4 data-he="מוצר">Product</h4><ul><li><a href="pricing.html" data-he="תמחור">Pricing</a></li><li><a href="#">MCP</a></li><li><a href="#" data-he="אירוח עצמי">Self-host</a></li><li><a href="#">GitHub</a></li></ul></div>
+      <div><h4 data-he="אמון">Trust</h4><ul><li><a href="security.html" data-he="אבטחה">Security</a></li><li><a href="#" data-he="ספקי משנה">Subprocessors</a></li><li><a href="#" data-he="סטטוס">Status</a></li></ul></div>
+      <div><h4 data-he="משפטי">Legal</h4><ul><li><a href="#" data-he="מדיניות פרטיות">Privacy policy</a></li><li><a href="#" data-he="תנאי שימוש">Terms</a></li><li><a href="#">DPA</a></li></ul></div>
+    </div>
+  </footer>
+</div>
+<div class="mock-toggle" role="group" aria-label="Mock review controls">
+  <button type="button" data-mock-theme="light">Light</button><button type="button" data-mock-theme="dark">Dark</button>
+  <button type="button" data-mock-lang="en">EN</button><button type="button" data-mock-lang="he">עב</button>
+</div>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search), root=document.documentElement;
+  function theme(t){root.classList.toggle('dark',t==='dark');mark('theme',t)}
+  function lang(l){
+    root.lang=l;root.dir=(l==='he')?'rtl':'ltr';
+    document.querySelectorAll('[data-he]').forEach(function(el){
+      if(!el.hasAttribute('data-en'))el.setAttribute('data-en',el.innerHTML);
+      el.innerHTML=(l==='he')?el.getAttribute('data-he'):el.getAttribute('data-en');});
+    ['placeholder','aria-label','title','value'].forEach(function(a){
+      document.querySelectorAll('[data-he-'+a+']').forEach(function(el){
+        if(!el.hasAttribute('data-en-'+a))el.setAttribute('data-en-'+a,el.getAttribute(a)||'');
+        el.setAttribute(a,(l==='he')?el.getAttribute('data-he-'+a):el.getAttribute('data-en-'+a));});});
+    var t=document.querySelector('title');if(t&&t.dataset.he){if(!t.dataset.en)t.dataset.en=t.textContent;t.textContent=(l==='he')?t.dataset.he:t.dataset.en}
+    if(window.__demo)window.__demo(l);
+    mark('lang',l)}
+  function mark(k,v){document.querySelectorAll('[data-mock-'+k+']').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-mock-'+k)===v)})}
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-mock-theme],[data-mock-lang]');if(!b)return;
+    if(b.dataset.mockTheme)theme(b.dataset.mockTheme);if(b.dataset.mockLang)lang(b.dataset.mockLang)});
+  theme(q.get('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+  lang(q.get('lang')||'en');
+  if(q.get('shot')==='1'){var m=document.querySelector('.mock-toggle');if(m)m.remove()}
+})();</script>
+</body>
+</html>
+

@@ -31,6 +31,7 @@
   background:var(--bg);color:var(--fg)}
 
 *{box-sizing:border-box;margin:0;padding:0}
+h1,h2,h3,.state,.lines .t,.qs .qt{text-wrap:balance}
 html{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
 body{font-family:var(--font-sans);font-size:16px;line-height:1.6;background:var(--bg);color:var(--fg);overflow-x:hidden}
 a{color:inherit;text-decoration:none}
@@ -72,9 +73,10 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 .hero::before{content:"";position:absolute;z-index:-1;inset-inline:0;top:330px;height:900px;background:radial-gradient(60% 50% at 50% 30%,rgba(59,191,174,.10),transparent 70%)}
 .h1{font-size:112px;line-height:.95;font-weight:500;letter-spacing:var(--track-xl)}
 :root:lang(he) .h1{line-height:1.04}
-.hero-top{display:grid;grid-template-columns:1fr 380px;align-items:end;gap:40px}
+.hero-top{display:grid;grid-template-columns:1fr 380px;align-items:end;gap:0 40px}
 .hero-top .h1{grid-column:1/-1;grid-row:1}
-.hero-side{grid-column:2;grid-row:1;padding-bottom:10px;max-width:380px}
+.hero-side{grid-column:2;grid-row:2;margin-top:-90px;max-width:380px}
+:root:lang(he) .hero-side{margin-top:-98px}
 .sub{font-size:21px;line-height:1.45;color:var(--fg)}
 .sub .muted{display:block}
 .ctas{display:flex;align-items:center;gap:28px;margin-top:28px}
@@ -189,7 +191,7 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 @keyframes shim{0%,100%{color:#A9B5B8}50%{color:var(--primary)}}
 .srv .item::before{content:"";position:absolute;inset-inline-start:-52px;top:50%;width:9px;height:9px;margin-top:-4px;border-radius:50%;background:var(--bg);box-shadow:0 0 0 2px var(--primary)}
 .line{position:relative;background:var(--primary);box-shadow:0 0 24px rgba(59,191,174,.5)}
-.line span{position:absolute;top:44px;left:50%;transform:translate(-50%,-50%);white-space:nowrap;background:var(--bg);color:var(--primary);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(59,191,174,.5)}
+.line span{position:absolute;top:0;left:50%;transform:translate(-50%,-50%);white-space:nowrap;background:var(--bg);color:var(--primary);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(59,191,174,.5)}
 .exc{margin-top:120px;display:grid;grid-template-columns:1fr 2fr;gap:40px}
 .exc h3{font-size:32px;line-height:1.15;font-weight:500;letter-spacing:var(--track-m);max-width:340px}
 .tbl{width:100%;border-collapse:collapse;font-size:15px}
@@ -221,23 +223,21 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 :root[dir=rtl] .qs .go{transform:scaleX(-1)}
 
 /* AI */
-.ai{display:grid;grid-template-columns:5fr 7fr;gap:72px;align-items:center}
-.ai .lead{margin-top:28px}
-.ai .link{margin-top:32px;font-size:16px}
-.term{direction:ltr;text-align:left;border-radius:20px;background:#070B0C;color:#D6DEE0;font-family:var(--font-mono);font-size:14.5px;line-height:1.75;box-shadow:0 0 0 1px rgba(19,26,28,.08),0 40px 90px -40px rgba(7,11,12,.6);overflow:hidden}
-.dark .term{box-shadow:0 0 0 1px var(--line-2)}
-.term .bar{height:44px;display:flex;align-items:center;padding-inline:20px;border-bottom:1px solid rgba(236,241,242,.08);font-size:12px;color:#647174}
-.term pre{font:inherit;padding:22px 26px;white-space:pre-wrap}
-.term .p{color:#647174}
-.term .c{color:#ECF1F2}
-.term .ok{color:#3BBFAE}
-.term .dim{color:#7D898C}
-.convo{border-top:1px solid rgba(236,241,242,.08);padding:22px 26px 26px;font-family:var(--font-sans);font-size:15px;line-height:1.6}
-.convo .u{color:#ECF1F2;margin-bottom:14px}
-.convo .tool{font-family:var(--font-mono);font-size:13px;color:#8E9B9E;margin-bottom:14px;display:flex;gap:10px}
-.convo .tool .ok{color:#3BBFAE}
-.convo .a{color:#C3CDD0}
+.screen{display:grid;grid-template-columns:7fr 5fr;border-radius:24px;background:#070B0C;color:#ECF1F2;overflow:hidden;box-shadow:0 40px 100px -40px rgba(7,11,12,.55)}
+.dark .screen{box-shadow:0 0 0 1px var(--line-2)}
+.convo{padding:56px 56px 60px;display:flex;flex-direction:column;gap:28px}
+.convo .u{font-size:34px;line-height:1.2;letter-spacing:var(--track-m);color:#ECF1F2}
+.convo .tool{font-family:var(--font-mono);font-size:14px;color:#ECF1F2;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding-block:14px;border-block:1px solid rgba(236,241,242,.09);direction:ltr;text-align:left}
+.convo .tool .ok{color:#3BBFAE}.convo .tool .dim{color:#7D898C}
+.convo .tool .res2{margin-inline-start:auto;color:#3BBFAE}
+.convo .a{font-size:21px;line-height:1.55;color:#AEB9BC;max-width:620px}
 .convo .a b{color:#ECF1F2;font-weight:500}
+.setup{padding:56px 48px;border-inline-start:1px solid rgba(236,241,242,.09);background:#0B1112;direction:ltr;text-align:left;display:flex;flex-direction:column}
+:root[dir=rtl] .setup{direction:rtl;text-align:right}
+.setup .sl{font-size:13px;color:#8E9B9E;margin-bottom:10px}
+.setup pre{direction:ltr;text-align:left;font-family:var(--font-mono);font-size:13px;line-height:1.85;color:#D6DEE0;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:32px}
+.setup .p{color:#647174}.setup .ok{color:#3BBFAE}
+.setup .link{color:#ECF1F2;margin-top:auto;font-size:15px}
 
 /* pricing */
 .nums{margin-top:72px;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -277,10 +277,11 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 @media (max-width:1100px){
   :root{--gut:32px}
   .h1{font-size:88px}.h2{font-size:56px}.lines .t{font-size:44px}.state{font-size:40px}
-  .hero-top{grid-template-columns:1fr}.hero-side{grid-column:1;grid-row:2}
+  .hero-top{grid-template-columns:1fr}.hero-side{grid-column:1;grid-row:2;margin-top:0}:root:lang(he) .hero-side{margin-top:0}
   .lines li{grid-template-columns:56px 1fr}.lines .a{grid-column:2}
   .app{grid-template-columns:1fr 340px}
-  .ai,.faq-g,.exc,.leak{grid-template-columns:1fr;gap:40px}
+  .faq-g,.exc,.leak{grid-template-columns:1fr;gap:40px}
+  .screen{grid-template-columns:1fr}.setup{border-inline-start:0;border-top:1px solid rgba(236,241,242,.09)}
   .nums{grid-template-columns:repeat(3,1fr)}.nums div:nth-child(4){border-inline-start:0;padding-inline-start:0}.nums div:nth-child(n+4){border-top:1px solid var(--line)}
   .qs a{grid-template-columns:40px 1fr 32px}.qs .role{grid-column:2;grid-row:2}
   .nav{display:none}
@@ -359,9 +360,14 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
   .qs .ic{display:none}
   .qs .qt{font-size:22px}
   .qs .role{grid-column:1;grid-row:2}
-  .term{font-size:12px;border-radius:16px;margin-inline:-4px}
-  .term pre{padding:16px 18px}
-  .convo{padding:16px 18px 20px;font-size:14px}
+  .screen{border-radius:18px;margin-inline:-8px}
+  .convo{padding:28px 22px 30px;gap:20px}
+  .convo .u{font-size:22px}
+  .convo .tool{font-size:12px}
+  .convo .tool .res2{margin-inline-start:0}
+  .convo .a{font-size:17px}
+  .setup{padding:28px 22px}
+  .setup pre{font-size:12px;margin-bottom:24px}
   .nums{grid-template-columns:1fr 1fr;margin-top:48px}
   .nums div,:root[dir=rtl] .nums div{padding:24px 0 22px;border-inline-start:0}
   .nums div+div{padding-inline-start:0;border-inline-start:0}
@@ -544,23 +550,25 @@ bdi,.ltr{direction:ltr;unicode-bidi:isolate}
 
 <!-- ===================== AI ===================== -->
 <section class="ch" style="padding-top:40px" aria-labelledby="ai-t">
-  <div class="wrap ai">
-    <div>
-      <h2 class="h2" id="ai-t"><span data-he="חיבור ל-Claude או לכל לקוח MCP.">Connect Claude or any MCP client.</span></h2>
-      <p class="lead" data-he="הסוכן askcalls רץ במחשב שלך ומחזיק את המפתחות. דרכו עוזר ה-AI מחפש שיחות, קורא אותן ומייבא חדשות, והכול מפוענח אצלך.">The askcalls agent runs on your computer and holds your keys. Your AI assistant searches, reads and imports calls through it, all decrypted on your machine.</p>
-      <a class="link" href="#"><span data-he="הגדרה ל-Claude Code, ל-Cursor ועוד">Setup for Claude Code, Cursor and more</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  <div class="wrap">
+    <div class="uses-h">
+      <h2 class="h2" id="ai-t"><span data-he="חיבור ל-Claude <br>או לכל לקוח MCP.">Connect Claude <br>or any MCP client.</span></h2>
+      <p class="lead" style="max-width:380px" data-he="הסוכן askcalls רץ במחשב שלך ומחזיק את המפתחות. עוזר ה-AI מחפש, קורא ומייבא שיחות דרכו, והכול מפוענח אצלך.">The askcalls agent runs on your computer and holds your keys. Your assistant searches, reads and imports calls through it, decrypted on your machine.</p>
     </div>
-    <div class="term" data-component="CopyableCode">
-      <div class="bar">~ zsh</div>
-<pre><span class="p">$</span> <span class="c">bunx askcalls login --url https://askcalls.com</span>
-<span class="p">$</span> <span class="c">bunx askcalls link</span>
-<span class="dim">  Fingerprint</span> <span class="c">418 602</span><span class="dim"> · confirm it on your other device</span>
-<span class="ok">  ✓ Linked. Keys stored in the macOS keychain.</span>
-<span class="p">$</span> <span class="c">claude mcp add --scope user askcalls -- bunx askcalls mcp</span></pre>
+    <div class="screen" data-component="AgentDemo">
       <div class="convo" dir="auto">
         <p class="u" data-he="מי מהלקוחות שאל על מועד ההובלה השבוע?">Which customers asked about delivery dates this week?</p>
-        <p class="tool" dir="ltr"><span class="ok">●</span>askcalls · search_calls("delivery date", since: 7d) <span>→ 4 calls, decrypted locally</span></p>
-        <p class="a"><span data-he="<b>מאיה כהן</b> (שלישי) צריכה את השולחן לפני ה-20. <b>אבי בן דוד</b> (רביעי) אישר התקנה ביום חמישי. שתי שיחות נוספות הזכירו הובלה בלי תאריך.">Four calls. <b>Maya Cohen</b> (Tue) needs the table before the 20th. <b>Avi Ben David</b> (Wed) confirmed installation on Thursday. Two more mention delivery without a date.</span></p>
+        <p class="tool" dir="ltr"><span class="ok">●</span><span>askcalls.search_calls<span class="dim">("delivery date", since: "7d")</span></span><span class="res2">4 calls · decrypted locally</span></p>
+        <p class="a"><span data-he="ארבע שיחות. <b>מאיה כהן</b> (שלישי) צריכה את השולחן לפני ה-20. <b>אבי בן דוד</b> (רביעי) אישר התקנה ביום חמישי. בשתיים האחרות הובלה עלתה בלי תאריך.">Four calls. <b>Maya Cohen</b> (Tue) needs the table before the 20th. <b>Avi Ben David</b> (Wed) confirmed installation on Thursday. The other two mention delivery without a date.</span></p>
+      </div>
+      <div class="setup" data-component="CopyableCode">
+        <p class="sl" data-he="1 · קישור הסוכן למכשיר שלך">1 · Link the agent to your account</p>
+<pre><span class="p">$</span> bunx askcalls login --url https://askcalls.com
+<span class="p">$</span> bunx askcalls link
+<span class="ok">✓ Linked · fingerprint 418 602</span></pre>
+        <p class="sl" data-he="2 · הוספה ל-Claude Code">2 · Add it to Claude Code</p>
+<pre><span class="p">$</span> claude mcp add --scope user askcalls -- bunx askcalls mcp</pre>
+        <a class="link" href="#"><span data-he="הגדרה ל-Claude Desktop, ל-Cursor ועוד">Claude Desktop, Cursor and more</span> <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
     </div>
   </div>
