@@ -17,6 +17,8 @@ const USER_TABLES = [
   'InboxItem',
   'ApiToken',
   'AuditEvent',
+  'PasswordCredential',
+  'SignInPasskey',
 ];
 
 let seq = 0;

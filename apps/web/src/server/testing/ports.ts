@@ -44,6 +44,7 @@ export function makeTestPorts(
     userData: db.userDataStore,
     inbox: db.inboxRepo,
     apiTokens: db.tokenRepo,
+    localCredentials: db.localCredentialRepo,
     audit: db.auditLog,
     blobs: blobStore,
     transcription: opts.transcription === false ? null : mockTranscription,

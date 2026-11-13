@@ -4,15 +4,17 @@ import Credentials from 'next-auth/providers/credentials';
 import GitHub from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 import Nodemailer from 'next-auth/providers/nodemailer';
+import Passkey from 'next-auth/providers/passkey';
 import type { ResolvedConfig } from '../config/config-service';
 import type { Container } from '../container';
 import { createAuthAdapter, findOrCreateUser } from './adapter';
 import { verifyGoogleIdToken } from './google-one-tap';
+import { passwordSignIn, passwordSignUp, redeemSetupClaim } from './local-accounts';
 import { authSecret } from './secret';
 
 export interface ProviderInfo {
   id: string;
-  kind: 'oauth' | 'email' | 'one-tap' | 'test';
+  kind: 'oauth' | 'email' | 'one-tap' | 'test' | 'password' | 'passkey' | 'setup';
 }
 
 /**
@@ -47,8 +49,19 @@ export function enabledProviders(resolved: ResolvedConfig): ProviderInfo[] {
   if (wants.has('email') && auth.email.server && auth.email.from) {
     out.push({ id: 'nodemailer', kind: 'email' });
   }
+  if (auth.localAccounts) out.push({ id: 'password', kind: 'password' });
+  if (passkeySignInEnabled(resolved)) out.push({ id: 'passkey', kind: 'passkey' });
+  if (!resolved.config.hosted) out.push({ id: 'setup-claim', kind: 'setup' });
   if (testProviderEnabled(resolved)) out.push({ id: 'test', kind: 'test' });
   return out;
+}
+
+/**
+ * Passkey sign-in is on for every self-hosted instance: the admin account the setup wizard
+ * creates may hold only a passkey. Creating a new account with one needs local accounts.
+ */
+export function passkeySignInEnabled(resolved: ResolvedConfig): boolean {
+  return !resolved.config.hosted && resolved.config.appMode === 'server';
 }
 
 export function buildAuthConfig(container: Container): NextAuthConfig {
@@ -83,6 +96,52 @@ export function buildAuthConfig(container: Container): NextAuthConfig {
         break;
       case 'nodemailer':
         providers.push(Nodemailer({ server: auth.email.server!, from: auth.email.from! }));
+        break;
+      case 'password':
+        providers.push(
+          Credentials({
+            id: 'password',
+            name: 'Password',
+            credentials: {
+              email: { type: 'email' },
+              password: { type: 'password' },
+              mode: { type: 'text' },
+            },
+            async authorize(credentials) {
+              const { email, password, mode } = credentials ?? {};
+              if (typeof email !== 'string' || typeof password !== 'string') return null;
+              const user =
+                mode === 'signup'
+                  ? await passwordSignUp(ports, email, password)
+                  : await passwordSignIn(ports, email, password);
+              return user && { id: user.id, email: user.email, name: user.name, image: null };
+            },
+          }),
+        );
+        break;
+      case 'passkey': {
+        const app = new URL(resolved.config.appUrl);
+        providers.push(
+          Passkey({
+            relayingParty: { id: app.hostname, name: 'AskCalls', origin: app.origin },
+          }),
+        );
+        break;
+      }
+      case 'setup-claim':
+        providers.push(
+          Credentials({
+            id: 'setup-claim',
+            name: 'Setup',
+            credentials: { claim: { type: 'text' } },
+            async authorize(credentials) {
+              const claim = credentials?.claim;
+              if (typeof claim !== 'string') return null;
+              const user = await redeemSetupClaim(ports, claim);
+              return user && { id: user.id, email: user.email, name: user.name, image: null };
+            },
+          }),
+        );
         break;
       case 'test':
         providers.push(
@@ -121,6 +180,7 @@ export function buildAuthConfig(container: Container): NextAuthConfig {
     providers,
     ...(auth.redirectProxyUrl && { redirectProxyUrl: auth.redirectProxyUrl }),
     pages: { signIn: '/login', error: '/login', verifyRequest: '/login?check=email' },
+    experimental: { enableWebAuthn: true },
     // Auth.js logs errors with their causes; keep only the error type, never request data.
     logger: {
       error: (error) => ports.telemetry.error({ code: 'auth', errorName: error.name }),
@@ -128,6 +188,11 @@ export function buildAuthConfig(container: Container): NextAuthConfig {
       debug: () => {},
     },
     callbacks: {
+      signIn({ user, account }) {
+        // A passkey registration without a signed-in user creates an account: local accounts only.
+        if (account?.provider === 'passkey' && !user.id) return auth.localAccounts;
+        return true;
+      },
       jwt({ token, user }) {
         if (user?.id) token.sub = user.id;
         // Keep the JWT to the user id: no email, name or picture in the cookie.

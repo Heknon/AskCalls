@@ -1,3 +1,252 @@
 {
-  "title": "מופע"
+  "title": "מופע",
+  "version": "גרסה {v}",
+  "cards": {
+    "database": "מסד נתונים",
+    "blob": "אחסון קבצים",
+    "signIn": "שיטות כניסה",
+    "transcription": "תמלול",
+    "llm": "שאלות (LLM)",
+    "embeddings": "הטמעות",
+    "telemetry": "טלמטריה",
+    "limits": "מגבלות",
+    "users": "משתמשים"
+  },
+  "health": {
+    "healthy": "תקין",
+    "degraded": "איטי",
+    "down": "לא זמין",
+    "off": "כבוי"
+  },
+  "envLocked": "נקבע על ידי סביבת השרת",
+  "hosted": "המופע הזה מוגדר על ידי סביבת השרת שלו. ההגדרות כאן לקריאה בלבד.",
+  "dbLocked": "אי אפשר לשנות כשיש בו נתונים. יש להשתמש ב-askcalls backup ו-restore.",
+  "restart": "יש להפעיל מחדש את AskCalls כדי להחיל את השינוי.",
+  "restartBanner": "יש להפעיל מחדש את AskCalls כדי להחיל את שינוי מסד הנתונים.",
+  "save": "שמירה",
+  "saving": "שומר…",
+  "saved": "נשמר",
+  "discard": "ביטול השינויים",
+  "saveFailed": "לא ניתן לשמור: {reason}",
+  "loadFailed": "לא ניתן לטעון את הגדרות המופע",
+  "field": {
+    "driver": "מנוע",
+    "connection": "חיבור",
+    "postgresUrl": "כתובת Postgres",
+    "folder": "תיקייה",
+    "adapter": "מתאם",
+    "endpoint": "נקודת קצה",
+    "region": "אזור",
+    "bucket": "דלי",
+    "accessKeyId": "מזהה מפתח גישה",
+    "secretKey": "מפתח סודי",
+    "provider": "ספק",
+    "model": "מודל",
+    "apiKey": "מפתח API",
+    "baseUrl": "כתובת השרת",
+    "clientId": "מזהה לקוח",
+    "clientSecret": "סוד לקוח",
+    "smtp": "שרת SMTP",
+    "from": "כתובת השולח",
+    "modelUrl": "כתובת קובצי המודל",
+    "backends": "יעדים",
+    "maxCalls": "שיחות למשתמש",
+    "transcriptionMinutes": "תמלול בחודש",
+    "asksPerDay": "שאלות ביום",
+    "recordings": "גיבוי הקלטות למשתמש",
+    "tokens": "אסימוני גישה למשתמש"
+  },
+  "value": {
+    "minutes": "{n} דק׳",
+    "gb": "{n} GB",
+    "thisInstance": "המופע הזה",
+    "off": "כבוי",
+    "on": "פועל"
+  },
+  "adapter": {
+    "postgres": "Postgres",
+    "pglite": "מובנה (PGlite)",
+    "memory": "בזיכרון",
+    "s3": "תואם S3",
+    "fs": "תיקייה מקומית"
+  },
+  "provider": {
+    "elevenlabs": "ElevenLabs",
+    "openai": "OpenAI",
+    "deepgram": "Deepgram",
+    "soniox": "Soniox",
+    "anthropic": "Anthropic",
+    "google": "Google",
+    "openai-compatible": "שרת מקומי (תואם OpenAI)",
+    "mock": "דמה (לבדיקות בלבד)",
+    "none": "כבוי"
+  },
+  "signIn": {
+    "google": "Google",
+    "github": "GitHub",
+    "email": "קישור במייל",
+    "local": "חשבונות מקומיים",
+    "localHint": "אימייל עם מפתח גישה או סיסמה. נדרש במצב לא מקוון.",
+    "passkeyNote": "חשבונות עם מפתח גישה תמיד יכולים להיכנס איתו."
+  },
+  "secret": {
+    "masked": "סוד שמור",
+    "replace": "החלפה",
+    "remove": "הסרה",
+    "removed": "יוסר בשמירה"
+  },
+  "test": {
+    "test": "בדיקת חיבור",
+    "testing": "בודק…",
+    "ok": "מחובר תוך {ms} אלפיות שנייה.",
+    "okPostgres": "מחובר ל-Postgres {v} עם pgvector {pv}.",
+    "noVector": "מחובר, אבל pgvector לא מותקן. יש להריץ CREATE EXTENSION vector; ולבדוק שוב.",
+    "builtIn": "מובנה. אין למה להתחבר.",
+    "off": "כבוי. אין למה להתחבר.",
+    "failed": "נכשל: {reason}.",
+    "reason": {
+      "unreachable": "לא ניתן להגיע לשרת",
+      "timeout": "אין תשובה תוך 8 שניות",
+      "incomplete": "יש למלא קודם את כל השדות",
+      "offline_blocked": "מצב לא מקוון חוסם את השרת הזה",
+      "invalidKey": "המפתח נדחה. כדאי לבדוק אותו",
+      "bucketNotFound": "הדלי לא קיים",
+      "accessDenied": "הגישה נדחתה. כדאי לבדוק את המפתחות",
+      "databaseUnreachable": "לא ניתן להגיע למסד הנתונים",
+      "other": "{message}"
+    }
+  },
+  "cors": {
+    "missing": "יש להוסיף את כלל ה-CORS הזה לדלי ולבדוק שוב.",
+    "ok": "דפדפנים במופע הזה יכולים להעלות לדלי."
+  },
+  "embeddings": {
+    "hint": "מאיפה דפדפנים מורידים את קובצי המודל multilingual-e5-small. ריק: המופע הזה. במצב לא מקוון המופע הזה תמיד מגיש אותם."
+  },
+  "telemetry": {
+    "off": "כבוי. שום דבר לא יוצא מהמופע.",
+    "turnOff": "כיבוי"
+  },
+  "users": {
+    "count": "{n, plural, one {חשבון אחד במופע הזה} other {# חשבונות במופע הזה}}",
+    "email": "אימייל החשבון",
+    "promote": "הפיכה למנהל",
+    "promoted": "עכשיו מנהל",
+    "already": "החשבון הזה כבר מנהל.",
+    "notFound": "אין חשבון עם האימייל הזה."
+  },
+  "offline": {
+    "title": "מצב לא מקוון",
+    "blockers": "{n, plural, one {הגדרה אחת פונה לאינטרנט. יש לתקן אותה כדי להפעיל מצב לא מקוון.} other {# הגדרות פונות לאינטרנט. יש לתקן אותן כדי להפעיל מצב לא מקוון.}}",
+    "clear": "שום הגדרה לא פונה לאינטרנט.",
+    "on": "פועל. בקשות לשרתים מחוץ לרשת שלך נחסמות.",
+    "confirmTitle": "להפעיל מצב לא מקוון?",
+    "confirm": "AskCalls תחסום כל בקשה לשרתים מחוץ לרשת שלך.",
+    "confirmLabel": "הפעלה",
+    "what": {
+      "transcription": "תמלול: {adapter}",
+      "llm": "שאלות: {adapter}",
+      "sign-in-google": "כניסה: Google",
+      "sign-in-github": "כניסה: GitHub",
+      "sign-in-email": "כניסה: קישור במייל",
+      "local-accounts": "כניסה: חשבונות מקומיים כבויים",
+      "auth-redirect-proxy": "כניסה: שרת הפניה",
+      "blob": "אחסון קבצים: S3",
+      "database": "מסד נתונים: Postgres",
+      "telemetry-otel": "טלמטריה: OpenTelemetry",
+      "telemetry-sentry": "טלמטריה: Sentry",
+      "telemetry-posthog": "טלמטריה: PostHog",
+      "telemetry-umami": "טלמטריה: Umami"
+    },
+    "fix": {
+      "local-whisper": "שרת Whisper מקומי",
+      "local-ollama": "Ollama מקומי",
+      "off": "כיבוי",
+      "sign-in-google": "כיבוי כניסה עם Google",
+      "sign-in-github": "כיבוי כניסה עם GitHub",
+      "sign-in-email": "כיבוי כניסה במייל",
+      "local-folder": "תיקייה מקומית",
+      "local-accounts-on": "הפעלת חשבונות מקומיים",
+      "this-instance": "הסרה"
+    },
+    "databaseHint": "יש להעביר את מסד הנתונים לתוך הרשת שלך: askcalls backup, החלפה, askcalls restore."
+  },
+  "setup": {
+    "label": "שלבי ההגדרה",
+    "noAdmin": "למופע הזה עדיין אין מנהל. החשבון שייווצר בשלב האחרון יהיה המנהל.",
+    "token": {
+      "title": "הזנת אסימון ההגדרה",
+      "body": "בזמן ההפעלה AskCalls הדפיסה אסימון הגדרה חד־פעמי ביומן השרת. הוא נמצא גם בקובץ setup-token בתיקיית הנתונים.",
+      "label": "אסימון הגדרה",
+      "wrong": "האסימון לא תואם. כדאי להעתיק אותו שוב מיומן השרת.",
+      "submit": "המשך"
+    },
+    "steps": {
+      "database": "מסד נתונים",
+      "storage": "אחסון",
+      "signIn": "כניסה",
+      "ai": "תמלול ו-AI",
+      "offline": "מצב לא מקוון",
+      "admin": "חשבון מנהל"
+    },
+    "changeLater": "אפשר לשנות הכול אחר כך בניהול, חוץ ממסד הנתונים אחרי שיש בו נתונים.",
+    "testRequired": "כדי להמשיך יש לבדוק את החיבור.",
+    "db": {
+      "title": "בחירת מסד נתונים",
+      "builtin": "מובנה",
+      "builtinBody": "PGlite, נשמר ב-{path} במכונה הזאת. לאדם אחד או לצוות קטן.",
+      "external": "Postgres חיצוני",
+      "externalBody": "Postgres 16 ומעלה עם ההרחבה pgvector."
+    },
+    "storage": {
+      "title": "בחירת אחסון",
+      "fs": "תיקייה מקומית",
+      "fsBody": "ההקלטות נשמרות בתיקייה במכונה הזאת.",
+      "s3": "דלי תואם S3",
+      "s3Body": "MinIO,‏ Cloudflare R2,‏ Backblaze B2,‏ AWS S3 או כל שירות תואם S3."
+    },
+    "signIn": {
+      "title": "בחירת שיטות כניסה",
+      "localBody": "אימייל עם מפתח גישה או סיסמה. עובד בלי גישה לאינטרנט.",
+      "googleBody": "נדרש לקוח OAuth מ-Google Cloud.",
+      "githubBody": "נדרשת אפליקציית OAuth מ-GitHub.",
+      "emailBody": "שולח קישור כניסה דרך שרת ה-SMTP שלך.",
+      "callback": "כתובת החזרה",
+      "none": "יש לבחור לפחות שיטת כניסה אחת."
+    },
+    "ai": {
+      "title": "תמלול ו-AI",
+      "transcription": "תמלול",
+      "llm": "שאלות על שיחה",
+      "off": "כבוי",
+      "transcriptionOffBody": "העלאת שמע כבויה. העלאת תמלולים ממשיכה לעבוד.",
+      "llmOffBody": "שאלות על שיחה כבויות.",
+      "cloud": "ספק ענן",
+      "cloudBody": "השמע או השיחה עוברים לספק כשמישהו מבקש זאת.",
+      "local": "שרת מקומי",
+      "transcriptionLocalBody": "שרת Whisper תואם OpenAI ברשת שלך, כמו faster-whisper או whisper.cpp.",
+      "llmLocalBody": "שרת תואם OpenAI ברשת שלך, כמו Ollama או vLLM."
+    },
+    "offline": {
+      "title": "מצב לא מקוון",
+      "body": "חוסם כל בקשה לשרתים מחוץ לרשת שלך. להתקנות מנותקות.",
+      "switch": "הפעלת מצב לא מקוון",
+      "needsLocal": "מצב לא מקוון דורש חשבונות מקומיים. אפשר להפעיל אותם בשלב הכניסה."
+    },
+    "admin": {
+      "title": "יצירת חשבון המנהל",
+      "email": "אימייל",
+      "passkey": "מפתח גישה",
+      "passkeyBody": "כניסה עם נעילת המסך של המכשיר הזה או עם מפתח אבטחה.",
+      "createPasskey": "יצירת מפתח גישה",
+      "passkeyReady": "מפתח הגישה נוצר",
+      "passkeyFailed": "מפתח הגישה לא נוצר. כדאי לנסות שוב.",
+      "password": "סיסמה",
+      "passwordBody": "לפחות 12 תווים. רק עם חשבונות מקומיים.",
+      "passwordShort": "יש להשתמש בלפחות 12 תווים.",
+      "finish": "יצירת המנהל וסיום",
+      "finishing": "מגדיר…",
+      "failed": "ההגדרה לא הסתיימה: {reason}"
+    }
+  }
 }

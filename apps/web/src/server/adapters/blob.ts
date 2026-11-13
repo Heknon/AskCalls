@@ -5,6 +5,7 @@ import { S3BlobStore } from '@askcalls/adapter-blob-s3';
 import { MemoryBlobStore } from '@askcalls/adapter-mocks';
 import type { BlobStore } from '@askcalls/domain';
 import type { InstanceConfig } from '../config/schema';
+import { assertLocalTarget } from '../http/offline-fetch';
 import { AdapterUnavailableError } from './errors';
 
 /** `~` and `~/x` → the user's home directory. */
@@ -22,6 +23,10 @@ export async function buildBlobStore(config: InstanceConfig): Promise<BlobStore>
     case 's3': {
       const { bucket, endpoint, region, accessKeyId, secretAccessKey, keyPrefix } = config.blob.s3;
       if (!bucket) throw new Error('S3_BUCKET: required when BLOB_DRIVER=s3');
+      assertLocalTarget(
+        config.offlineMode,
+        endpoint ?? `https://s3.${region ?? 'us-east-1'}.amazonaws.com`,
+      );
       return new S3BlobStore({
         bucket,
         ...(endpoint ? { endpoint } : {}),

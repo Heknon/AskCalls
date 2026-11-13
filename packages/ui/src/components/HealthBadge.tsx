@@ -23,7 +23,12 @@ export function HealthBadge({ status, label, latencyMs }: HealthBadgeProps) {
     <Badge data-component="HealthBadge" data-status={status} variant={variant}>
       {Icon ? <Icon aria-hidden /> : null}
       {label}
-      {latencyMs !== undefined ? <span className="tabular">{` · ${latencyMs} ms`}</span> : null}
+      {latencyMs !== undefined ? (
+        <span className="tabular">
+          {' · '}
+          <bdi dir="ltr">{`${latencyMs} ms`}</bdi>
+        </span>
+      ) : null}
     </Badge>
   );
 }

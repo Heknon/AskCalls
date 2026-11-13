@@ -666,7 +666,8 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### ChoiceCard
 - **Purpose:** a large radio option with a title, description and optional details.
-- **Composes:** `RadioGroup` item. **Screens:** W1, O2, S3.
+- **Props:** `checkbox` for choices that combine (W1 sign-in methods): a checkbox, outside a `RadioGroup`, same look and revealed details.
+- **Composes:** `RadioGroup` item, or `Checkbox` with `checkbox`. **Screens:** W1, O2, S3.
 
 #### Stepper
 - **Purpose:** position in a fixed sequence of steps.

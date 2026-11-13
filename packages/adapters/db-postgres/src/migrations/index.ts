@@ -1,4 +1,5 @@
 import { sql as m0001 } from './0001_init';
+import { sql as m0002 } from './0002_local_credentials';
 
 export interface Migration {
   /** Sortable, unique, never renamed. */
@@ -11,4 +12,7 @@ export interface Migration {
  * Migrations must stay backward compatible with the release still serving (spec 14.1): add
  * columns nullable or with defaults, rename or drop across two releases.
  */
-export const MIGRATIONS: readonly Migration[] = [{ id: '0001_init', sql: m0001 }];
+export const MIGRATIONS: readonly Migration[] = [
+  { id: '0001_init', sql: m0001 },
+  { id: '0002_local_credentials', sql: m0002 },
+];

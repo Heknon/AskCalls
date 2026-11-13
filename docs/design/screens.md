@@ -936,7 +936,7 @@ Mock: [`first-run-wizard.html`](mocks/first-run-wizard.html).
 5. **Offline mode:** switch with the blocker list (A2) computed from steps 1 to 4.
 6. **Admin account:** email and passkey (or password for local accounts); creating it finishes setup and opens onboarding (O1).
 
-The first screen carries one callout: "This instance has no admin yet. The account you create in the last step becomes the admin." If the request isn't from loopback, the wizard first asks for the setup token printed in the server log (see README open questions).
+The first screen carries one callout: "This instance has no admin yet. The account you create in the last step becomes the admin." The wizard first asks for the setup token printed in the server log, from every address (see README open question 1).
 
 | Key | English | Hebrew |
 | --- | --- | --- |

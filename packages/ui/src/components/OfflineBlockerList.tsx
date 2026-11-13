@@ -62,7 +62,7 @@ export function OfflineBlockerList({
             >
               <div className="flex flex-col gap-0.5">
                 <strong className="font-semibold">{b.what}</strong>
-                <bdi dir="ltr" className="font-mono text-muted-foreground text-xs">
+                <bdi dir="ltr" className="self-start font-mono text-muted-foreground text-xs">
                   {b.host}
                 </bdi>
               </div>

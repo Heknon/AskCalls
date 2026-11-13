@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, ConfigService } from './config-service';
 
+const MOCKS = { TRANSCRIPTION_PROVIDER: 'mock', LLM_PROVIDER: 'mock' };
+
 async function tempDir() {
   return mkdtemp(join(tmpdir(), 'askcalls-config-'));
 }
@@ -17,6 +19,8 @@ describe('ConfigService', () => {
     expect(r.incomplete).toEqual([
       'DATABASE_URL: required when DB_DRIVER=postgres',
       'S3_BUCKET: required when BLOB_DRIVER=s3',
+      'ELEVENLABS_API_KEY: required when TRANSCRIPTION_PROVIDER=elevenlabs',
+      'ANTHROPIC_API_KEY: required when LLM_PROVIDER=anthropic',
     ]);
   });
 
@@ -74,7 +78,7 @@ describe('ConfigService', () => {
 
   it('writes updates owner-only, rejects locked paths, notifies and redacts secrets', async () => {
     const dir = await tempDir();
-    const svc = new ConfigService({ ASKCALLS_DATA_DIR: dir, BLOB_DRIVER: 'memory' });
+    const svc = new ConfigService({ ASKCALLS_DATA_DIR: dir, BLOB_DRIVER: 'memory', ...MOCKS });
     await svc.load();
     let notified = 0;
     svc.subscribe(() => notified++);
@@ -91,6 +95,7 @@ describe('ConfigService', () => {
     const reloaded = await new ConfigService({
       ASKCALLS_DATA_DIR: dir,
       BLOB_DRIVER: 'memory',
+      ...MOCKS,
     }).load();
     expect(reloaded.config.db.driver).toBe('postgres');
   });
@@ -104,5 +109,80 @@ describe('ConfigService', () => {
     });
     await svc.load();
     await expect(svc.update({ llm: { provider: 'mock' } })).rejects.toThrow(/hosted/);
+  });
+
+  it('returns no secret values to the admin UI, only which are set', async () => {
+    const svc = new ConfigService({
+      ASKCALLS_DATA_DIR: await tempDir(),
+      DB_DRIVER: 'postgres',
+      DATABASE_URL: 'postgres://askcalls:pg-secret@db:5432/askcalls',
+      BLOB_DRIVER: 'memory',
+      ANTHROPIC_API_KEY: 'sk-ant-api-secret',
+      AUTH_GITHUB_SECRET: 'gh-secret',
+    });
+    await svc.load();
+    await svc.update({ transcription: { keys: { elevenlabs: 'xi-secret' } } });
+    const view = svc.redacted();
+    const json = JSON.stringify(view);
+    for (const secret of ['pg-secret', 'sk-ant-api-secret', 'gh-secret', 'xi-secret']) {
+      expect(json).not.toContain(secret);
+    }
+    expect(view.secrets.sort()).toEqual(
+      ['auth.github.secret', 'db.url', 'llm.apiKey', 'transcription.keys.elevenlabs'].sort(),
+    );
+    expect((view.config.db as { urlDisplay: string }).urlDisplay).toBe(
+      'postgres://askcalls@db:5432/askcalls',
+    );
+  });
+
+  it('removes a setting patched to null and rejects patches that would not boot', async () => {
+    const dir = await tempDir();
+    const svc = new ConfigService({
+      ASKCALLS_DATA_DIR: dir,
+      DB_DRIVER: 'memory',
+      BLOB_DRIVER: 'memory',
+      ...MOCKS,
+    });
+    await svc.load();
+    await svc.update({ embeddingModelUrl: 'https://models.example.com/e5' });
+    await svc.update({ embeddingModelUrl: null });
+    expect(svc.get().config.embeddingModelUrl).toBeUndefined();
+    expect(JSON.parse(await readFile(join(dir, 'config.json'), 'utf8'))).not.toHaveProperty(
+      'embeddingModelUrl',
+    );
+    await expect(svc.update({ blob: { driver: 'fs' }, db: { url: null } })).rejects.toThrow(
+      /set by the server environment/,
+    );
+    const open = new ConfigService({
+      ASKCALLS_DATA_DIR: await tempDir(),
+      BLOB_DRIVER: 'memory',
+      ...MOCKS,
+    });
+    await open.load();
+    await expect(open.update({ db: { driver: 'postgres' } })).rejects.toThrow(/DATABASE_URL/);
+    expect(
+      open.preview({ db: { driver: 'postgres' } }, { allowIncomplete: true }).incomplete,
+    ).toEqual(['DATABASE_URL: required when DB_DRIVER=postgres']);
+  });
+
+  it('refuses offline mode while a setting reaches the internet', async () => {
+    const svc = new ConfigService({
+      ASKCALLS_DATA_DIR: await tempDir(),
+      DB_DRIVER: 'memory',
+      BLOB_DRIVER: 'memory',
+    });
+    await svc.load();
+    await svc.update({
+      auth: { providers: ['google'], localAccounts: true },
+      llm: { provider: 'mock' },
+      transcription: { provider: 'mock' },
+    });
+    await expect(svc.update({ offlineMode: true })).rejects.toThrow(/accounts\.google\.com/);
+    await svc.update({
+      auth: { providers: [] },
+      llm: { provider: 'none' },
+      transcription: { provider: 'none' },
+    });
+    expect((await svc.update({ offlineMode: true })).config.offlineMode).toBe(true);
   });
 });
