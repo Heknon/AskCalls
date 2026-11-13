@@ -3,15 +3,34 @@
 import { setTelemetryConsent } from '@askcalls/api-contract/routes/settings';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { SettingsSection } from '@askcalls/ui/components/SettingsSection';
+import { Button } from '@askcalls/ui/primitives/button';
 import { Label } from '@askcalls/ui/primitives/label';
 import { Switch } from '@askcalls/ui/primitives/switch';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
+import { useInstallPrompt } from '../../../../../../client/pwa/install-prompt';
 import { useAppSession, useUnlocked } from '../../../../../../client/session/session';
 import { SectionScreen } from '../_settings/section-screen';
 import { ShortcutsSetting } from '../_settings/shortcuts-setting';
 
 type Consent = { productEvents: boolean; errorReports: boolean };
+
+/** S6 Install app: one row, only while the browser offers installation. */
+function InstallApp() {
+  const t = useTranslations('settings.priv');
+  const { state, install } = useInstallPrompt();
+  if (state !== 'available') return null;
+  return (
+    <SettingsSection title={t('install')}>
+      <div className="flex items-center gap-4 py-3">
+        <p className="min-w-0 flex-1 text-muted-foreground text-sm">{t('installDetail')}</p>
+        <Button variant="outline" size="sm" onClick={() => void install()}>
+          {t('installAction')}
+        </Button>
+      </div>
+    </SettingsSection>
+  );
+}
 
 function ConsentRow({
   label,
@@ -83,6 +102,7 @@ export default function PrivacySettingsPage() {
           ) : null}
         </SettingsSection>
         <ShortcutsSetting />
+        <InstallApp />
       </div>
     </SectionScreen>
   );

@@ -363,7 +363,10 @@
     "errors": "Error reports",
     "whatIsSent": "Page names, counts and timings. Never call content, names, numbers or file names.",
     "errorsSent": "Error codes and the page they happened on. Never call content, names, numbers or file names.",
-    "saved": "Privacy choice saved"
+    "saved": "Privacy choice saved",
+    "install": "Install app",
+    "installDetail": "Opens AskCalls in its own window from your dock or home screen.",
+    "installAction": "Install"
   },
   "audit": {
     "filters": "Filters",
