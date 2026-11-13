@@ -1,5 +1,5 @@
-import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
