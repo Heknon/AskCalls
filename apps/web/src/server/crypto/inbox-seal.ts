@@ -85,9 +85,9 @@ export async function openInboxSeal(
     const key = await deriveKey(shared, ephPoint, 'decrypt');
     return new Uint8Array(
       await subtle().decrypt(
-        { name: 'AES-GCM', iv: envelope.subarray(1, 13), additionalData: buf(aad) },
+        { name: 'AES-GCM', iv: buf(envelope.subarray(1, 13)), additionalData: buf(aad) },
         key,
-        envelope.subarray(13),
+        buf(envelope.subarray(13)),
       ),
     );
   } finally {
