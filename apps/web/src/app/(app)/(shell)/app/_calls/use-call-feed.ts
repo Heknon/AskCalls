@@ -2,7 +2,6 @@
 
 import { listCalls } from '@askcalls/client-core/calls';
 import type { ClientContext } from '@askcalls/client-core/context';
-import { meaningHighlights } from '@askcalls/client-core/meaning';
 import { type HighlightRange, searchCalls } from '@askcalls/client-core/search';
 import { intentTagId, type ResolvedTag } from '@askcalls/client-core/tags';
 import type { CallMeta, DurationBucket } from '@askcalls/domain';
@@ -231,25 +230,30 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
   /** On a meaning search, marks the phrase of each snippet closest to the query. */
   const markMeaning = useCallback(
     (p: Page, id: number) => {
-      if (!p.vector) return;
-      meaningHighlights(
-        ctx.embedder,
-        p.vector,
-        p.items.map((i) => i.snippet),
-      ).then(
-        (ranges) => {
-          if (id !== run.current) return;
-          const byId = new Map(p.items.map((item, k) => [item.id, ranges[k]] as const));
-          setState((s) => ({
-            ...s,
-            raw: s.raw.map((i) => {
-              const r = byId.get(i.id);
-              return r ? { ...i, highlights: [...i.highlights, r] } : i;
-            }),
-          }));
-        },
-        () => {},
-      );
+      const vector = p.vector;
+      if (!vector) return;
+      import('@askcalls/client-core/meaning')
+        .then(({ meaningHighlights }) =>
+          meaningHighlights(
+            ctx.embedder,
+            vector,
+            p.items.map((i) => i.snippet),
+          ),
+        )
+        .then(
+          (ranges) => {
+            if (id !== run.current) return;
+            const byId = new Map(p.items.map((item, k) => [item.id, ranges[k]] as const));
+            setState((s) => ({
+              ...s,
+              raw: s.raw.map((i) => {
+                const r = byId.get(i.id);
+                return r ? { ...i, highlights: [...i.highlights, r] } : i;
+              }),
+            }));
+          },
+          () => {},
+        );
     },
     [ctx],
   );
