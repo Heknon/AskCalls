@@ -33,6 +33,7 @@ export class DomainError extends Error {
 
   /** Matches any copy of DomainError; subclasses keep the ordinary prototype check. */
   static override [Symbol.hasInstance](value: unknown): boolean {
+    // biome-ignore lint/complexity/noThisInStatic: `this` is the subclass being checked.
     if (this !== DomainError) return Function.prototype[Symbol.hasInstance].call(this, value);
     return (
       typeof value === 'object' &&
