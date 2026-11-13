@@ -314,19 +314,8 @@ export function validateCombination(c: InstanceConfig): CombinationProblem[] {
       message: 'S3_BUCKET: required when BLOB_DRIVER=s3',
     });
   }
+  // A provider without its API key is off (the adapter returns null), not a config error.
   const tx = c.transcription;
-  const txKeys = {
-    elevenlabs: 'ELEVENLABS_API_KEY',
-    openai: 'OPENAI_API_KEY',
-    deepgram: 'DEEPGRAM_API_KEY',
-    soniox: 'SONIOX_API_KEY',
-  } as const;
-  if (tx.provider in txKeys && !tx.keys[tx.provider as keyof typeof txKeys]) {
-    out.push({
-      paths: ['transcription.provider', `transcription.keys.${tx.provider}`],
-      message: `${txKeys[tx.provider as keyof typeof txKeys]}: required when TRANSCRIPTION_PROVIDER=${tx.provider}`,
-    });
-  }
   if (tx.provider === 'openai-compatible' && !tx.baseUrl) {
     out.push({
       paths: ['transcription.provider', 'transcription.baseUrl'],
@@ -338,11 +327,6 @@ export function validateCombination(c: InstanceConfig): CombinationProblem[] {
     out.push({
       paths: ['llm.provider', 'llm.baseUrl', 'llm.model'],
       message: 'LLM_BASE_URL and LLM_MODEL: required when LLM_PROVIDER=openai-compatible',
-    });
-  } else if (!['none', 'mock', 'openai-compatible'].includes(llm.provider) && !llm.apiKey) {
-    out.push({
-      paths: ['llm.provider', 'llm.apiKey'],
-      message: `ANTHROPIC_API_KEY: required when LLM_PROVIDER=${llm.provider}`,
     });
   }
   if (c.offlineMode && !c.auth.localAccounts && c.appMode !== 'local') {
