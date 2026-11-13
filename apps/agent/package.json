@@ -12,12 +12,21 @@
     "build:binary": "bun build ./src/cli.ts --compile --outfile dist/askcalls"
   },
   "dependencies": {
+    "@askcalls/adapter-transcription-deepgram": "workspace:*",
+    "@askcalls/adapter-transcription-elevenlabs": "workspace:*",
+    "@askcalls/adapter-transcription-openai": "workspace:*",
+    "@askcalls/adapter-transcription-openai-compatible": "workspace:*",
+    "@askcalls/adapter-transcription-soniox": "workspace:*",
     "@askcalls/api-contract": "workspace:*",
     "@askcalls/client-core": "workspace:*",
+    "@askcalls/crypto": "workspace:*",
     "@askcalls/domain": "workspace:*",
+    "@askcalls/transcript-formats": "workspace:*",
+    "@huggingface/transformers": "4.3.2",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@napi-rs/keyring": "2.1.2",
     "commander": "15.1.0",
+    "ffmpeg-static": "5.3.0",
     "zod": "4.6.7"
   },
   "devDependencies": {
