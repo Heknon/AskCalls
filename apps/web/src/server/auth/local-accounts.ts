@@ -28,7 +28,9 @@ async function locked(ports: LocalPorts, email: string): Promise<boolean> {
 }
 
 async function recordFailure(ports: LocalPorts, email: string): Promise<void> {
-  await ports.rateLimiter.consume(failureKey(email), windowStart(), 1, null);
+  const start = windowStart();
+  const end = new Date(start.getTime() + WINDOW_MS);
+  await ports.rateLimiter.consume(failureKey(email), { start, end }, 1, null);
 }
 
 async function attachPassword(ports: LocalPorts, user: User, email: string, password: string) {

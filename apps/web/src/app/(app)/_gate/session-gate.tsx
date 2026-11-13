@@ -9,10 +9,13 @@ import { GateFrame } from '../../_gate/gate-frame';
 import { UnlockGate } from './unlock-gate';
 
 export const WELCOME_PATH = '/app/welcome';
+/** Joining with a link code: signed in, but this browser can't unlock yet. */
+export const LINK_PATH = '/app/link';
 
 /**
  * Decides what an app route shows: nothing while the account and client load, onboarding for an
- * account without unlock methods, the unlock gate while locked, the route once unlocked. The
+ * account without unlock methods, the unlock gate while locked (except on the link page), the
+ * route once unlocked. The
  * gate replaces content instantly (no animation), and the URL stays, so a deep link opens after
  * unlock.
  */
@@ -42,7 +45,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       </GateFrame>
     );
   }
-  if (onWelcome) return children;
+  if (onWelcome || pathname === LINK_PATH) return children;
   if (status === 'locked') return <UnlockGate />;
   return children;
 }

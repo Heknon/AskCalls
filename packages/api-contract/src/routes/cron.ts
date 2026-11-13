@@ -14,5 +14,6 @@ export const cronRetention = defineRoute({
     callsDeleted: z.number().int(),
     inboxExpired: z.number().int(),
     linkSessionsExpired: z.number().int(),
+    rateBucketsExpired: z.number().int(),
   }),
 });

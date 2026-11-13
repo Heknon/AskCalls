@@ -36,7 +36,13 @@ Mocks use the system font when IBM Plex isn't installed; the screenshots were re
 3. **Logo.** The mark in the mocks (waveform bars with a small key block on a teal tile) is a placeholder, not a designed logo.
 4. **Demo video.** The hero needs the recorded Playwright video from the spec; who records the final cut, in which language first, and do we ship both an English and a Hebrew version?
 5. **Google sign-in button.** Google's branding rules require its own button artwork; the mocks use plain text buttons. Confirm we use Google's official button on `/login`.
-6. **Hebrew copy review.** Hebrew strings use gender-neutral infinitive forms. A native copy editor should review `screens.md` before the message files are frozen, especially legal and consent wording.
+6. **Hebrew copy review.** Hebrew strings use gender-neutral infinitive forms. A native copy editor should review `screens.md` before the message files are frozen, especially legal and consent wording. "Unlock" is now "פתיחה" / "פתיחת הנעילה" ("ביטול נעילה" read as "cancel the lock"). Still open for a native speaker:
+   - `upload.queue.decoding` and `common.decrypting` are both "מפענח": decoding audio and decrypting read the same.
+   - Terminal is "מסוף" in onboarding and "טרמינל" in Settings → API and the link dialog; pick one.
+   - The marketing pages say "השיחה הזו", the app "השיחה הזאת"; pick one register.
+   - `calls.search.s.chosen` "נבחר, הקשה מסירה" is terse; `tags.syn.variants` "נחשב גם" for "Also means".
+   - Rule sentences built from fragments (`tags.rules.ofThese`, `all` / `any`, `op.containsAny` "מכילה אחת מ", `op.isIn` "נמצא ב"): check the gender and word order of the assembled sentence.
+   - `admin.cards.embeddings` "הטמעות" for embeddings.
 7. **Word-level highlighting.** R1 highlights the playing segment, not the playing word, because provider word timings are inconsistent. Revisit if Scribe v2 word timings prove reliable.
 8. **Ask consent scope.** Consent is remembered until lock, per provider and route. Confirm that is acceptable legally, or whether consent should be per call.
 9. **Marketing FAQ legal answer.** "Is recording legal?" needs counsel review for Israel, the EU and US states.

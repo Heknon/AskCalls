@@ -10,9 +10,9 @@ import { type FeatureExtractor, isCompiledBinary, workerExtractor } from './runt
  * backend (onnx-web.ts), in this process or, for the single binary, in a worker process. Like
  * the browser, it runs one text per inference: the q8 model quantizes activations per batch,
  * so batching would make a vector depend on its neighbours. The files are downloaded once into the
- * agent's data directory from the model host (ASKCALLS_MODEL_URL, default
- * models.askcalls.com), verified on every load, and loaded on first use, so commands that
- * never embed never pay for them.
+ * agent's data directory from the model host (`modelUrl`, resolved on first use; see
+ * agent.ts modelHost), verified on every load, and loaded on first use, so commands that never
+ * embed never pay for them.
  */
 export class TransformersEmbedder implements Embedder {
   readonly modelId = EMBEDDING_MODEL_ID;
@@ -21,13 +21,17 @@ export class TransformersEmbedder implements Embedder {
 
   constructor(
     private readonly dirs: { models: string; runtime: string },
-    private readonly opts: { modelUrl?: string } = { modelUrl: process.env.ASKCALLS_MODEL_URL },
+    private readonly opts: { modelUrl?: string | (() => Promise<string>) } = {
+      modelUrl: process.env.ASKCALLS_MODEL_URL,
+    },
   ) {}
 
   async #start(): Promise<FeatureExtractor> {
     const log = (line: string) => console.error(line);
+    const { modelUrl } = this.opts;
+    const baseUrl = typeof modelUrl === 'function' ? await modelUrl() : modelUrl;
     const { localModelPath, model } = await ensureModelFiles(this.dirs.models, {
-      ...(this.opts.modelUrl && { baseUrl: this.opts.modelUrl }),
+      ...(baseUrl && { baseUrl }),
       log,
     });
     return isCompiledBinary()

@@ -1,4 +1,5 @@
 import { type ApiClient, createApiClient } from '@askcalls/api-contract';
+import { putDirectAccess } from '@askcalls/api-contract/routes/settings';
 import type { BulkStateStore } from '@askcalls/client-core/bulk/queue';
 import { type ClientContext, createClientContext } from '@askcalls/client-core/context';
 import type {
@@ -20,14 +21,7 @@ import { SettingsTranscriber } from './adapters/own-key-transcriber';
 import { WebAuthnPasskeyAuthenticator } from './adapters/passkey';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from './adapters/stores';
 import { FetchBlobFetcher, FetchRecordingUploader } from './adapters/transfer';
-import {
-  DIRECT_COOKIE,
-  DIRECT_COOKIE_SECURE,
-  type DirectAccess,
-  encodeDirectCookie,
-  normalizeOrigin,
-  PROVIDER_ORIGINS,
-} from './direct-origins';
+import { type DirectAccess, normalizeOrigin, PROVIDER_ORIGINS } from './direct-origins';
 import { BlobUrls, installLockRules } from './lock';
 import { readEmbeddingModelUrl } from './runtime-config';
 
@@ -53,13 +47,14 @@ export interface BrowserClient {
   /** Object URLs for decrypted media; revoked on lock. */
   blobUrls: BlobUrls;
   /**
-   * Mirrors the own-key providers and bucket into the `askcalls-direct` cookie so the next page
-   * load's CSP allows them. Runs after every unlock; call it after saving Settings → Providers.
-   * `changed: true` means the current page's CSP is stale: reload to apply it.
+   * Registers the own-key providers and bucket with the server, which sets the signed
+   * `askcalls-direct` cookie so the next page load's CSP allows them. Runs after every unlock;
+   * call it after saving Settings → Providers. `changed: true` means the current page's CSP is
+   * stale: reload to apply it.
    */
   syncDirectAccess(): Promise<{ changed: boolean }>;
   /** Removes the cookie (sign-out). */
-  clearDirectAccess(): void;
+  clearDirectAccess(): Promise<void>;
   /** Removes listeners, stops workers and locks. */
   dispose(): void;
 }
@@ -92,14 +87,6 @@ export function directAccessFor(p: Providers): DirectAccess {
   }
   if (p.recordings.mode === 'own') origins.push(bucketOrigin(p.recordings.bucket));
   return { providers, origins };
-}
-
-function readCookie(name: string): string | undefined {
-  const prefix = `${name}=`;
-  return document.cookie
-    .split('; ')
-    .find((c) => c.startsWith(prefix))
-    ?.slice(prefix.length);
 }
 
 /**
@@ -145,20 +132,9 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     ownBuckets,
   });
 
-  const secure = location.protocol === 'https:';
-  const cookieName = secure ? DIRECT_COOKIE_SECURE : DIRECT_COOKIE;
-  const writeCookie = (value: string, maxAge: number) => {
-    // biome-ignore lint/suspicious/noDocumentCookie: the middleware reads it on the next request.
-    document.cookie = `${cookieName}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Strict${secure ? '; Secure' : ''}`;
-  };
-  const syncDirectAccess = async () => {
-    const value = encodeDirectCookie(directAccessFor(await context().userData.get('providers')));
-    const before = readCookie(cookieName) ?? '';
-    if (value === before) return { changed: false };
-    if (value) writeCookie(value, 400 * 24 * 3600);
-    else writeCookie('', 0);
-    return { changed: true };
-  };
+  const putDirect = (access: DirectAccess) => api.request(putDirectAccess, { body: access });
+  const syncDirectAccess = async () =>
+    putDirect(directAccessFor(await context().userData.get('providers')));
 
   const unsubscribe = session.subscribe((e) => {
     if (e.type === 'unlocked') {
@@ -191,7 +167,9 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     ownBuckets,
     blobUrls,
     syncDirectAccess,
-    clearDirectAccess: () => writeCookie('', 0),
+    clearDirectAccess: async () => {
+      await putDirect({ providers: [], origins: [] });
+    },
     dispose() {
       uninstall();
       unsubscribe();

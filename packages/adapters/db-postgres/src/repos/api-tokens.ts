@@ -25,9 +25,8 @@ const publicColumns = {
 const toToken = (r: ApiToken): ApiToken => ({ ...r, scopes: [...r.scopes] });
 
 /**
- * Personal access tokens. `findByHash` authenticates a request before any user is known, and
- * `touch` / `incrementFetches` are keyed by token id (the port has no userId), so those three
- * use the system path.
+ * Personal access tokens. `findByHash` authenticates a request before any user is known, so it
+ * uses the system path; everything else runs as the token's owner under RLS.
  */
 export function createApiTokenRepository(d: Driver): ApiTokenRepository {
   return {
@@ -95,9 +94,12 @@ export function createApiTokenRepository(d: Driver): ApiTokenRepository {
       );
     },
 
-    touch: async (id, at) => {
-      await d.asSystem((db) =>
-        db.update(apiTokens).set({ lastUsedAt: at }).where(eq(apiTokens.id, id)),
+    touch: async (userId, id, at) => {
+      await d.asUser(userId, (tx) =>
+        tx
+          .update(apiTokens)
+          .set({ lastUsedAt: at })
+          .where(and(eq(apiTokens.userId, userId), eq(apiTokens.id, id))),
       );
     },
 
@@ -117,11 +119,11 @@ export function createApiTokenRepository(d: Driver): ApiTokenRepository {
       return Number(r?.n ?? 0);
     },
 
-    incrementFetches: async (id, now) => {
+    incrementFetches: async (userId, id, now) => {
       // One atomic statement: reset the window when it started an hour or more before `now`.
-      const [r] = await d.asSystem((db) =>
+      const [r] = await d.asUser(userId, (tx) =>
         rows<{ n: unknown }>(
-          db,
+          tx,
           sql`UPDATE "ApiToken" SET
                 "fetchesThisHour" = CASE
                   WHEN "hourWindowStart" IS NULL
@@ -131,7 +133,7 @@ export function createApiTokenRepository(d: Driver): ApiTokenRepository {
                   WHEN "hourWindowStart" IS NULL
                     OR "hourWindowStart" <= ${now.toISOString()}::timestamptz - interval '1 hour'
                   THEN ${now.toISOString()}::timestamptz ELSE "hourWindowStart" END
-              WHERE "id" = ${id}
+              WHERE "id" = ${id} AND "userId" = ${userId}
               RETURNING "fetchesThisHour" AS "n"`,
         ),
       );

@@ -213,7 +213,7 @@ export function AppSessionProvider({
     if (client) {
       await client.deviceKeys.clear().catch(() => {});
       await client.bulkState.clear().catch(() => {});
-      client.clearDirectAccess();
+      await client.clearDirectAccess().catch(() => {});
       client.session.lock('manual');
     }
     await authSignOut({ redirectTo: '/login' });

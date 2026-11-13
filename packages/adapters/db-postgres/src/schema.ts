@@ -194,6 +194,7 @@ export const rateBuckets = pgTable(
     key: text('key').notNull(),
     windowStart: ts('windowStart').notNull(),
     count: integer('count').notNull(),
+    expiresAt: ts('expiresAt'),
   },
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
 );
