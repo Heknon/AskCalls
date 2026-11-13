@@ -13,6 +13,7 @@ export const SetupStateSchema = z.object({
   /** Config the server environment already sets: shown read-only in the wizard. */
   config: z.record(z.string(), z.unknown()),
   locked: z.array(z.string()),
+  env: z.record(z.string(), z.string()),
   defaults: z.object({ pgliteDir: z.string(), fsDir: z.string() }),
   environment: z.enum(['production', 'development', 'test']),
   appUrl: z.string(),

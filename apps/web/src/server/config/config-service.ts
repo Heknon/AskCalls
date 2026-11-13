@@ -227,8 +227,16 @@ export class ConfigService {
    * The config as the admin UI may see it: every secret removed (`secrets` lists the ones that
    * are set), and the Postgres URL without its password.
    */
-  redacted(): { config: Json; locked: string[]; secrets: string[] } {
+  redacted(): {
+    config: Json;
+    locked: string[];
+    env: Record<string, string>;
+    secrets: string[];
+  } {
     const { config, locked } = this.get();
+    const env = Object.fromEntries(
+      ENV_BINDINGS.filter(([, path]) => locked.has(path)).map(([name, path]) => [path, name]),
+    );
     const copy = structuredClone(config) as Json;
     const secrets: string[] = [];
     for (const path of SECRET_PATHS) {
@@ -237,7 +245,7 @@ export class ConfigService {
       deletePath(copy, path);
     }
     if (config.db.url) setPath(copy, 'db.urlDisplay', withoutPassword(config.db.url));
-    return { config: copy, locked: [...locked], secrets };
+    return { config: copy, locked: [...locked], env, secrets };
   }
 }
 

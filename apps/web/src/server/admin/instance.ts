@@ -1,11 +1,13 @@
 import { corsJson } from '@askcalls/adapter-blob-s3';
-import { DomainError, type HealthResult } from '@askcalls/domain';
+import { DomainError, type HealthResult, isDomainError } from '@askcalls/domain';
 import { instanceUsage } from '@askcalls/domain/use-cases/admin';
 import type { Actor } from '@askcalls/domain/use-cases/context';
 import pkg from '../../../package.json' with { type: 'json' };
+import { AdapterUnavailableError } from '../adapters/errors';
 import { ConfigError, type ConfigService } from '../config/config-service';
 import { type OfflineBlocker, offlineBlockers } from '../config/offline';
 import type { Container } from '../container';
+import { OfflineBlockedError } from '../http/offline-fetch';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'down';
 
@@ -21,6 +23,7 @@ export interface InstanceView {
   environment: 'production' | 'development' | 'test';
   config: Record<string, unknown>;
   locked: string[];
+  env: Record<string, string>;
   secrets: string[];
   restartRequired: string[];
   offline: {
@@ -90,7 +93,7 @@ export async function instanceView(
 ): Promise<InstanceView> {
   const usage = await instanceUsage(container.ports, actor);
   const resolved = configService.get();
-  const { config, locked, secrets } = configService.redacted();
+  const { config, locked, env, secrets } = configService.redacted();
   const lockedSet = new Set(locked);
   const blob = resolved.config.blob;
   return {
@@ -99,6 +102,7 @@ export async function instanceView(
     environment: resolved.environment,
     config,
     locked,
+    env,
     secrets,
     restartRequired: container.restartRequired,
     offline: {
@@ -112,10 +116,19 @@ export async function instanceView(
   };
 }
 
-/** ConfigError → a 400 with the problems (paths and env names, never values). */
+/**
+ * A config the instance can't run with → 400. ConfigError lists paths and env names; an
+ * adapter that refuses to build says which setting it needs. Never values.
+ */
 export function configProblem(e: unknown): never {
   if (e instanceof ConfigError) {
     throw new DomainError('invalid', e.problems.join('; ').slice(0, 500));
+  }
+  if (e instanceof AdapterUnavailableError || e instanceof OfflineBlockedError) {
+    throw new DomainError('invalid', e.message);
+  }
+  if (e instanceof Error && !isDomainError(e) && /required/.test(e.message)) {
+    throw new DomainError('invalid', e.message.slice(0, 200));
   }
   throw e;
 }

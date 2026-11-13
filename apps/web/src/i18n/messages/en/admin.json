@@ -1,3 +1,252 @@
 {
-  "title": "Instance"
+  "title": "Instance",
+  "version": "Version {v}",
+  "cards": {
+    "database": "Database",
+    "blob": "Blob storage",
+    "signIn": "Sign-in methods",
+    "transcription": "Transcription",
+    "llm": "Ask (LLM)",
+    "embeddings": "Embeddings",
+    "telemetry": "Telemetry",
+    "limits": "Limits",
+    "users": "Users"
+  },
+  "health": {
+    "healthy": "Healthy",
+    "degraded": "Slow",
+    "down": "Down",
+    "off": "Off"
+  },
+  "envLocked": "Set by the server environment",
+  "hosted": "This instance is configured by its server environment. Settings here are read-only.",
+  "dbLocked": "Can't be changed while it holds data. Use askcalls backup and restore.",
+  "restart": "Restart AskCalls to apply this change.",
+  "restartBanner": "Restart AskCalls to apply the database change.",
+  "save": "Save",
+  "saving": "Saving…",
+  "saved": "Saved",
+  "discard": "Discard",
+  "saveFailed": "Couldn't save: {reason}",
+  "loadFailed": "Couldn't load the instance settings",
+  "field": {
+    "driver": "Driver",
+    "connection": "Connection",
+    "postgresUrl": "Postgres URL",
+    "folder": "Folder",
+    "adapter": "Adapter",
+    "endpoint": "Endpoint",
+    "region": "Region",
+    "bucket": "Bucket",
+    "accessKeyId": "Access key ID",
+    "secretKey": "Secret key",
+    "provider": "Provider",
+    "model": "Model",
+    "apiKey": "API key",
+    "baseUrl": "Server URL",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "smtp": "SMTP server",
+    "from": "From address",
+    "modelUrl": "Model files URL",
+    "backends": "Backends",
+    "maxCalls": "Calls per user",
+    "transcriptionMinutes": "Transcription per month",
+    "asksPerDay": "Questions per day",
+    "recordings": "Recording backups per user",
+    "tokens": "Access tokens per user"
+  },
+  "value": {
+    "minutes": "{n} min",
+    "gb": "{n} GB",
+    "thisInstance": "This instance",
+    "off": "Off",
+    "on": "On"
+  },
+  "adapter": {
+    "postgres": "Postgres",
+    "pglite": "Built-in (PGlite)",
+    "memory": "In memory",
+    "s3": "S3-compatible",
+    "fs": "Local folder"
+  },
+  "provider": {
+    "elevenlabs": "ElevenLabs",
+    "openai": "OpenAI",
+    "deepgram": "Deepgram",
+    "soniox": "Soniox",
+    "anthropic": "Anthropic",
+    "google": "Google",
+    "openai-compatible": "Local server (OpenAI-compatible)",
+    "mock": "Mock (testing only)",
+    "none": "Off"
+  },
+  "signIn": {
+    "google": "Google",
+    "github": "GitHub",
+    "email": "Email link",
+    "local": "Local accounts",
+    "localHint": "Email with a passkey or a password. Required in offline mode.",
+    "passkeyNote": "Accounts that have a passkey can always sign in with it."
+  },
+  "secret": {
+    "masked": "Saved secret",
+    "replace": "Replace",
+    "remove": "Remove",
+    "removed": "Removed when you save"
+  },
+  "test": {
+    "test": "Test connection",
+    "testing": "Testing…",
+    "ok": "Connected in {ms} ms.",
+    "okPostgres": "Connected to Postgres {v} with pgvector {pv}.",
+    "noVector": "Connected, but pgvector isn't installed. Run CREATE EXTENSION vector; and test again.",
+    "builtIn": "Built-in. Nothing to connect to.",
+    "off": "Off. Nothing to connect to.",
+    "failed": "Failed: {reason}.",
+    "reason": {
+      "unreachable": "Couldn't reach the server",
+      "timeout": "No answer within 8 seconds",
+      "incomplete": "Fill in every field first",
+      "offline_blocked": "Offline mode blocks this host",
+      "invalidKey": "Key rejected. Check the key",
+      "bucketNotFound": "The bucket doesn't exist",
+      "accessDenied": "Access denied. Check the keys",
+      "databaseUnreachable": "Couldn't reach the database",
+      "other": "{message}"
+    }
+  },
+  "cors": {
+    "missing": "Add this CORS rule to your bucket, then test again.",
+    "ok": "Browsers on this instance can upload to the bucket."
+  },
+  "embeddings": {
+    "hint": "Where browsers download the multilingual-e5-small model files. Empty: this instance. In offline mode this instance always serves them."
+  },
+  "telemetry": {
+    "off": "Off. Nothing leaves the instance.",
+    "turnOff": "Turn off"
+  },
+  "users": {
+    "count": "{n, plural, one {# account on this instance} other {# accounts on this instance}}",
+    "email": "Account email",
+    "promote": "Make admin",
+    "promoted": "Now an admin",
+    "already": "That account is already an admin.",
+    "notFound": "No account uses that email."
+  },
+  "offline": {
+    "title": "Offline mode",
+    "blockers": "{n, plural, one {# setting reaches the internet. Fix it to turn offline mode on.} other {# settings reach the internet. Fix them to turn offline mode on.}}",
+    "clear": "Nothing reaches the internet.",
+    "on": "On. Requests to hosts outside your network are blocked.",
+    "confirmTitle": "Turn on offline mode?",
+    "confirm": "AskCalls will block every request to hosts outside your network.",
+    "confirmLabel": "Turn on",
+    "what": {
+      "transcription": "Transcription: {adapter}",
+      "llm": "Ask: {adapter}",
+      "sign-in-google": "Sign-in: Google",
+      "sign-in-github": "Sign-in: GitHub",
+      "sign-in-email": "Sign-in: email link",
+      "local-accounts": "Sign-in: local accounts are off",
+      "auth-redirect-proxy": "Sign-in: redirect proxy",
+      "blob": "Blob storage: S3",
+      "database": "Database: Postgres",
+      "telemetry-otel": "Telemetry: OpenTelemetry",
+      "telemetry-sentry": "Telemetry: Sentry",
+      "telemetry-posthog": "Telemetry: PostHog",
+      "telemetry-umami": "Telemetry: Umami"
+    },
+    "fix": {
+      "local-whisper": "Use local Whisper server",
+      "local-ollama": "Use local Ollama",
+      "off": "Turn off",
+      "sign-in-google": "Turn off Google sign-in",
+      "sign-in-github": "Turn off GitHub sign-in",
+      "sign-in-email": "Turn off email sign-in",
+      "local-folder": "Use a local folder",
+      "local-accounts-on": "Turn on local accounts",
+      "this-instance": "Remove it"
+    },
+    "databaseHint": "Move the database inside your network: askcalls backup, switch, askcalls restore."
+  },
+  "setup": {
+    "label": "Setup steps",
+    "noAdmin": "This instance has no admin yet. The account you create in the last step becomes the admin.",
+    "token": {
+      "title": "Enter the setup token",
+      "body": "AskCalls printed a one-time setup token in the server log when it started. It is also in the setup-token file in the data folder.",
+      "label": "Setup token",
+      "wrong": "That token doesn't match. Copy it again from the server log.",
+      "submit": "Continue"
+    },
+    "steps": {
+      "database": "Database",
+      "storage": "Storage",
+      "signIn": "Sign-in",
+      "ai": "Transcription and AI",
+      "offline": "Offline mode",
+      "admin": "Admin account"
+    },
+    "changeLater": "Everything here can be changed later in Admin, except the database once it holds data.",
+    "testRequired": "Test the connection to continue.",
+    "db": {
+      "title": "Choose a database",
+      "builtin": "Built-in",
+      "builtinBody": "PGlite, stored in {path} on this machine. For one person or a small team.",
+      "external": "External Postgres",
+      "externalBody": "Postgres 16 or later with the pgvector extension."
+    },
+    "storage": {
+      "title": "Choose storage",
+      "fs": "Local folder",
+      "fsBody": "Recordings are stored in a folder on this machine.",
+      "s3": "S3-compatible bucket",
+      "s3Body": "MinIO, Cloudflare R2, Backblaze B2, AWS S3 or any S3-compatible service."
+    },
+    "signIn": {
+      "title": "Choose how people sign in",
+      "localBody": "Email with a passkey or a password. Works without internet access.",
+      "googleBody": "Needs an OAuth client from Google Cloud.",
+      "githubBody": "Needs an OAuth app from GitHub.",
+      "emailBody": "Sends a sign-in link through your SMTP server.",
+      "callback": "Callback URL",
+      "none": "Choose at least one sign-in method."
+    },
+    "ai": {
+      "title": "Transcription and AI",
+      "transcription": "Transcription",
+      "llm": "Ask about a call",
+      "off": "Off",
+      "transcriptionOffBody": "Audio uploads are off. Transcript uploads still work.",
+      "llmOffBody": "Asking about a call is off.",
+      "cloud": "Cloud provider",
+      "cloudBody": "Audio or the call goes to the provider when someone asks for it.",
+      "local": "Local server",
+      "transcriptionLocalBody": "An OpenAI-compatible Whisper server on your network, such as faster-whisper or whisper.cpp.",
+      "llmLocalBody": "An OpenAI-compatible server on your network, such as Ollama or vLLM."
+    },
+    "offline": {
+      "title": "Offline mode",
+      "body": "Blocks every request to hosts outside your network. For air-gapped installs.",
+      "switch": "Turn on offline mode",
+      "needsLocal": "Offline mode needs local accounts. Turn them on in the sign-in step."
+    },
+    "admin": {
+      "title": "Create the admin account",
+      "email": "Email",
+      "passkey": "Passkey",
+      "passkeyBody": "Sign in with this device's screen lock or a security key.",
+      "createPasskey": "Create passkey",
+      "passkeyReady": "Passkey created",
+      "passkeyFailed": "The passkey wasn't created. Try again.",
+      "password": "Password",
+      "passwordBody": "At least 12 characters. Only with local accounts.",
+      "passwordShort": "Use at least 12 characters.",
+      "finish": "Create admin and finish",
+      "finishing": "Setting up…",
+      "failed": "Setup didn't finish: {reason}"
+    }
+  }
 }

@@ -7,11 +7,12 @@ import { applyConfig, finishSetup } from '../container';
 /** What the wizard shows before anything is chosen: env-locked settings and the defaults. */
 export function setupState(configService: ConfigService) {
   const resolved = configService.get();
-  const { config, locked } = configService.redacted();
+  const { config, locked, env } = configService.redacted();
   const dataDir = configService.dataDir;
   return {
     config,
     locked,
+    env,
     defaults: { pgliteDir: `${dataDir}/db`, fsDir: `${dataDir}/blobs` },
     environment: resolved.environment,
     appUrl: resolved.config.appUrl,

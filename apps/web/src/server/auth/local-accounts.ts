@@ -124,10 +124,8 @@ export async function redeemSetupClaim(
   const userId = valid ? claim.slice(0, dot) : '';
   const hash = await sha256Hex(valid ? claim.slice(dot + 1) : '');
   // A malformed claim still makes the lookup, under an identifier no claim can have.
-  const used = await ports.users.useVerificationToken(
-    valid ? `${CLAIM_PREFIX}${userId}` : `${CLAIM_PREFIX}invalid`,
-    hash,
-  );
+  const consume = ports.users.useVerificationToken.bind(ports.users);
+  const used = await consume(valid ? `${CLAIM_PREFIX}${userId}` : `${CLAIM_PREFIX}invalid`, hash);
   if (!valid || !used || used.expires.getTime() < Date.now()) return null;
   const user = await ports.users.findById(userId);
   return user && !user.deletedAt ? user : null;

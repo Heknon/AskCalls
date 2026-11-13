@@ -27,6 +27,8 @@ export const InstanceViewSchema = z.object({
   environment: z.enum(['production', 'development', 'test']),
   config: z.record(z.string(), z.unknown()),
   locked: z.array(z.string()),
+  /** Env var name per locked path. */
+  env: z.record(z.string(), z.string()),
   secrets: z.array(z.string()),
   restartRequired: z.array(z.string()),
   offline: z.object({
