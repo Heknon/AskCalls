@@ -102,6 +102,9 @@ jobs:
       # Builds the app, then runs it with the in-memory adapters (apps/web/playwright.config.ts).
       - name: E2E tests
         run: bun run test:e2e
+        env:
+          # The smoke tests never embed, so the 118 MB model download is skipped.
+          ASKCALLS_SKIP_MODEL_DOWNLOAD: "1"
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: failure()
