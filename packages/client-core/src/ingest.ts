@@ -163,6 +163,20 @@ async function findExisting(
   return res.items[0]?.id ?? null;
 }
 
+/** Audio token from decoded PCM, or from the file bytes when decoding fails (spec 6.4). */
+async function fingerprintAudio(ctx: ClientContext, audio: AudioSource) {
+  if (!ctx.audio) throw new IngestError('audio_unreadable', 'no audio codec on this device');
+  const codec = ctx.audio;
+  const decoded = await codec.decode(audio).catch(() => null);
+  const bytes = decoded
+    ? pcmBytes(decoded)
+    : await codec.readBytes(audio).catch(() => {
+        throw new IngestError('audio_unreadable', 'audio could not be read');
+      });
+  const audioTok = await token(ctx.session.keys.indexKey, 'a', await sha256(bytes));
+  return { decoded, audioTok, existingId: await findExisting(ctx, { audio_tok: audioTok }) };
+}
+
 async function runIngest(
   ctx: ClientContext,
   input: IngestInput,
@@ -180,27 +194,11 @@ async function runIngest(
   let decoded: DecodedAudio | null = null;
   let audioTok: bigint | null = null;
   if (input.audio) {
-    const audio = input.audio;
     onStatus('decoding');
-    const found = await gates.indexing(async () => {
-      if (!ctx.audio) throw new IngestError('audio_unreadable', 'no audio codec on this device');
-      const codec = ctx.audio;
-      try {
-        decoded = await codec.decode(audio);
-      } catch {
-        decoded = null;
-      }
-      const fingerprint = decoded
-        ? await sha256(pcmBytes(decoded))
-        : await sha256(
-            await codec.readBytes(audio).catch(() => {
-              throw new IngestError('audio_unreadable', 'audio could not be read');
-            }),
-          );
-      audioTok = await token(session.keys.indexKey, 'a', fingerprint);
-      return findExisting(ctx, { audio_tok: audioTok });
-    });
-    if (found) return { status: 'duplicate', existingId: found, match: 'audio' };
+    const fp = await gates.indexing(() => fingerprintAudio(ctx, input.audio!));
+    decoded = fp.decoded;
+    audioTok = fp.audioTok;
+    if (fp.existingId) return { status: 'duplicate', existingId: fp.existingId, match: 'audio' };
   }
 
   // 2. Transcript: parse, or transcribe the audio.
@@ -208,7 +206,7 @@ async function runIngest(
   if (input.transcript !== undefined) {
     parsed = toTranscript(input.transcript, input.transcriptFileName);
   } else {
-    const audio = decoded as DecodedAudio | null;
+    const audio = decoded;
     if (!audio) throw new IngestError('audio_unreadable', 'audio could not be decoded');
     if (!ctx.transcriber || !ctx.audio) {
       throw new IngestError('transcription_unavailable', 'transcription is off');
@@ -247,7 +245,7 @@ async function runIngest(
     ]);
     const meta = input.meta ?? {};
     const intents = await ctx.intents.get(settings.customIntents);
-    const decodedAudio = decoded as DecodedAudio | null;
+    const decodedAudio = decoded;
     const indexed = await indexCall({
       transcript,
       meta: {

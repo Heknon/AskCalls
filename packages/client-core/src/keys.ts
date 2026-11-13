@@ -51,7 +51,8 @@ interface PendingEntry {
  * Onboarding key setup (spec 6.2, 11.3). Generates RK on this device, prepares the unlock
  * methods locally, and uploads nothing until the recovery code is confirmed by retyping two
  * groups. `finish()` then uploads the keyring rows, the inbox key pair and this device's signing
- * key, and unlocks the session.
+ * key, and unlocks the session. A failed `finish()` can be called again: steps already done on
+ * the server are not repeated.
  */
 export class Onboarding {
   readonly recoveryCode: string;
@@ -61,6 +62,8 @@ export class Onboarding {
   #entries: PendingEntry[];
   #confirmed = false;
   #finished = false;
+  #userKeysUploaded = false;
+  #device: { deviceKeyId: string; privateKey: CryptoKey } | null = null;
 
   private constructor(
     readonly userId: string,
@@ -165,7 +168,8 @@ export class Onboarding {
     }
     const keys = await UnlockedKeys.fromRootKey(this.#rootKey);
     try {
-      for (const e of this.#entries) {
+      while (this.#entries.length) {
+        const e = this.#entries[0]!;
         await opts.api.request(addKeyring, {
           body: {
             type: 'entry',
@@ -176,23 +180,30 @@ export class Onboarding {
             kdfParams: { ...e.kdfParams },
           },
         });
+        this.#entries.shift();
       }
-      const inbox = await generateInboxKeyPair(keys.kek, this.userId);
-      await opts.api.request(addKeyring, {
-        body: {
-          type: 'userKeys',
-          inboxPublicKey: inbox.publicKey,
-          inboxPrivateKeyCt: inbox.privateKeyCt,
-          keyVersion: INBOX_KEY_VERSION,
-        },
+      if (!this.#userKeysUploaded) {
+        const inbox = await generateInboxKeyPair(keys.kek, this.userId);
+        await opts.api.request(addKeyring, {
+          body: {
+            type: 'userKeys',
+            inboxPublicKey: inbox.publicKey,
+            inboxPrivateKeyCt: inbox.privateKeyCt,
+            keyVersion: INBOX_KEY_VERSION,
+          },
+        });
+        this.#userKeysUploaded = true;
+      }
+      this.#device ??= await registerDevice(opts.api, opts.deviceKeys, opts.deviceLabel);
+      await opts.session.unlock({
+        userId: this.userId,
+        rootKey: new Uint8Array(this.#rootKey),
+        device: this.#device,
       });
-      const device = await registerDevice(opts.api, opts.deviceKeys, opts.deviceLabel);
-      await opts.session.unlock({ userId: this.userId, rootKey: this.#rootKey, device });
     } finally {
       keys.wipe();
-      this.discard();
     }
-    this.#finished = true;
+    this.discard();
   }
 
   /** Drops the RK and every prepared entry (cancel, or after `finish`). */

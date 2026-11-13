@@ -2,6 +2,7 @@ import { ApiError } from '@askcalls/api-contract';
 import { uploadInbox } from '@askcalls/api-contract/routes/inbox';
 import {
   addUnlockMethod,
+  applyAutoLockSetting,
   BulkQueue,
   checkDeviceLink,
   confirmDeviceLink,
@@ -227,6 +228,14 @@ describe('client-core end to end against the route handlers', () => {
     session.lock();
     await unlock({ method: 'passphrase', passphrase: 'correct horse battery staple' }, opts);
     expect(sortedIds(await searchCalls(ctx, { text: 'ולמקררים' }))).toEqual([ids.he]);
+  });
+
+  it('applies the auto-lock setting to the session', async () => {
+    const { ctx, session } = browser;
+    await ctx.userData.update('settings', (d) => ({ ...d, autoLockMinutes: 5 }));
+    await applyAutoLockSetting(ctx);
+    expect(session.idleTimeoutMs).toBe(5 * 60_000);
+    session.setIdleTimeout(0);
   });
 
   it('a new browser unlocked with the recovery code registers its own device key', async () => {

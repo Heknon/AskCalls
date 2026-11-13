@@ -109,3 +109,9 @@ export function createClientContext(deps: ClientDeps): ClientContext {
     },
   };
 }
+
+/** Applies `settings.autoLockMinutes` (0 = never) to the session's idle timer (spec 6.8). */
+export async function applyAutoLockSetting(ctx: ClientContext): Promise<void> {
+  const { autoLockMinutes } = await ctx.userData.get('settings');
+  ctx.session.setIdleTimeout(autoLockMinutes * 60_000);
+}
