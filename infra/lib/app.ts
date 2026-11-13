@@ -18,7 +18,7 @@ export function buildStacks(app: App) {
 
   const github = new GithubDeployStack(app, 'AskCallsGithubDeploy', {
     env,
-    githubRepo: config.githubRepo,
+    subjectPrefix: config.githubSubjectPrefix,
     ...(config.existingOidcProviderArn && {
       existingOidcProviderArn: config.existingOidcProviderArn,
     }),

@@ -13,7 +13,10 @@ function required(value: string | undefined, env: string, provider: string): str
   return value;
 }
 
-/** TRANSCRIPTION_PROVIDER → adapter. `none` turns transcription off (null). */
+/**
+ * TRANSCRIPTION_PROVIDER → adapter. `none`, or a keyed provider without its API key, turns
+ * managed transcription off (null); users can still transcribe with their own key.
+ */
 export async function buildTranscription(
   config: InstanceConfig,
   fetchImpl: typeof fetch = fetch,
@@ -25,25 +28,21 @@ export async function buildTranscription(
     case 'mock':
       return new MockTranscriptionProvider();
     case 'elevenlabs':
-      return new ElevenLabsTranscriptionProvider({
-        apiKey: required(keys.elevenlabs, 'ELEVENLABS_API_KEY', provider),
-        fetch: fetchImpl,
-      });
+      return keys.elevenlabs
+        ? new ElevenLabsTranscriptionProvider({ apiKey: keys.elevenlabs, fetch: fetchImpl })
+        : null;
     case 'openai':
-      return new OpenAiTranscriptionProvider({
-        apiKey: required(keys.openai, 'OPENAI_API_KEY', provider),
-        fetch: fetchImpl,
-      });
+      return keys.openai
+        ? new OpenAiTranscriptionProvider({ apiKey: keys.openai, fetch: fetchImpl })
+        : null;
     case 'deepgram':
-      return new DeepgramTranscriptionProvider({
-        apiKey: required(keys.deepgram, 'DEEPGRAM_API_KEY', provider),
-        fetch: fetchImpl,
-      });
+      return keys.deepgram
+        ? new DeepgramTranscriptionProvider({ apiKey: keys.deepgram, fetch: fetchImpl })
+        : null;
     case 'soniox':
-      return new SonioxTranscriptionProvider({
-        apiKey: required(keys.soniox, 'SONIOX_API_KEY', provider),
-        fetch: fetchImpl,
-      });
+      return keys.soniox
+        ? new SonioxTranscriptionProvider({ apiKey: keys.soniox, fetch: fetchImpl })
+        : null;
     case 'openai-compatible':
       // No key slot exists for this provider in the config; local Whisper servers need none.
       return new OpenAiCompatibleTranscriptionProvider({

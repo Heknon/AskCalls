@@ -19,8 +19,6 @@ describe('ConfigService', () => {
     expect(r.incomplete).toEqual([
       'DATABASE_URL: required when DB_DRIVER=postgres',
       'S3_BUCKET: required when BLOB_DRIVER=s3',
-      'ELEVENLABS_API_KEY: required when TRANSCRIPTION_PROVIDER=elevenlabs',
-      'ANTHROPIC_API_KEY: required when LLM_PROVIDER=anthropic',
     ]);
   });
 

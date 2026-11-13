@@ -151,6 +151,7 @@ The CDK app in [`infra/`](../infra) owns everything on AWS. Context in `infra/cd
 |---|---|
 | `askcalls:region` | `eu-central-1` (the app's `S3_REGION`) |
 | `askcalls:githubRepo` | `Heknon/AskCalls` (the only repository the OIDC roles trust) |
+| `askcalls:githubSubjectPrefix` | the OIDC `sub` before `:environment:`. Default `repo:<githubRepo>`; a repository on immutable subjects sends `repo:<owner>@<owner-id>/<name>@<repo-id>` (`sub_claim_prefix` in `gh api repos/<owner>/<name>/actions/oidc/customization/sub`) |
 | `askcalls:buckets` | `{ "prod": "askcalls-prod", "dev": "askcalls-dev" }` |
 | `askcalls:modelsBucket` | `askcalls-models` |
 | `askcalls:appOrigins` | per environment, the origins allowed by bucket CORS: prod `https://askcalls.com`; dev `https://<DEV_DOMAIN>` (`https://dev.askcalls.com` in the file: change it if `DEV_DOMAIN` differs), `https://askcalls-*.vercel.app` (previews), `http://localhost:3000` |
