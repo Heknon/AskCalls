@@ -91,7 +91,7 @@
       "tx": "transcript only",
       "dup": "likely duplicates, skipped"
     },
-    "minutes": "About {n} minutes of audio to transcribe.",
+    "minutes": "About {n, plural, one {# minute} other {# minutes}} of audio to transcribe.",
     "usage": "Transcription this month, after this import",
     "min": "min",
     "manifestApplied": "manifest.csv set names and dates for {n} files.",

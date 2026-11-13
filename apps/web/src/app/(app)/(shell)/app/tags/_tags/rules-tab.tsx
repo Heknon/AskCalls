@@ -318,13 +318,12 @@ function Rules({ initial }: { initial: Catalogs }) {
           ))}
           onAddAction={() => change({ actions: [...draft.actions, newAction('add_tag')] })}
           preview={
-            valid ? (
+            valid && !job ? (
               <Preview
                 draft={draft}
                 contacts={contacts}
                 cache={cache.current}
                 auto={me.usage.calls <= AUTO_PREVIEW_MAX}
-                paused={!!job}
               />
             ) : undefined
           }
@@ -379,13 +378,11 @@ function Preview({
   contacts,
   cache,
   auto,
-  paused,
 }: {
   draft: RuleDraft;
   contacts: Contact[];
   cache: FactsCache;
   auto: boolean;
-  paused: boolean;
 }) {
   const t = useTranslations('tags.rules');
   const { ctx } = useUnlocked();
@@ -394,7 +391,7 @@ function Preview({
   const key = JSON.stringify(toRule(draft, contacts));
   useEffect(() => {
     setN(null);
-    if (!requested || paused) return;
+    if (!requested) return;
     const abort = new AbortController();
     const timer = setTimeout(() => {
       countMatches(ctx, JSON.parse(key) as Rule, { cache, signal: abort.signal }).then(
@@ -406,7 +403,7 @@ function Preview({
       clearTimeout(timer);
       abort.abort();
     };
-  }, [ctx, key, cache, requested, paused]);
+  }, [ctx, key, cache, requested]);
   if (!requested) {
     return (
       <Button variant="link" onClick={() => setRequested(true)}>

@@ -27,7 +27,7 @@ export default function TagsPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
         <TabsList className="mb-6 overflow-x-auto">
           {TABS.map(({ value, icon: Icon }) => (
-            <TabsTrigger key={value} value={value}>
+            <TabsTrigger key={value} value={value} className="whitespace-nowrap">
               <Icon aria-hidden />
               {t(`tab.${value}`)}
             </TabsTrigger>

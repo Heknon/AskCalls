@@ -3,6 +3,7 @@
 import type { Pairing } from '@askcalls/client-core/bulk/pairing';
 import type { BulkItemState } from '@askcalls/client-core/bulk/queue';
 import { getCall } from '@askcalls/client-core/calls';
+import type { IngestMeta } from '@askcalls/client-core/ingest';
 import type { Settings } from '@askcalls/client-core/userdata';
 import { dateFromDay } from '@askcalls/domain';
 import { DEFAULT_PHONE_REGION, isPhoneRegion, parsePhone } from '@askcalls/indexing';
@@ -121,7 +122,7 @@ export function BulkUpload({ flow, settings, recordingsOff }: BulkUploadProps) {
         }
       >
         {snap.error ? <ErrorState scope="inline" title={t(snap.error)} /> : null}
-        <PlannedTable pairing={plan.pairing} />
+        <PlannedTable pairing={plan.pairing} meta={plan.meta} region={settings.phoneRegion} />
       </Layout>
     );
   }
@@ -317,7 +318,23 @@ function Summary({
   );
 }
 
-function PlannedTable({ pairing }: { pairing: Pairing }) {
+function contactOf(meta: IngestMeta | undefined, region: string) {
+  const phone = meta?.phone
+    ? parsePhone(meta.phone, isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION)
+    : null;
+  if (!meta?.contactName && !phone) return undefined;
+  return { ...(meta?.contactName && { name: meta.contactName }), ...(phone && { phone }) };
+}
+
+function PlannedTable({
+  pairing,
+  meta,
+  region,
+}: {
+  pairing: Pairing;
+  meta: ReadonlyMap<string, IngestMeta>;
+  region: string;
+}) {
   const t = useTranslations('upload');
   const [shown, setShown] = useState(PAGE);
   const items = pairing.items.slice(0, shown);
@@ -329,6 +346,7 @@ function PlannedTable({ pairing }: { pairing: Pairing }) {
             key={p.key}
             fileName={(p.audio ?? p.transcript)!.name}
             parts={parts(p, t)}
+            contact={contactOf(meta.get(p.key), region)}
             status={{ state: 'queued', label: t('queue.queued') }}
           />
         ))}
@@ -411,7 +429,6 @@ function QueuePanel({
   const remaining = counts.queued + counts.active;
   const finished = remaining === 0 && !queue.restored;
   const pausing = queue.paused && counts.active > 0;
-  const phoneRegion = isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION;
   const tabCounts: Record<Filter, number> = {
     all: counts.total,
     active: counts.active,
@@ -546,8 +563,6 @@ function QueuePanel({
         ) : (
           <QueueTable>
             {visible.slice(0, shown).map((item) => {
-              const meta = queue.meta.get(item.id);
-              const phone = meta?.phone ? parsePhone(meta.phone, phoneRegion) : null;
               const reason =
                 item.status === 'failed' && item.reason
                   ? tu(
@@ -562,14 +577,7 @@ function QueuePanel({
                   key={item.id}
                   fileName={(item.audio ?? item.transcript)!.name}
                   parts={parts(item, tu)}
-                  contact={
-                    meta?.contactName || phone
-                      ? {
-                          ...(meta?.contactName && { name: meta.contactName }),
-                          ...(phone && { phone }),
-                        }
-                      : undefined
-                  }
+                  contact={contactOf(queue.meta.get(item.id), region)}
                   status={{ state: item.status, label: tu(`queue.${item.status}`), reason }}
                   duplicateOf={
                     item.status === 'duplicate' && item.existingId ? (

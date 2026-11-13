@@ -28,6 +28,8 @@ export interface Plan {
   summary: PreflightSummary;
   /** Items a manifest row describes. */
   manifestCovered: number;
+  /** Number and name per item, from the manifest and file names. */
+  meta: ReadonlyMap<string, IngestMeta>;
 }
 
 export interface QueueView {
@@ -299,9 +301,17 @@ export class BulkController {
           [i.audio, i.transcript].some((f) => f && manifest.lookup(f.name)),
         ).length
       : 0;
+    const region = (await ctx.userData.get('settings')).phoneRegion;
+    const meta = new Map(
+      pairing.items.map((i) => [
+        i.key,
+        itemMeta(i, { manifest, region, utcOffsetMinutes: utcOffsetMinutes() }),
+      ]),
+    );
+    if (run !== this.#planRun) return;
     this.#set({
       phase: 'preflight',
-      plan: { pairing, summary, manifestCovered },
+      plan: { pairing, summary, manifestCovered, meta },
       error: error ?? (manifestError ? 'manifestError' : null),
     });
   }
