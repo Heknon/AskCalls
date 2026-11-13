@@ -6,6 +6,7 @@ import { JobProgress } from '@askcalls/ui/components/JobProgress';
 import { RuleAction } from '@askcalls/ui/components/RuleAction';
 import { RuleBuilder } from '@askcalls/ui/components/RuleBuilder';
 import { RuleCondition } from '@askcalls/ui/components/RuleCondition';
+import { RuleListItem } from '@askcalls/ui/components/RuleListItem';
 import { SaveStatus } from '@askcalls/ui/components/SaveStatus';
 import { SynonymRow } from '@askcalls/ui/components/SynonymRow';
 import { TagChip } from '@askcalls/ui/components/TagChip';
@@ -113,6 +114,12 @@ const copy = {
       match_: 'Match',
       job: { pause: 'Pause', resume: 'Resume', stop: 'Stop', progress: 'Applying the rule' },
       applying: 'Applying to existing calls: 136 of 212',
+      off: 'Off',
+      list: [
+        ['Hot leads', 'Price words + Purchase interest → tag Hot lead, star', true],
+        ['Service calls', 'Service request → tag Service', true],
+        ['Lawyer', 'Contact is Avi Ben David → tag Legal', false],
+      ] as [string, string, boolean][],
     },
     synonym: { canonical: 'Canonical term', remove: 'Remove synonym group', forms: 'Other forms' },
     contacts: [
@@ -215,6 +222,12 @@ const copy = {
       match_: 'התאמה',
       job: { pause: 'השהיה', resume: 'המשך', stop: 'עצירה', progress: 'החלת הכלל' },
       applying: 'מחיל על שיחות קיימות: 136 מתוך 212',
+      off: 'כבוי',
+      list: [
+        ['לידים חמים', 'מילות מחיר + עניין ברכישה → תגית ליד חם, כוכב', true],
+        ['שיחות שירות', 'בקשת שירות → תגית שירות', true],
+        ['עורך דין', 'איש הקשר הוא אבי בן דוד → תגית משפטי', false],
+      ] as [string, string, boolean][],
     },
     synonym: { canonical: 'מונח עיקרי', remove: 'הסרת קבוצת מילים נרדפות', forms: 'צורות נוספות' },
     contacts: [
@@ -239,6 +252,7 @@ export function OrganiseGroup() {
   const [enabled, setEnabled] = useState(true);
   const [syn, setSyn] = useState(['price', 'עלות', 'cost']);
   const [threshold, setThreshold] = useState(0.72);
+  const [selectedRule, setSelectedRule] = useState(0);
   const sel = (value: string, options: [string, string][] | string[][], label: string) => ({
     value,
     options: opts(options),
@@ -342,6 +356,23 @@ export function OrganiseGroup() {
           onDelete={() => {}}
           labels={r.labels}
         />
+      </Specimen>
+      <Specimen name="RuleListItem" note="selected · default · off">
+        <Card className="max-w-72 p-2">
+          <ul className="m-0 flex flex-col gap-0.5 p-0">
+            {r.list.map(([name, summary, enabled], i) => (
+              <RuleListItem
+                key={name}
+                name={name}
+                summary={summary}
+                enabled={enabled}
+                offLabel={r.off}
+                selected={i === selectedRule}
+                onSelect={() => setSelectedRule(i)}
+              />
+            ))}
+          </ul>
+        </Card>
       </Specimen>
       <Specimen name="TagManagerRow">
         <Card>
