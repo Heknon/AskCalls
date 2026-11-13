@@ -183,8 +183,9 @@ The product talks like a careful colleague: short, specific, and silent when the
 2. **Extend with a variant, never copy.** Need a different look for the same meaning? Add a variant with a meaning-based name (`size="compact"` because the context is dense, `source="rule"` because the tag came from a rule). Never `color="blue"` or `big`.
 3. **Variants are named by meaning.** `TagChip source="intent"` exists because intents are system-derived and cannot be renamed, not because they are outlined. If a variant has no meaning to explain, it should not exist.
 4. **Look-alikes that mean different things stay separate, and say why.** The catalog lists every such pair under "Not to be confused with". Examples:
-   - `TagChip` vs `SearchChip`: a tag is data on a call; a search chip is a filter control on the search. Both are pills.
-   - `SearchToken` vs `TagChip`: a token is part of the current query and can hold any filter (contact, date), removable from the query only.
+   - `TagChip` vs the chips inside `FilterPicker`: a tag chip is data on a call; a picker chip is one choice in a filter. They share a shape only inside the picker, where the context is unambiguous.
+   - `FilterBlank` vs `TagChip`: a blank is a filter's current value inside the filter sentence; it is never shaped like a chip, so filters and tags can't be confused on the calls page.
+   - `SearchSuggestion kind="call"` vs `CallRow`: a suggestion is a shortcut to open one call from the search box; a row is a result in the list.
    - `QueueItemStatus` vs `HealthBadge`: one is the state of a job item that ends; the other is the ongoing state of a connection.
    - `DecryptingPlaceholder` vs `Skeleton` (primitive): the placeholder means "ciphertext is here, being decrypted on your device" and carries the lock; the bare skeleton means "waiting for the network".
    - `UnlockMethodRow` covers passkeys, recovery code, passphrase and linked devices because all four are keyring rows that wrap the same root key. There is no separate `DeviceRow` or `PasskeyRow`.
@@ -290,39 +291,69 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 
 ### 4.3 Call list and search
 
-#### SearchBar
-- **Purpose:** the one search input for calls: free text plus filter tokens.
-- **Use:** Calls page header. **Don't use:** for searching within a transcript (that is `TranscriptFind`), or for filtering settings tables.
-- **Props:** `query`, `tokens: SearchToken[]`, `onChange` (debounced 250 ms by the screen hook).
-- **Composes:** `Input`, `SearchToken`, `Popover` + `Command` (qualifier autocomplete), `Button` (clear).
-- **Screens:** C1, C2. **States:** empty (placeholder), typing, with tokens, loading (results dim after 400 ms, the bar never spins), error (handled by results area).
-- **A11y:** `role="search"`; input `aria-label="Search calls"`; tokens are buttons "Remove filter Intent: Purchase interest"; `/` focuses; `Esc` clears; Backspace at the start of an empty input focuses the last token.
-- **RTL:** search icon at the start edge, clear at the end; the input text uses `dir="auto"` but aligns to the UI direction.
+The calls list uses one search pattern, shared with the owner's other product (`ListFilters`): **one search box that suggests as you type, the filters written as a sentence under it, and a result line with the sort.** It replaces any chip bar or row of filter buttons. Every list page that gains filters later uses the same components; don't add filter popovers, sheets or sort selects of your own.
 
-#### SearchToken
-- **Purpose:** one active filter shown inside the search bar.
-- **Props:** `kind="contact" | "tag" | "intent" | "starred" | "date" | "direction"`, `label`, `negated` ("is not").
-- **Composes:** `Badge`-like button. **Screens:** C1, C2, M1 (read-only in marketing sample searches via `readOnly`).
-- **Not to be confused with:** `TagChip` (data on a call) and `SearchChip` (the control that creates the token).
-- **A11y/RTL:** label `dir="auto"`; remove button named.
+```
+[ 🔍  מחיר                                            × ]          SearchBox (suggestions drop below while typing)
+Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase interest] · from [the last 30 days] · [in and out] · matching [exact words]   Clear
+18 calls   also matched  מחירים ×  המחיר ×  price ×                                  Newest first ▾                                                     ResultLine
+```
 
-#### SearchChip
-- **Purpose:** a filter control under the search bar that opens a picker or toggles a filter.
-- **Props:** `kind` (as SearchToken plus `meaning`), `value?` (filled state when set), `mode="picker" | "toggle"` (`meaning` and `starred` are toggles).
-- **Composes:** `Toggle` / `Button`, `Popover`, `Command`, `Calendar` (date), `Switch` (meaning).
-- **Screens:** C1, C2. **States:** empty, set (filled, primary-subtle), open.
-- **A11y:** pickers are buttons with `aria-haspopup="dialog"`; toggles use `role="switch"` or `aria-pressed`.
-- **RTL:** chevron is not directional (down), not mirrored; on mobile the row scrolls horizontally and set chips move to the start.
+#### SearchBox
+- **Purpose:** the one text input for finding calls. Plain text is a keyword search (fuzzy, with synonyms); while typing it suggests filter values and calls.
+- **Use:** above any filterable list (calls; contacts later). **Don't use:** for finding text inside one transcript (`TranscriptFind`), or as a second search on the same page.
+- **Props:** `value`, `onChange` (results debounce 250 ms in the screen hook), `placeholder`, `suggestions` (built by the screen from the decrypted local catalogs), `records` (calls found by the text).
+- **Composes:** `Input` with `role="combobox"`, a listbox of `SearchSuggestion`s, `Button` (clear).
+- **Screens:** C1, C2, O5. **States:** empty (placeholder "Search names, numbers, tags or words"), typing with suggestions, typing with no suggestions (Enter runs the word search), searching (results dim after 400 ms; the box never spins).
+- **Behaviour:** at most 6 suggestions; filter values first, then up to 2 calls (4 when no values match); identifier-looking text (any digit, or 6+ characters) puts calls first. Typing a group name ("intent", "כוונה", "tag") suggests opening that picker. Choosing a suggestion applies it and clears the text.
+- **A11y:** `role="combobox"`, `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant`; ↑ ↓ move, Enter applies the highlighted suggestion (or runs the word search when none is highlighted), Esc closes the list, a second Esc clears the text. `/` focuses the box.
+- **RTL:** search icon at the start, clear at the end; the input is `dir="auto"` and aligns to the UI direction.
 
-#### AlsoMatched
-- **Purpose:** shows which fuzzy and synonym variants were searched, and lets the user exclude one.
-- **Props:** `variants: { term, excluded }[]`, `onExclude`.
-- **Composes:** `Badge` (dashed outline), `Button`. **Screens:** C1, C2.
-- **A11y:** polite live region together with the result count; each exclude button "Exclude מחירים". **RTL:** each variant `dir="auto"`.
+#### SearchSuggestion
+- **Purpose:** one thing the typed text could mean: a filter value, a call, a picker, or the word search itself.
+- **Props:** `kind` (meaning, not look: `contact`, `tag`, `intent`, `starred`, `direction`, `date-preset`, `group` = open that blank's picker, `call` = open the call, `words` = run the keyword search), `label` (the matched part bold with an accent underline), `meta` line, `chosen`.
+- **Meta lines:** "Contact · show only this", "Tag · add to the filter" (when other tags are chosen), "Tag · chosen, tap to remove", "Intent · see all 9" (group), "Today, 14:32 · 8 min" (call), "Search the transcripts" (words).
+- **Composes:** `Button` row (`role="option"`), lucide icon in a tile, `Kbd` (↵ on the highlighted row, desktop only).
+- **Screens:** C1, C2. **Not to be confused with:** `CallRow` (a result in the list). A call suggestion is a shortcut to open one call, not a result.
+- **No counts.** Suggestions never show how many calls a value would return: the server can't count over encrypted names, and counting locally would mean decrypting every call's metadata.
+- **RTL:** labels `dir="auto"`; phone numbers are LTR islands; the ↵ hint sits at the end edge.
 
-#### ResultsSummary
-- **Purpose:** the count and ordering of the current results.
-- **Props:** `count`, `order="newest" | "best-match"`. **Screens:** C1, C2. **A11y:** polite live region.
+#### FilterSentence
+- **Purpose:** shows every filter at once, as a sentence the user can read and edit: "Showing [all calls] · with [anyone] · tagged [any tag] · about [any intent] · from [any time] · [in and out] · matching [exact words]".
+- **Props:** `blanks: FilterBlank[]`, `onClear` (the "Clear" link appears when any blank is set).
+- **Composes:** text + `FilterBlank`s. **Screens:** C1, C2; M1 (read-only fragments in use-case samples).
+- **Copy:** each blank is a message with its value interpolated, so each language places its own prepositions. Hebrew folds some prepositions into the value ("[בכל זמן]", "[ב-30 הימים האחרונים]") instead of a separate word. Full sentences in both languages are in `screens.md` C2.
+- **A11y:** a `<p>`; each blank is a button named by its sentence fragment ("with anyone, change contact filter").
+- **RTL:** reads right to left as a Hebrew sentence; the "·" separators and Clear follow the reading order.
+
+#### FilterBlank
+- **Purpose:** one filter inside the sentence: its current value, and the button that changes it.
+- **Props:** `facet` (`starred`, `contact`, `tag`, `intent`, `date`, `direction`, `match`), `empty` text ("anyone"), `value` text ("דנה לוי", "Hot lead + 1" for several), `open`, `readOnly` (marketing samples).
+- **Looks:** empty = bold text with a dashed underline; set = accent tint with a solid accent underline. Never a pill or a chip.
+- **Match blank:** "matching [exact words | meaning]" is the semantic search switch. It is a single-choice blank because it is one concept: how the text is matched. Choosing "meaning" sorts by best match and loads the meaning model once.
+- **Composes:** `Button`. Opens `FilterPicker`. **Screens:** C1, C2, M1.
+- **A11y:** `aria-haspopup="dialog"`, `aria-expanded`. **RTL:** none beyond the sentence.
+
+#### FilterPicker
+- **Purpose:** the short list of values for one blank.
+- **Props:** `title` ("Which tag?"), `options` (from decrypted local catalogs: contacts, tags, intents; fixed lists for starred, direction, match; presets plus a calendar range for date), `multiple` (contacts, tags, intents; others close on one tap), `searchable` (automatic over 8 options, and when opened from a group suggestion), `total` (calls matching now, from the server, for the "Show 18 calls" button).
+- **Composes:** `Popover` (desktop, anchored to the blank) or `Sheet` side="bottom" (phones, 80 % height, no auto-focus so the keyboard doesn't cover the options), chips as `Toggle`s, `Input` (search), `Button`, `Calendar` (date range).
+- **Order:** fixed when the picker opens (chosen first, then recent use), so a chip never moves under the next tap. Natural order for ordered values (date presets).
+- **No per-option counts** (same reason as suggestions). A value with no calls stays visible; picking it gives an empty list with ways out.
+- **Screens:** C1, C2. **States:** default, searched with no match ("No tag matches “xyz”"), empty catalog ("No tags yet. Tags you add appear here.").
+- **A11y:** dialog with title; chips `aria-pressed`; Esc closes; focus returns to the blank. **RTL:** chips wrap from the start edge; tag names `dir="auto"`.
+
+#### ResultLine
+- **Purpose:** how many calls match, which word variants were also searched, and the sort.
+- **Props:** `total` (keeps the last number while a new page loads, never blank), `variants` (fuzzy and synonym variants, each removable), `sort` (Newest first, Oldest first, Longest first; Best match when matching by meaning).
+- **Composes:** text, dashed variant pills with remove buttons, `DropdownMenu` (sort). **Screens:** C1, C2.
+- **A11y:** polite live region for the count; each variant's remove button "Exclude מחירים". **RTL:** sort menu at the end edge; variants `bdi`.
+
+#### FoldedFilterSummary
+- **Purpose:** on phones, once the search block scrolls away, one line at the top says what's filtered and brings the block back.
+- **Props:** `summary` ("“מחיר” · Purchase interest · the last 30 days", or "All calls"), `total`.
+- **Composes:** `Button` fixed under the safe area. **Screens:** C1, C2 (mobile only).
+- **A11y:** "Show search and filters"; tapping scrolls to the top and focuses the search box. **RTL:** icons at both ends mirror positions; text `dir="auto"`.
 
 #### CallRow
 - **Purpose:** one call in any list.
@@ -347,12 +378,12 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Purpose:** star or unstar a call (the reserved `__star` tag).
 - **Props:** `starred`, `size="row" | "header"`.
 - **Composes:** `Toggle`. **Screens:** C1, C2, C3.
-- **Not to be confused with:** `TagChip`. Stars are stored as a tag but are a separate concept in the UI with their own toggle, filter (`SearchChip kind="starred"`) and shortcut `s`.
+- **Not to be confused with:** `TagChip`. Stars are stored as a tag but are a separate concept in the UI with their own toggle, filter (the first blank of `FilterSentence`, "[starred calls]") and shortcut `s`.
 - **A11y:** `aria-pressed`, name "Star" / "Unstar". **RTL:** none.
 
 #### TagChip
 - **Purpose:** one tag attached to a call.
-- **Use:** on rows, in the call header, in tag pickers and the tag manager. **Don't use:** for filters (SearchChip/SearchToken) or statuses (Badge).
+- **Use:** on rows, in the call header, in tag pickers and the tag manager. **Don't use:** for filters (`FilterBlank`, `FilterPicker`) or statuses (Badge).
 - **Props:** `tag` (`name`, `colour`), `source="manual" | "rule" | "intent"` (meaning: who attached it. `rule` shows `wand-sparkles` and the rule name in a tooltip; `intent` shows `lightbulb` and is outlined because it is derived from the call's content and can be dismissed but not renamed), `removable` (in edit mode).
 - **Composes:** `Badge`, `Tooltip`, `Button` (remove).
 - **Screens:** C1, C2, C3, T1, T2.
@@ -631,7 +662,7 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Purpose:** a numbered sequence of how something works. **Screens:** M1, M5.
 
 #### UseCaseCard
-- **Purpose:** one use case with a sample search. **Composes:** `Card`, `SearchToken` (read-only). **Screens:** M1.
+- **Purpose:** one use case with a sample search. **Composes:** `Card`, `FilterBlank` (read-only). **Screens:** M1.
 
 #### LimitsTable
 - **Purpose:** the free-tier limits. **Composes:** `Table`. **Screens:** M1, M2.
@@ -647,7 +678,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 
 | Code | Screen | Product components |
 | --- | --- | --- |
-| M1 | Marketing home | MarketingHeader, DemoFrame, StepList, TrustDiagram, DataFlowNote, UseCaseCard, SearchToken (read-only), CopyableCode, LimitsTable, FaqList, MarketingFooter |
+| M1 | Marketing home | MarketingHeader, DemoFrame, StepList, TrustDiagram, DataFlowNote, UseCaseCard, FilterBlank (read-only), CopyableCode, LimitsTable, FaqList, MarketingFooter |
 | M2 | Pricing | MarketingHeader, LimitsTable, FaqList, MarketingFooter |
 | M3 | Security | MarketingHeader, TrustDiagram, DataFlowNote, CopyableCode, FaqList, MarketingFooter |
 | M4 | Login | ErrorState, Notice |
@@ -657,11 +688,11 @@ Screen codes are used in the catalog above and in `screens.md`.
 | O2b | Onboarding: passphrase fallback | Stepper, PassphraseField |
 | O3 | Onboarding: recovery code | Stepper, RecoveryCodeGrid |
 | O4 | Onboarding: confirm recovery code | Stepper, CodeGroupInput |
-| O5 | Onboarding: try it with a sample call | Stepper, SearchBar, CallRow, TranscriptSegment |
+| O5 | Onboarding: try it with a sample call | Stepper, SearchBox, ResultLine, CallRow, TranscriptSegment |
 | O6 | Onboarding: connect your AI | Stepper, CopyableCode, DataFlowNote |
 | G1 | Unlock gate | CodeGroupInput, PassphraseField, ErrorState, Notice |
-| C1 | Calls list | AppSidebar, MobileTabBar, MobileTopBar, PageHeader, SearchBar, SearchChip, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
-| C2 | Search results | SearchBar, SearchToken, SearchChip, AlsoMatched, ResultsSummary, CallRow, SearchSnippet, HitMark, StarToggle, TagChip, EmptyState |
+| C1 | Calls list | AppSidebar, MobileTabBar, MobileTopBar, PageHeader, SearchBox, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
+| C2 | Search results | SearchBox, SearchSuggestion, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, SearchSnippet, HitMark, StarToggle, TagChip, EmptyState |
 | C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
 | U1 | Upload: single | FileDropZone, PhoneNumber, CallDirection, DataFlowNote, QueueItemStatus, ErrorState |
