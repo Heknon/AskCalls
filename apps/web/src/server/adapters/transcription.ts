@@ -21,7 +21,7 @@ export async function buildTranscription(
   config: InstanceConfig,
   fetchImpl: typeof fetch = fetch,
 ): Promise<TranscriptionProvider | null> {
-  const { provider, keys, baseUrl } = config.transcription;
+  const { provider, keys, baseUrl, elevenlabsZeroRetention } = config.transcription;
   switch (provider) {
     case 'none':
       return null;
@@ -29,7 +29,11 @@ export async function buildTranscription(
       return new MockTranscriptionProvider();
     case 'elevenlabs':
       return keys.elevenlabs
-        ? new ElevenLabsTranscriptionProvider({ apiKey: keys.elevenlabs, fetch: fetchImpl })
+        ? new ElevenLabsTranscriptionProvider({
+            apiKey: keys.elevenlabs,
+            zeroRetention: elevenlabsZeroRetention,
+            fetch: fetchImpl,
+          })
         : null;
     case 'openai':
       return keys.openai

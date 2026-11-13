@@ -419,7 +419,7 @@
       "retentionBody": "The terms each adapter works under, as documented in its README in the repository.",
       "provider": "Provider",
       "terms": "Retention",
-      "elevenlabs": "Requests carry <code>enable_logging=false</code>, which ElevenLabs honours only for workspaces with Zero Retention Mode, an Enterprise feature. Until that is in place, ElevenLabs may keep request logs under its standard policy.",
+      "elevenlabs": "With zero retention turned on, requests carry <code>enable_logging=false</code>. ElevenLabs accepts it only on Enterprise plans; with it off, ElevenLabs keeps request logs under its standard policy.",
       "deepgram": "Requests carry <code>mip_opt_out=true</code>, opting out of Deepgram's Model Improvement Program; Deepgram then keeps the data only as long as needed to process the request.",
       "openaiStt": "No per-request retention flag. API inputs aren't used for training by default; zero data retention is an account-level agreement with OpenAI.",
       "soniox": "No no-retention flag. The adapter deletes the uploaded file and the transcription as soon as it has the transcript; Soniox's 30-day expiry is the backstop.",

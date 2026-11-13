@@ -58,7 +58,13 @@ describe('direct origins', () => {
         v: 1,
         transcription: {
           mode: 'own',
-          key: { provider: 'elevenlabs', apiKey: 'k', baseUrl: null, model: null },
+          key: {
+            provider: 'elevenlabs',
+            apiKey: 'k',
+            baseUrl: null,
+            model: null,
+            zeroRetention: false,
+          },
         },
         llm: {
           mode: 'own',
@@ -67,6 +73,7 @@ describe('direct origins', () => {
             apiKey: 'k',
             baseUrl: 'http://localhost:11434/v1',
             model: 'llama',
+            zeroRetention: false,
           },
         },
         recordings: {

@@ -39,7 +39,13 @@ import {
   transcriptPlaintext,
 } from './call-crypto';
 import type { ClientContext } from './context';
-import { duplicateOf, type FailureReason, failureReason, IngestError } from './errors';
+import {
+  duplicateOf,
+  type FailureReason,
+  failureReason,
+  IngestError,
+  providerRefusal,
+} from './errors';
 import type { AudioSource, DecodedAudio } from './ports/index';
 import { ensureTags, intentTagId } from './tags';
 import { RECORDING_BITRATE_KBPS, transcribeAudio } from './transcription';
@@ -216,7 +222,7 @@ async function runIngest(
     const result = await gates.transcription(() =>
       transcribeAudio(codec, transcriber, audio, input.language ?? settings.language).catch((e) => {
         if (failureReason(e) === 'quota_exceeded') throw e;
-        throw new IngestError('transcription_failed', 'transcription failed');
+        throw new IngestError(providerRefusal(e) ?? 'transcription_failed', 'transcription failed');
       }),
     );
     parsed = {

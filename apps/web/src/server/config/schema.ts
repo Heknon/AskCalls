@@ -83,8 +83,15 @@ export const InstanceConfigSchema = z.object({
         .default({}),
       baseUrl: z.string().url().optional(),
       allowByoKey: z.boolean().default(true),
+      /** ElevenLabs Zero Retention Mode (`enable_logging=false`): Enterprise and trial plans only. */
+      elevenlabsZeroRetention: z.boolean().default(false),
     })
-    .default({ provider: 'elevenlabs', keys: {}, allowByoKey: true }),
+    .default({
+      provider: 'elevenlabs',
+      keys: {},
+      allowByoKey: true,
+      elevenlabsZeroRetention: false,
+    }),
 
   llm: z
     .object({
@@ -236,6 +243,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['SONIOX_API_KEY', 'transcription.keys.soniox', str],
   ['TRANSCRIPTION_BASE_URL', 'transcription.baseUrl', str],
   ['ALLOW_BYO_TRANSCRIPTION_KEY', 'transcription.allowByoKey', bool],
+  ['ELEVENLABS_ZERO_RETENTION', 'transcription.elevenlabsZeroRetention', bool],
   ['LLM_PROVIDER', 'llm.provider', str],
   ['LLM_MODEL', 'llm.model', str],
   ['ANTHROPIC_API_KEY', 'llm.apiKey', str],

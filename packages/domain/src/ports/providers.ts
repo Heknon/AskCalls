@@ -90,4 +90,6 @@ export interface ProviderInfo {
   baseUrl: 'required' | 'fixed';
   /** False when a key is optional (a local server without auth). */
   keyRequired: boolean;
+  /** Offers an opt-in zero-retention mode that only some of the provider's plans accept. */
+  zeroRetention?: boolean;
 }

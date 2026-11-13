@@ -69,6 +69,8 @@ const OwnKey = z.object({
   apiKey: z.string().min(1).max(4_096),
   baseUrl: z.string().max(2_048).nullable().default(null),
   model: z.string().max(200).nullable().default(null),
+  /** The provider's zero-retention mode, for plans that offer it (`ProviderInfo.zeroRetention`). */
+  zeroRetention: z.boolean().default(false),
 });
 const Capability = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('managed') }),
