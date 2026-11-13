@@ -16,6 +16,7 @@ test-results/
 .DS_Store
 .claude/worktrees/
 .vercel/
+infra/cdk.out/
 
 # Self-hosted browser assets, fetched by scripts/fetch-browser-assets.ts
 apps/web/public/models/

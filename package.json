@@ -14,7 +14,8 @@
   "scripts": {
     "dev": "turbo run dev --filter=@askcalls/web",
     "build": "turbo run build",
-    "check": "bun run lint && bun run typecheck && bun run boundaries && bun run test",
+    "check": "bun run lint && bun run typecheck && bun run boundaries && bun run test && bun run check:infra",
+    "check:infra": "bun install --cwd infra --frozen-lockfile && bun run --cwd infra check",
     "check:bundle": "bun run --cwd apps/web build && bun run budget",
     "budget": "bun scripts/checks/bundle-budget.ts",
     "lint": "biome check .",
