@@ -110,6 +110,7 @@
       "name": "@askcalls/crypto",
       "version": "0.0.0",
       "dependencies": {
+        "@askcalls/domain": "workspace:*",
         "hash-wasm": "4.13.0",
       },
       "devDependencies": {
