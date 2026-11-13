@@ -415,6 +415,7 @@ function CallView({
       back={{ href: back.href, label: t('back') }}
       topStart={topStart}
       width="reading"
+      titleHidden
       aside={
         isPhone ? undefined : (
           <aside

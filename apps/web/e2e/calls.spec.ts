@@ -205,7 +205,15 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   await expect(page.getByRole('dialog', { name: /Send this call to/ })).toHaveCount(0);
   await expect(answers.nth(1)).toContainText('mock answer');
 
+  // Notes save on their own, encrypted.
+  await page.getByRole('tab', { name: 'Notes' }).click();
+  await page.getByRole('textbox', { name: 'Notes' }).fill('Send the quote by Sunday');
+  await expect(page.locator('[data-component="SaveStatus"]')).toHaveText(/Saved/, {
+    timeout: 10_000,
+  });
+
   // Back in the list: the tag filters.
+  await blur(page);
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(/\/app$/);
   await search(page).fill('Hot');

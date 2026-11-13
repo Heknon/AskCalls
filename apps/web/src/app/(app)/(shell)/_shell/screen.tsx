@@ -24,6 +24,8 @@ export type ScreenProps = {
   hints?: { keys: string[]; label: string }[];
   /** Actions next to the title (Settings → Security: none; Tags: New tag). */
   headerActions?: ReactNode;
+  /** The page names itself (the call view's contact): the title stays for screen readers only. */
+  titleHidden?: boolean;
   /** The start of the desktop top bar: the call view's back link. */
   topStart?: ReactNode;
   /** A side panel at the end edge from 768 px, beside the content column (the call view). */
@@ -52,6 +54,7 @@ export function Screen({
   back,
   hints,
   headerActions,
+  titleHidden = false,
   topStart,
   aside,
   width = 'wide',
@@ -63,7 +66,7 @@ export function Screen({
   const shownHints = hints && singleKey ? [...hints, { keys: ['?'], label: t('all') }] : undefined;
   const main = (
     <main id="main" className={`mx-auto w-full ${WIDTH[width]} px-4 py-4 md:px-6 md:py-6`}>
-      <div className="max-md:hidden">
+      <div className={titleHidden ? 'sr-only max-md:hidden' : 'max-md:hidden'}>
         <PageHeader title={title} description={description} actions={headerActions} />
       </div>
       {children}

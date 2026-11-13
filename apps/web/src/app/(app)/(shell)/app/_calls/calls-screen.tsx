@@ -148,14 +148,13 @@ export function CallsScreen() {
   }, [ctx, feed.status, feed.forms, searched, numbers, excluded, ids, query]);
 
   const { contacts: contactList, tags: tagList, intents } = catalogs;
+  // Every call decrypted while unlocked, not only the current results, names suggestions.
+  const days = useRef(new Map<string, number>());
+  for (const item of feed.items) days.current.set(item.id, item.day);
   // biome-ignore lint/correctness/useExhaustiveDependencies: metaVersion tracks feed.metas
   const decrypted = useMemo(
-    () =>
-      feed.items.flatMap((item) => {
-        const meta = feed.metas.get(item.id);
-        return meta ? [{ item, meta }] : [];
-      }),
-    [feed.items, feed.metaVersion],
+    () => [...feed.metas].map(([id, meta]) => ({ id, day: days.current.get(id) ?? 0, meta })),
+    [feed.metas, feed.metaVersion],
   );
 
   const contactOptions = useMemo<ContactOption[]>(() => {
@@ -194,13 +193,13 @@ export function CallsScreen() {
       contacts: contactOptions,
       tags: tagList.map((x) => ({ id: x.id, name: x.name, colour: tagColour(x.id, x.color) })),
       intents,
-      calls: decrypted.slice(0, 200).map(({ item, meta }) => {
+      calls: decrypted.slice(0, 200).map(({ id, day, meta }) => {
         const name = contactName(meta, contactList);
         return {
-          id: item.id,
+          id,
           contact: name ?? (meta.phoneE164 ? formatPhone(meta.phoneE164) : tc('hiddenNumber')),
           numeric: !name,
-          meta: `${formatWhen(startedAt(meta, item.day), locale)} · ${formatDuration(meta.durationSec ?? 0, locale)}`,
+          meta: `${formatWhen(startedAt(meta, day), locale)} · ${formatDuration(meta.durationSec ?? 0, locale)}`,
         };
       }),
       dates: DATE_PRESETS.map((p) => ({ preset: p, label: t(`picker.options.${p}`) })),
