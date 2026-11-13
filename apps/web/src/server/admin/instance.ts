@@ -44,7 +44,7 @@ export interface InstanceView {
 }
 
 const SLOW_MS = 2_000;
-const HEALTH_TIMEOUT_MS = 5_000;
+const HEALTH_TIMEOUT_MS = 3_000;
 const HEALTH_TTL_MS = 15_000;
 
 async function probe(check: () => Promise<HealthResult>): Promise<PortHealth> {

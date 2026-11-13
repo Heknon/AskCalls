@@ -131,6 +131,13 @@ describe('/api/admin', () => {
     expect(events.map((e) => e.meta.paths)).toEqual(['llm.model']);
   });
 
+  it('reports live health from the rebuilt container after a save', async () => {
+    const res = await call('PATCH', '/api/admin/instance', c.adminCookie, {
+      patch: { llm: { provider: 'mock' } },
+    });
+    expect((await res.json()).health.llm).toMatchObject({ status: 'healthy' });
+  });
+
   it('tests a connection with the proposed settings without saving them', async () => {
     const ok = await call('POST', '/api/admin/instance/test', c.adminCookie, {
       port: 'llm',

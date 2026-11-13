@@ -36,19 +36,21 @@ test('fresh instance: wizard with the setup token, admin, env locks, mock LLM, o
   // 3. Sign-in: local accounts and Google.
   await expect(page.getByRole('heading', { name: 'Choose how people sign in' })).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Local accounts' })).toBeChecked();
-  await page.getByRole('checkbox', { name: 'Google' }).check();
-  await page.getByLabel('Client ID').fill('e2e-google-client');
-  await page.getByLabel('Client secret').fill('e2e-google-secret');
+  // The whole card is the click target.
+  await page.locator('label', { hasText: /^Google$/ }).click();
+  await expect(page.getByRole('checkbox', { name: 'Google' })).toBeChecked();
+  await page.getByLabel('Client ID').filter({ visible: true }).fill('e2e-google-client');
+  await page.getByLabel('Client secret').filter({ visible: true }).fill('e2e-google-secret');
   await page.getByRole('button', { name: 'Continue' }).click();
 
   // 4. Cloud transcription and LLM, with keys.
   await expect(page.getByRole('heading', { name: 'Transcription and AI', level: 1 })).toBeVisible();
   const tx = page.getByRole('radiogroup', { name: 'Transcription' });
-  await tx.getByRole('radio', { name: 'Cloud provider' }).check();
-  await tx.getByLabel('API key').fill('xi-e2e-key');
+  await tx.locator('label', { hasText: /^Cloud provider$/ }).click();
+  await tx.getByLabel('API key').filter({ visible: true }).fill('xi-e2e-key');
   const ask = page.getByRole('radiogroup', { name: 'Ask about a call' });
-  await ask.getByRole('radio', { name: 'Cloud provider' }).check();
-  await ask.getByLabel('API key').fill(LLM_KEY);
+  await ask.locator('label', { hasText: /^Cloud provider$/ }).click();
+  await ask.getByLabel('API key').filter({ visible: true }).fill(LLM_KEY);
   await page.getByRole('button', { name: 'Continue' }).click();
 
   // 5. Offline mode stays off: three settings would reach the internet.
@@ -80,13 +82,16 @@ test('fresh instance: wizard with the setup token, admin, env locks, mock LLM, o
   await page.goto('/setup');
   await expect(page).toHaveURL(/\/login|\/app/);
 
+  // A page load locks; the deep link opens after unlock.
   await page.goto('/admin/instance');
+  await page.getByRole('button', { name: 'Unlock with passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Instance', level: 1 })).toBeVisible();
   expect(await page.content()).not.toContain(LLM_KEY);
 
   // Env-locked settings are read-only.
   const limits = card(page, 'Limits');
-  await expect(limits.getByText('Set by the server environment')).toBeVisible();
+  // Live health runs first; a provider that doesn't answer takes up to 3 s.
+  await expect(limits.getByText('Set by the server environment')).toBeVisible({ timeout: 15_000 });
   await expect(limits.getByLabel('Calls per user')).toHaveAttribute('readonly', '');
   await expect(limits.getByLabel('Calls per user')).toHaveValue('500');
   await expect(card(page, 'Telemetry').getByText('Set by the server environment')).toBeVisible();
@@ -113,6 +118,7 @@ test('fresh instance: wizard with the setup token, admin, env locks, mock LLM, o
   expect(refused.status()).toBe(409);
 
   await offline.getByRole('button', { name: 'Use local Whisper server' }).click();
+  await expect(offline).toContainText('1 setting reaches the internet.');
   await offline.getByRole('button', { name: 'Turn off Google sign-in' }).click();
   await expect(offline).toContainText('Nothing reaches the internet.');
   await offline.getByRole('switch').click();

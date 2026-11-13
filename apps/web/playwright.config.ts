@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { ADMIN_DATA_DIR, ADMIN_PORT, ADMIN_URL } from './e2e/admin-helpers';
 
 // Off the usual dev ports, and never reused: a server someone else started has other env.
-const port = 3417;
+const port = Number(process.env.E2E_PORT ?? 3417);
 const baseURL = `http://localhost:${port}`;
 const ci = Boolean(process.env.CI);
 

@@ -28,9 +28,10 @@ export default function InstancePage() {
   const { client } = useUnlocked();
   const loaded = useAsync(() => client.api.request(getInstance, {}), [client]);
   const [view, setView] = useState<View | null>(null);
+  const data = loaded.data;
   useEffect(() => {
-    if (loaded.status === 'ready') setView(loaded.data);
-  }, [loaded]);
+    if (data) setView(data);
+  }, [data]);
 
   return (
     <Screen

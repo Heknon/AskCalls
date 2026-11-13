@@ -19,14 +19,20 @@ export function OfflineCard() {
   const { view, api, apply } = useInstance();
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const { enabled, blockers } = view.offline;
 
+  // One change at a time: each fix is computed from the config the last one left.
   const run = async (fn: () => Promise<typeof view>) => {
+    if (busy) return;
+    setBusy(true);
     setError(null);
     try {
       apply(await fn());
     } catch (e) {
       setError(e instanceof ApiError ? e.message : String(e));
+    } finally {
+      setBusy(false);
     }
   };
   const setOffline = (on: boolean) =>

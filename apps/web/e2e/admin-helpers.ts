@@ -4,9 +4,9 @@ import { join } from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 
 /** The admin specs' server: fresh, no config file (see playwright.config.ts). */
-export const ADMIN_PORT = 3418;
+export const ADMIN_PORT = Number(process.env.E2E_ADMIN_PORT ?? 3418);
 export const ADMIN_URL = `http://localhost:${ADMIN_PORT}`;
-export const ADMIN_DATA_DIR = join(tmpdir(), 'askcalls-e2e-admin');
+export const ADMIN_DATA_DIR = join(tmpdir(), `askcalls-e2e-admin-${ADMIN_PORT}`);
 
 /** The one-time token the server printed at boot, from the file it also writes. */
 export async function readSetupToken(): Promise<string> {

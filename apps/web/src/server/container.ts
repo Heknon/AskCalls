@@ -96,6 +96,8 @@ interface Runtime {
   setup: SetupToken | null;
   /** A container built ahead of a config write, picked up by the change listener. */
   prebuilt: Container | null;
+  /** Config changes apply one at a time, each on top of the last. */
+  applying: Promise<unknown>;
 }
 
 // Survives Next.js dev reloads; one runtime per server process.
@@ -133,6 +135,7 @@ async function boot(): Promise<Runtime> {
     container: start(buildContainer(resolved)),
     setup,
     prebuilt: null,
+    applying: Promise.resolve(),
   };
   configService.subscribe((next) => {
     const previous = runtime.container;
@@ -189,6 +192,16 @@ export async function applyConfig(
   beforeCommit?: (next: Container) => Promise<void>,
 ): Promise<Container> {
   const rt = await runtime();
+  const run = rt.applying.then(() => applyNow(rt, patch, beforeCommit));
+  rt.applying = run.catch(() => {});
+  return run;
+}
+
+async function applyNow(
+  rt: Runtime,
+  patch: Record<string, unknown>,
+  beforeCommit?: (next: Container) => Promise<void>,
+): Promise<Container> {
   const next = rt.configService.preview(patch);
   const previous = await rt.container.catch(() => null);
   const built = await buildContainer(next, previous);
@@ -247,6 +260,7 @@ export function setContainerForTests(
       : Promise.reject(new SetupRequiredError(['test'])),
     setup: opts.setup ?? null,
     prebuilt: null,
+    applying: Promise.resolve(),
   };
   g.__askcalls.container.catch(() => {});
 }
