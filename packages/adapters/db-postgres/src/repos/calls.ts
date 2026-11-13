@@ -6,7 +6,7 @@ import {
   type DurationBucket,
   type RecordingRef,
 } from '@askcalls/domain';
-import { and, asc, desc, eq, gte, lt, lte, or, type SQL, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lt, lte, or, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, encodeCursor, pageLimit, tokParam } from '../codec';
 import type { Db, Driver } from '../driver';
 import { calls } from '../schema';
@@ -227,7 +227,8 @@ export function createCallRepository(d: Driver): CallRepository {
         tx
           .select({ n: sql<string>`coalesce(sum(${calls.recordingBytes}), 0)::text` })
           .from(calls)
-          .where(eq(calls.userId, userId)),
+          // Quota covers the instance bucket only; the user's own buckets are theirs to fill.
+          .where(and(eq(calls.userId, userId), isNull(calls.recordingBucketRef))),
       );
       return Number(r?.n ?? 0);
     },

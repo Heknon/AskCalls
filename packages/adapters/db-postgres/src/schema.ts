@@ -102,6 +102,7 @@ export const deviceLinkSessions = pgTable('DeviceLinkSession', {
   }).notNull(),
   devicePublicKey: bytea('devicePublicKey'),
   deviceLabel: text('deviceLabel'),
+  deviceSigningPublicKey: bytea('deviceSigningPublicKey'),
   encryptedRootKey: bytea('encryptedRootKey'),
   createdAt: ts('createdAt').notNull(),
   expiresAt: ts('expiresAt').notNull(),

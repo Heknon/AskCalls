@@ -25,7 +25,17 @@ const toEntry = (r: typeof keyring.$inferSelect): KeyringEntry => ({
 
 const toDevice = (r: typeof deviceKeys.$inferSelect): DeviceKey => ({ ...r });
 
-const toLinkSession = (r: typeof deviceLinkSessions.$inferSelect): DeviceLinkSession => ({ ...r });
+const toLinkSession = (r: typeof deviceLinkSessions.$inferSelect): DeviceLinkSession => ({
+  id: r.id,
+  userId: r.userId,
+  secretHash: r.secretHash,
+  state: r.state,
+  devicePublicKey: r.devicePublicKey,
+  deviceLabel: r.deviceLabel,
+  encryptedRootKey: r.encryptedRootKey,
+  createdAt: r.createdAt,
+  expiresAt: r.expiresAt,
+});
 
 /**
  * Keyring, inbox keys, device keys and device-link sessions. A device-link session is looked
@@ -165,7 +175,19 @@ export function createKeyringRepository(d: Driver): KeyringRepository {
     },
 
     createLinkSession: async (s) => {
-      await d.asUser(s.userId, (tx) => tx.insert(deviceLinkSessions).values({ ...s }));
+      await d.asUser(s.userId, (tx) =>
+        tx.insert(deviceLinkSessions).values({
+          id: s.id,
+          userId: s.userId,
+          secretHash: s.secretHash,
+          state: s.state,
+          devicePublicKey: s.devicePublicKey,
+          deviceLabel: s.deviceLabel,
+          encryptedRootKey: s.encryptedRootKey,
+          createdAt: s.createdAt,
+          expiresAt: s.expiresAt,
+        }),
+      );
     },
 
     getLinkSession: async (id) => {

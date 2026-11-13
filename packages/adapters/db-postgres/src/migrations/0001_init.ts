@@ -92,6 +92,8 @@ CREATE TABLE "DeviceLinkSession" (
     CHECK ("state" IN ('waiting_for_device', 'waiting_for_confirmation', 'completed', 'expired')),
   "devicePublicKey" bytea,
   "deviceLabel" text,
+  -- Joiner's ECDSA P-256 signing key (SPKI), registered as a DeviceKey on completion.
+  "deviceSigningPublicKey" bytea,
   "encryptedRootKey" bytea,
   "createdAt" timestamptz NOT NULL,
   "expiresAt" timestamptz NOT NULL
