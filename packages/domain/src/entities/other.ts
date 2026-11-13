@@ -57,6 +57,9 @@ export interface ApiToken {
 
 export type NewApiToken = Omit<ApiToken, 'createdAt' | 'lastUsedAt' | 'revokedAt'>;
 
+/** A listed token with its ciphertext-fetch window (spec 12); null before the first fetch. */
+export type ListedApiToken = ApiToken & { fetchWindow: { start: Date; count: number } | null };
+
 /** `session`, `token:<id>`, `agent:<deviceId>`, or `system` for scheduled jobs. */
 export type AuditActor = 'session' | 'system' | `token:${string}` | `agent:${string}`;
 

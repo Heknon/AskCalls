@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 // Off the usual dev ports, and never reused: a server someone else started has other env.
-const port = 3417;
+// E2E_PORT lets parallel checkouts run their suites side by side.
+const port = Number(process.env.E2E_PORT ?? 3417);
 const baseURL = `http://localhost:${port}`;
 const ci = Boolean(process.env.CI);
 

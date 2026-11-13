@@ -1,4 +1,9 @@
-import { type ApiToken, type ApiTokenRepository, DomainError } from '@askcalls/domain';
+import {
+  type ApiToken,
+  type ApiTokenRepository,
+  DomainError,
+  type ListedApiToken,
+} from '@askcalls/domain';
 import { and, asc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { toNumber } from '../codec';
 import { type Driver, rows } from '../driver';
@@ -60,12 +65,23 @@ export function createApiTokenRepository(d: Driver): ApiTokenRepository {
     list: async (userId) => {
       const rs = await d.asUser(userId, (tx) =>
         tx
-          .select(publicColumns)
+          .select({
+            ...publicColumns,
+            fetchesThisHour: apiTokens.fetchesThisHour,
+            hourWindowStart: apiTokens.hourWindowStart,
+          })
           .from(apiTokens)
           .where(eq(apiTokens.userId, userId))
           .orderBy(asc(apiTokens.createdAt), asc(apiTokens.id)),
       );
-      return rs.map(toToken);
+      return rs.map(
+        ({ fetchesThisHour, hourWindowStart, ...r }): ListedApiToken => ({
+          ...toToken(r),
+          fetchWindow: hourWindowStart
+            ? { start: hourWindowStart, count: toNumber(fetchesThisHour) }
+            : null,
+        }),
+      );
     },
 
     revoke: async (userId, id, at) => {

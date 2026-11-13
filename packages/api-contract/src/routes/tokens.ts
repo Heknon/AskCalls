@@ -14,11 +14,14 @@ export const ApiTokenSchema = z.object({
   revokedAt: DateCodec.nullable(),
 });
 
+/** `fetchesThisHour`: ciphertext fetches in the token's current hourly budget window. */
 export const listTokens = defineRoute({
   method: 'GET',
   path: '/api/tokens',
   auth: 'session',
-  response: z.object({ items: z.array(ApiTokenSchema) }),
+  response: z.object({
+    items: z.array(ApiTokenSchema.extend({ fetchesThisHour: z.number().int().min(0) })),
+  }),
 });
 
 /** `token` (`ac_…`) is shown once; the server keeps only its sha256. */

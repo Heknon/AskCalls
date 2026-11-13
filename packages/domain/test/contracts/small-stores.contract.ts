@@ -132,6 +132,7 @@ export function describeApiTokenRepositoryContract(
         scopes: ['read', 'write'],
         expiresAt: null,
       });
+      expect((await s.store.list(s.userA))[0]?.fetchWindow).toBeNull();
       expect((await s.store.findByHash(hash))?.id).toBe(t.id);
       expect(await s.store.findByHash(rand(32))).toBeNull();
       expect(await s.store.countActive(s.userA, new Date())).toBe(1);
@@ -139,6 +140,10 @@ export function describeApiTokenRepositoryContract(
       expect(await s.store.incrementFetches(t.id, t0)).toBe(1);
       expect(await s.store.incrementFetches(t.id, new Date(t0.getTime() + 60_000))).toBe(2);
       expect(await s.store.incrementFetches(t.id, new Date(t0.getTime() + 3_700_000))).toBe(1);
+      expect((await s.store.list(s.userA))[0]?.fetchWindow).toEqual({
+        start: new Date(t0.getTime() + 3_700_000),
+        count: 1,
+      });
       await s.store.revoke(s.userB, t.id, new Date());
       expect(await s.store.countActive(s.userA, new Date())).toBe(1);
       await s.store.revoke(s.userA, t.id, new Date());
