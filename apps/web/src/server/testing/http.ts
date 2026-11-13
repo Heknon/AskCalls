@@ -1,5 +1,5 @@
 import { createApiClient } from '@askcalls/api-contract';
-import type { Limits } from '@askcalls/domain';
+import type { Limits, Ports } from '@askcalls/domain';
 import { encode } from 'next-auth/jwt';
 import * as account from '../../app/api/account/route';
 import * as adminInstanceOffline from '../../app/api/admin/instance/offline/route';
@@ -136,6 +136,8 @@ export function startTestApp(
     limits?: Partial<Limits>;
     llm?: boolean;
     transcription?: boolean;
+    /** Real adapters in place of the in-memory ones (the PGlite + fs leak test). */
+    adapters?: Partial<Ports>;
   } = {},
 ): TestApp {
   const config = new ConfigService({
@@ -148,11 +150,14 @@ export function startTestApp(
     CRON_SECRET,
     ...opts.env,
   }).loadFromEnvOnly();
-  const ports = makeTestPorts({
-    ...(opts.limits && { limits: opts.limits }),
-    ...(opts.llm !== undefined && { llm: opts.llm }),
-    ...(opts.transcription !== undefined && { transcription: opts.transcription }),
-  });
+  const ports: TestPorts = {
+    ...makeTestPorts({
+      ...(opts.limits && { limits: opts.limits }),
+      ...(opts.llm !== undefined && { llm: opts.llm }),
+      ...(opts.transcription !== undefined && { transcription: opts.transcription }),
+    }),
+    ...opts.adapters,
+  };
   setContainerForTests({ config, ports, restartRequired: [], close: async () => {} });
 
   const headersFor = (as: Credential | undefined): Record<string, string> => {
