@@ -224,7 +224,7 @@ describe('deleteCall and retention', () => {
     expect(orphan?.meta).toEqual({ bucketRef: 'mybucket', objectKey: 'calls/abc.ogg' });
   });
 
-  it('purges calls older than the retention window, expired inbox items and link sessions', async () => {
+  it('purges old calls, expired inbox items, link sessions and quota counters', async () => {
     const today = Math.floor(ports.clock.now().getTime() / 86_400_000);
     const old = newCall({ day: today - 31 });
     const fresh = newCall({ day: today - 5 });
@@ -242,13 +242,20 @@ describe('deleteCall and retention', () => {
       blobKey: 'inbox/x/1',
       expiresAt: new Date(ports.clock.now().getTime() - 1),
     });
+    const yesterday = {
+      start: new Date(ports.clock.now().getTime() - 2 * 86_400_000),
+      end: new Date(ports.clock.now().getTime() - 86_400_000),
+    };
+    await ports.rateLimiter.consume(`usage:ask:${a}`, yesterday, 1, null);
     const r = await runRetentionPurge(ports);
     expect(r).toEqual({
       usersProcessed: 1,
       callsDeleted: 1,
       inboxExpired: 1,
       linkSessionsExpired: 0,
+      rateBucketsExpired: 1,
     });
+    expect(await ports.rateLimiter.usage(`usage:ask:${a}`, yesterday.start)).toBe(0);
     expect(await ports.calls.get(a, old.id)).toBeNull();
     expect(await ports.calls.get(a, fresh.id)).not.toBeNull();
     expect(await ports.calls.get(b, bOld.id)).not.toBeNull();

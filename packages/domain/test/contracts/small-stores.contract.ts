@@ -221,17 +221,39 @@ export function describeRateLimiterContract(name: string, harness: Harness<RateL
       const key = `u-${testId()}`;
       const w1 = new Date('2026-03-01T00:00:00Z');
       const w2 = new Date('2026-04-01T00:00:00Z');
+      const m1 = { start: w1, end: w2 };
+      const m2 = { start: w2, end: new Date('2026-05-01T00:00:00Z') };
       expect(await limiter.usage(key, w1)).toBe(0);
-      expect(await limiter.consume(key, w1, 120, 300)).toEqual({ allowed: true, used: 120 });
-      expect(await limiter.consume(key, w1, 180, 300)).toEqual({ allowed: true, used: 300 });
-      expect(await limiter.consume(key, w1, 1, 300)).toEqual({ allowed: false, used: 300 });
-      expect(await limiter.consume(key, w1, 50, null)).toEqual({ allowed: true, used: 350 });
+      expect(await limiter.consume(key, m1, 120, 300)).toEqual({ allowed: true, used: 120 });
+      expect(await limiter.consume(key, m1, 180, 300)).toEqual({ allowed: true, used: 300 });
+      expect(await limiter.consume(key, m1, 1, 300)).toEqual({ allowed: false, used: 300 });
+      expect(await limiter.consume(key, m1, 50, null)).toEqual({ allowed: true, used: 350 });
       expect(await limiter.usage(key, w1)).toBe(350);
-      expect(await limiter.consume(key, w1, -50, null)).toEqual({ allowed: true, used: 300 });
+      expect(await limiter.consume(key, m1, -50, null)).toEqual({ allowed: true, used: 300 });
       expect(await limiter.usage(key, w1)).toBe(300);
       expect(await limiter.usage(key, w2)).toBe(0);
       expect(await limiter.usage(`${key}-other`, w1)).toBe(0);
-      expect(await limiter.consume(key, w2, 10, 300)).toEqual({ allowed: true, used: 10 });
+      expect(await limiter.consume(key, m2, 10, 300)).toEqual({ allowed: true, used: 10 });
+    });
+
+    it('deletes counters whose period ended and windows no longer weighed', async () => {
+      const key = `e-${testId()}`;
+      const day = {
+        start: new Date('2026-03-01T00:00:00Z'),
+        end: new Date('2026-03-02T00:00:00Z'),
+      };
+      await limiter.consume(key, day, 5, null);
+      await limiter.deleteExpired(new Date(day.end.getTime() - 1));
+      expect(await limiter.usage(key, day.start)).toBe(5);
+      expect(await limiter.deleteExpired(day.end)).toBeGreaterThanOrEqual(1);
+      expect(await limiter.usage(key, day.start)).toBe(0);
+
+      const hourMs = 3_600_000;
+      expect((await limiter.hit(key, 1, hourMs)).allowed).toBe(true);
+      await limiter.deleteExpired(new Date());
+      expect((await limiter.hit(key, 1, hourMs)).allowed).toBe(false);
+      await limiter.deleteExpired(new Date(Date.now() + 3 * hourMs));
+      expect((await limiter.hit(key, 1, hourMs)).allowed).toBe(true);
     });
   });
 }
