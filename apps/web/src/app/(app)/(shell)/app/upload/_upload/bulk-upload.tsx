@@ -572,7 +572,7 @@ function ReviewTable({
                         key={key}
                         fileName={file}
                         parts={parts(p, t)}
-                        contact={contactOf(meta.get(key), region)}
+                        contact={by === 'contact' ? undefined : contactOf(meta.get(key), region)}
                         status={{
                           state: 'queued',
                           label: t(included ? 'queue.queued' : 'queue.excluded'),
