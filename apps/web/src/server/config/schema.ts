@@ -56,6 +56,11 @@ export const InstanceConfigSchema = z.object({
           bucket: z.string().optional(),
           accessKeyId: z.string().optional(),
           secretAccessKey: secret,
+          /** Prefix for every object key, e.g. `preview/pr-12/`: previews share the dev bucket. */
+          keyPrefix: z
+            .string()
+            .regex(/^[^/]+(\/[^/]+)*\/$/, 'must be path segments ending in /, e.g. preview/pr-12/')
+            .optional(),
         })
         .default({}),
       fsDir: z.string().default('./data/blobs'),
@@ -177,6 +182,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['S3_BUCKET', 'blob.s3.bucket', str],
   ['S3_ACCESS_KEY_ID', 'blob.s3.accessKeyId', str],
   ['S3_SECRET_ACCESS_KEY', 'blob.s3.secretAccessKey', str],
+  ['S3_KEY_PREFIX', 'blob.s3.keyPrefix', str],
   ['FS_BLOB_DIR', 'blob.fsDir', str],
   ['ALLOW_USER_BUCKETS', 'blob.allowUserBuckets', bool],
   ['TRANSCRIPTION_PROVIDER', 'transcription.provider', str],

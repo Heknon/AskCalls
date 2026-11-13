@@ -1,26 +1,198 @@
 name: Preview
 
+# Every pull request gets its own Neon branch (from NEON_PREVIEW_PARENT_BRANCH, normally `dev`),
+# migrated to the PR's schema, and a Vercel preview that uses it, with its blobs under
+# preview/pr-<n>/ in the dev bucket. Closing the PR deletes the branch and the prefix.
+#
+# One job: deploy the preview first, then run the fast checks (./.github/actions/checks) on the
+# same runner. The preview is a disposable copy with its own database branch, so there is
+# nothing to protect by deploying before the checks, and reviewers get the link sooner; a failed
+# check still fails the run and blocks merging. One job rather than two because GitHub bills each
+# job rounded up to a whole minute, plus its runner boot and install. Integration and E2E tests
+# run locally before pushing and in CI before production (ci.yml).
+#
+# Previews use the mock transcription and LLM providers, so pull requests never spend provider
+# credits. The `real-providers` label switches the next push's preview to the non-prod keys.
+#
+# Pull requests from forks get no secrets, and neither does a repository before its one-time
+# setup (docs/deployment.md): both skip the database and deploy steps and still run the checks.
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
+    # Docs-only changes need neither checks nor a preview.
     paths-ignore:
       - "**/*.md"
       - "docs/**"
 
 concurrency:
-  group: preview-${{ github.event.pull_request.number }}
+  group: preview-${{ github.event.number }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: write
+
+env:
+  NEON_BRANCH: preview/pr-${{ github.event.number }}
+  NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
 
 jobs:
-  preview:
+  deploy:
+    name: Preview and checks
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment:
+      name: preview
+      url: ${{ steps.app.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      # Neon branch, migrations and the Vercel preview deploy land in M1.
+
+      - name: Check the preview can deploy
+        id: cfg
+        env:
+          FORK: ${{ github.event.pull_request.head.repo.fork }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ "$FORK" = true ]; then
+            echo "::notice::Pull request from a fork: no secrets, so no preview. Running the checks only."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$NEON_API_KEY" ] || [ -z "$VERCEL_TOKEN" ]; then
+            echo "::notice::Previews are not set up yet (NEON_API_KEY or VERCEL_TOKEN missing in the preview environment; docs/deployment.md, One-time setup). Running the checks only."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            # The secrets are in, so a missing variable is a setup mistake, not a fresh repo.
+            missing=""
+            for v in NEON_PROJECT_ID VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+              [ -n "${!v}" ] || missing="$missing $v"
+            done
+            if [ -n "$missing" ]; then
+              echo "::error::Repository variables missing:$missing (docs/deployment.md, GitHub)"
+              exit 1
+            fi
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or reuse the PR's database branch
+        if: steps.cfg.outputs.deploy == 'true'
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          PARENT: ${{ vars.NEON_PREVIEW_PARENT_BRANCH }}
+        run: |
+          neon() { bunx neonctl "$@" --project-id "$NEON_PROJECT_ID"; }
+          if ! neon branches get "$NEON_BRANCH" > /dev/null 2>&1; then
+            neon branches create --name "$NEON_BRANCH" --parent "${PARENT:-dev}" > /dev/null
+          fi
+          # As the owner role (neondb_owner, the default), which owns the schema and has the
+          # CREATEROLE that migration 0001 needs for askcalls_app.
+          direct=$(neon connection-string "$NEON_BRANCH")
+          pooled=$(neon connection-string "$NEON_BRANCH" --pooled)
+          echo "::add-mask::$direct"
+          echo "::add-mask::$pooled"
+          # In a file the migrate and deploy steps source, not $GITHUB_ENV: the checks that run
+          # later in this job must not see a real database.
+          printf 'export DIRECT_URL=%q DATABASE_URL=%q\n' "$direct" "$pooled" > "$RUNNER_TEMP/preview-db.env"
+
+      - name: Apply database migrations
+        if: steps.cfg.outputs.deploy == 'true'
+        # A preview database is a disposable copy. If migrating it fails (for instance the PR
+        # rewrote a migration this branch already applied), start it over from the parent once
+        # and retry.
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          source "$RUNNER_TEMP/preview-db.env"
+          migrate() { DATABASE_URL="$DIRECT_URL" bun run --cwd packages/adapters/db-postgres migrate; }
+          if ! migrate; then
+            echo "::warning::Migrations failed; resetting $NEON_BRANCH to its parent and retrying"
+            bunx neonctl branches reset "$NEON_BRANCH" --parent --project-id "$NEON_PROJECT_ID"
+            migrate
+          fi
+
+      - name: Deploy the app
+        id: app
+        if: steps.cfg.outputs.deploy == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PR: ${{ github.event.number }}
+          REAL_PROVIDERS: ${{ contains(github.event.pull_request.labels.*.name, 'real-providers') }}
+        run: |
+          source "$RUNNER_TEMP/preview-db.env"
+          vercel() { bunx vercel "$@" --token="$VERCEL_TOKEN"; }
+          vercel pull --yes --environment=preview
+          vercel build
+          # Without the label, the Preview scope's real providers are overridden per deploy.
+          providers=()
+          if [ "$REAL_PROVIDERS" != true ]; then
+            providers=(--env TRANSCRIPTION_PROVIDER=mock --env LLM_PROVIDER=mock)
+          fi
+          url=$(vercel deploy --prebuilt \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env DB_DRIVER=postgres \
+            --env S3_KEY_PREFIX="preview/pr-$PR/" \
+            "${providers[@]}")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          # The checks below lint the whole tree, and the pulled .env files hold Preview secrets.
+          rm -rf .vercel apps/web/.vercel
+
+      - name: Comment the preview URL
+        if: steps.cfg.outputs.deploy == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.number }}
+          URL: ${{ steps.app.outputs.url }}
+          # GITHUB_SHA is the test merge commit on pull_request events; reviewers know the head.
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REAL_PROVIDERS: ${{ contains(github.event.pull_request.labels.*.name, 'real-providers') }}
+        run: |
+          providers=mock
+          if [ "$REAL_PROVIDERS" = true ]; then providers="real (non-prod keys)"; fi
+          body="Preview: $URL
+          Database: Neon branch \`$NEON_BRANCH\` · blobs: \`preview/pr-$PR/\` · providers: $providers · commit ${HEAD_SHA::7}"
+          gh pr comment "$PR" --edit-last --body "$body" || gh pr comment "$PR" --body "$body"
+
       - uses: ./.github/actions/checks
+
+  cleanup:
+    name: Delete preview database branch and blobs
+    if: github.event.action == 'closed' && !github.event.pull_request.head.repo.fork
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preview
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Delete the database branch (if it exists)
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          if [ -z "$NEON_API_KEY" ] || [ -z "$NEON_PROJECT_ID" ]; then
+            echo "::notice::Neon is not set up; nothing to delete."
+            exit 0
+          fi
+          neon() { bunx neonctl "$@" --project-id "$NEON_PROJECT_ID"; }
+          if neon branches get "$NEON_BRANCH" > /dev/null 2>&1; then
+            neon branches delete "$NEON_BRANCH"
+          fi
+
+      - name: Delete the preview's blobs
+        env:
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          PR: ${{ github.event.number }}
+        run: |
+          if [ -z "$S3_BUCKET" ] || [ -z "$S3_ACCESS_KEY_ID" ] || [ -z "$S3_SECRET_ACCESS_KEY" ]; then
+            echo "::notice::The dev bucket is not set up in the preview environment; nothing to delete."
+            exit 0
+          fi
+          bun scripts/delete-preview-blobs.ts "$PR"

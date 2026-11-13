@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit -p .",
-    "test:e2e": "playwright test --trace off",
+    "test:e2e": "next build && playwright test --trace off",
     "test:adapters": "node ../../scripts/test-browser-adapters.mjs"
   },
   "dependencies": {
