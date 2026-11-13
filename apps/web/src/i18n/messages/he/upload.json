@@ -163,7 +163,14 @@
       "filter": "סינון קבוצות",
       "noMatch": "אין קבוצה תואמת.",
       "noneSelected": "יש לבחור שיחות לייבוא.",
-      "moreGroups": "הצגת {n} קבוצות נוספות"
+      "moreGroups": "הצגת {n} קבוצות נוספות",
+      "editGroup": "עריכת {name}",
+      "editCall": "עריכת {name}",
+      "editCalls": "{n, plural, one {עריכת שיחה אחת} other {עריכת # שיחות}}",
+      "editHint": "שדות שלא שונו שומרים את הערך של כל שיחה.",
+      "mixed": "משתנה",
+      "save": "שמירה",
+      "revert": "ביטול העריכות"
     },
     "guide": {
       "title": "מבנה התיקייה ו-manifest.csv",

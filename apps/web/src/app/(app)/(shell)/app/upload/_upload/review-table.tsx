@@ -1,8 +1,11 @@
 'use client';
 
 import type { Pairing } from '@askcalls/client-core/bulk/pairing';
-import type { IngestMeta } from '@askcalls/client-core/ingest';
+import type { IngestMeta, MetaEdits } from '@askcalls/client-core/ingest';
+import type { Contact } from '@askcalls/client-core/userdata';
+import { DEFAULT_PHONE_REGION, isPhoneRegion } from '@askcalls/indexing';
 import { ContactLabel } from '@askcalls/ui/components/ContactLabel';
+import { ImportEditDialog } from '@askcalls/ui/components/ImportEditDialog';
 import { ImportGroup } from '@askcalls/ui/components/ImportGroup';
 import { QueueRow } from '@askcalls/ui/components/QueueRow';
 import { Button } from '@askcalls/ui/primitives/button';
@@ -14,8 +17,10 @@ import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { intlLocale } from '../../../../../../i18n/locales';
 import type { BulkController } from './bulk-controller';
+import { editValues, toEdits } from './edit';
 import { contactOf, PAGE, parts, QueueTable } from './queue-parts';
 import { type GroupBy, type GroupLabel, groupItems, groupState, type ItemGroup } from './selection';
+import { phoneValid } from './single';
 
 const GROUP_PAGE = 30;
 /** Groups at which the filter input appears. */
@@ -56,29 +61,35 @@ function GroupName({ group, text }: { group: ItemGroup; text: string }) {
 
 /**
  * U2 review: the planned calls grouped by contact, folder or month, each group and each call
- * put in the import or left out before it starts.
+ * put in the import or left out, and corrected, before it starts.
  */
 export function ReviewTable({
   controller,
   pairing,
   meta,
+  edits,
   excluded,
   region,
+  contacts,
 }: {
   controller: BulkController;
   pairing: Pairing;
   meta: ReadonlyMap<string, IngestMeta>;
+  edits: ReadonlyMap<string, MetaEdits>;
   excluded: ReadonlySet<string>;
   region: string;
+  contacts: readonly Contact[];
 }) {
   const t = useTranslations('upload');
   const tr = useTranslations('upload.bulk.review');
+  const tc = useTranslations('common');
   const locale = intlLocale(useLocale());
   const allId = useId();
   const [by, setBy] = useState<GroupBy>('contact');
   const [toggled, setToggled] = useState<ReadonlySet<string>>(new Set());
   const [filter, setFilter] = useState('');
   const [shownGroups, setShownGroups] = useState(GROUP_PAGE);
+  const [editing, setEditing] = useState<{ keys: string[]; title: string } | null>(null);
   const groups = useMemo(
     () => groupItems(pairing.items, meta, by, region),
     [pairing.items, meta, by, region],
@@ -103,6 +114,8 @@ export function ReviewTable({
   const all = pairing.items.map((i) => i.key);
   const selected = all.length - excluded.size;
   const isOpen = (g: ItemGroup) => toggled.has(g.key) !== (groups.length === 1);
+  const phoneRegion = isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION;
+  const contactNames = useMemo(() => [...new Set(contacts.map((c) => c.name))], [contacts]);
 
   return (
     <Card className="overflow-hidden">
@@ -174,6 +187,11 @@ export function ReviewTable({
                 checked={groupState(g.keys, excluded)}
                 onCheckedChange={(v) => controller.setIncluded(g.keys, v)}
                 selectLabel={tr('include', { name: text })}
+                edit={{
+                  label: tr('editGroup', { name: text }),
+                  onEdit: () =>
+                    setEditing({ keys: g.keys, title: tr('editCalls', { n: g.keys.length }) }),
+                }}
                 open={isOpen(g)}
                 onOpenChange={() =>
                   setToggled((prev) => {
@@ -201,6 +219,10 @@ export function ReviewTable({
                           state: 'queued',
                           label: t(included ? 'queue.queued' : 'queue.excluded'),
                         }}
+                        edit={{
+                          label: tr('editCall', { name: file }),
+                          onEdit: () => setEditing({ keys: [key], title: file }),
+                        }}
                         select={{
                           checked: included,
                           control: (
@@ -227,6 +249,35 @@ export function ReviewTable({
           </Button>
         </div>
       ) : null}
+      <ImportEditDialog
+        open={editing !== null}
+        onOpenChange={(o) => !o && setEditing(null)}
+        title={editing?.title ?? ''}
+        {...(editing && editing.keys.length > 1 && { description: tr('editHint') })}
+        values={editing ? editValues(editing.keys, meta, region) : {}}
+        date={editing?.keys.length === 1}
+        contactNames={contactNames}
+        phoneError={(p) => (phoneValid(p, phoneRegion) ? null : t('badNumber'))}
+        onSave={(changed) => editing && controller.editMeta(editing.keys, toEdits(changed))}
+        {...(editing?.keys.some((k) => edits.has(k)) && {
+          onRevert: () => controller.revertMeta(editing.keys),
+        })}
+        labels={{
+          phone: t('phone'),
+          phoneHint: t('phoneHint'),
+          contactName: t('contact'),
+          date: t('date'),
+          direction: t('direction.label'),
+          in: t('direction.in'),
+          out: t('direction.out'),
+          unknown: t('direction.unknown'),
+          mixed: tr('mixed'),
+          save: tr('save'),
+          cancel: tc('cancel'),
+          revert: tr('revert'),
+          close: tc('close'),
+        }}
+      />
     </Card>
   );
 }

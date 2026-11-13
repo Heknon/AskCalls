@@ -144,6 +144,9 @@ describe('recording file names', () => {
     ['Call recording Dana Levi_240501_101532_1.m4a', null, 'Dana Levi', at('2024-05-01T10:15:32Z')],
     ['0541234567_20240501_101532.m4a', '+972541234567', null, at('2024-05-01T10:15:32Z')],
     ['הקלטת שיחה דנה_240501_101532.m4a', null, 'דנה', at('2024-05-01T10:15:32Z')],
+    ['Call אלון שני_240501_101532.m4a', null, 'אלון שני', at('2024-05-01T10:15:32Z')],
+    ['Call \u202Bאלון שני\u202C_240501_101532.m4a', null, 'אלון שני', at('2024-05-01T10:15:32Z')],
+    ['\u200Fאלון שני\u200F_240501_101532.m4a', null, 'אלון שני', at('2024-05-01T10:15:32Z')],
     // iPhone exports
     [
       'Call with +1 (415) 555-0132 2025-11-03 at 14.05.09.m4a',
@@ -190,6 +193,7 @@ describe('recording file names', () => {
     expect(parseRecordingFileName('x_241341_101532.m4a')).toBeNull();
     expect(parseRecordingFileName('voice memo.m4a')).toBeNull();
     expect(parseRecordingFileName('0525550134.m4a')).toBeNull();
+    expect(parseRecordingFileName('Call 2.m4a')).toBeNull();
   });
 
   it('lets the manifest override file-name data field by field', () => {

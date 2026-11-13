@@ -144,7 +144,7 @@ test('leave out a contact and a single call before the import starts', async ({
   await expect(count(page, 'transcript only')).toHaveText('2');
   await expect(page.getByRole('button', { name: 'Import 2 calls' })).toBeVisible();
 
-  await dana.getByRole('button', { name: /Dana Levi/ }).click();
+  await dana.getByRole('button', { name: /^Dana Levi/ }).click();
   await page.getByRole('checkbox', { name: 'Include dana-2.txt' }).click();
   await expect(dana).toContainText('1 of 2');
   await expect(dana.getByRole('checkbox', { name: 'Include Dana Levi' })).toHaveAttribute(
@@ -175,6 +175,67 @@ test('leave out a contact and a single call before the import starts', async ({
   await expect(
     page.getByRole('tablist', { name: 'Show' }).getByRole('tab', { name: /All/ }),
   ).toContainText('1');
+});
+
+test('fix the contact of a group and a single call before the import starts', async ({
+  page,
+  context,
+}) => {
+  await onboard(page, context, 'edit');
+  await go(page, 'Upload');
+  await page.getByRole('tab', { name: 'Bulk' }).click();
+  const txt = (name: string, text: string) => ({
+    name,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(text),
+  });
+  await page
+    .locator('[data-component="FileDropZone"] input[type="file"]')
+    .first()
+    .setInputFiles([
+      txt('Call אלון שני_240501_101532.txt', 'Alon: The tiles arrive on Tuesday.'),
+      txt('Call \u202Bאלון שני\u202C_240502_101532.txt', 'Alon: The grout is the grey one.'),
+      txt('misc-1.txt', 'Ron: The contract is ready to sign.'),
+    ]);
+
+  const groups = page.locator('[data-component="ImportGroup"]');
+  await expect(groups).toHaveCount(2, { timeout: 30_000 });
+  const alon = groups.filter({ hasText: 'אלון שני' });
+  await expect(alon).toContainText('2 calls');
+  await expect(alon).not.toContainText('Call');
+
+  const dialog = page.getByRole('dialog');
+  await page.getByRole('button', { name: 'Edit אלון שני' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Edit 2 calls' })).toBeVisible();
+  await expect(dialog.getByLabel('Date and time')).toHaveCount(0);
+  await dialog.getByLabel('Phone number').fill('abc');
+  await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await dialog.getByLabel('Phone number').fill('050-123-4567');
+  await dialog.getByRole('radio', { name: 'Outgoing' }).click();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(groups.filter({ hasText: 'אלון שני' })).toContainText('2 calls');
+
+  await page.getByRole('button', { name: 'Edit No contact' }).click();
+  await dialog.getByLabel('Contact name').fill('Ron Cohen');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(groups.filter({ hasText: 'Ron Cohen' })).toContainText('1 call');
+
+  await page.getByRole('radio', { name: 'Folder' }).click();
+  await page.getByRole('button', { name: 'Edit misc-1.txt' }).click();
+  await expect(dialog.getByLabel('Contact name')).toHaveValue('Ron Cohen');
+  await dialog.getByRole('button', { name: 'Undo edits' }).click();
+  await page.getByRole('radio', { name: 'Contact' }).click();
+  await expect(groups.filter({ hasText: 'No contact' })).toContainText('1 call');
+
+  await page.getByRole('button', { name: 'Import 3 calls' }).click();
+  await expect(page.getByText('3 calls imported. 0 failed, 0 duplicates.')).toBeVisible({
+    timeout: 60_000,
+  });
+  await go(page, 'Calls');
+  await expect(
+    page.locator('[data-component="CallRow"]').filter({ hasText: 'אלון שני' }),
+  ).toHaveCount(2, { timeout: 30_000 });
 });
 
 test('pause, reload, unlock, pick the files again and resume', async ({ page, context }) => {

@@ -28,14 +28,19 @@ function folderOf(item: Item): string {
   return parts.join('/');
 }
 
+const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+
+/** Names that look the same group together: no bidi marks, one Unicode form, one case. */
+const nameKey = (name: string) =>
+  `name:${name.normalize('NFC').replace(INVISIBLE, '').replace(/\s+/g, ' ').trim().toLowerCase()}`;
+
 function contactKey(meta: IngestMeta | undefined, region: string) {
   const phone = meta?.phone
     ? parsePhone(meta.phone, isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION)
     : null;
-  const name = meta?.contactName?.trim() || undefined;
+  const name = meta?.contactName?.replace(INVISIBLE, '').trim() || undefined;
   if (phone) return { key: phone, label: { kind: 'contact', name, phone } as GroupLabel };
-  if (name)
-    return { key: `name:${name.toLowerCase()}`, label: { kind: 'contact', name } as GroupLabel };
+  if (name) return { key: nameKey(name), label: { kind: 'contact', name } as GroupLabel };
   return { key: NONE, label: { kind: 'none' } as GroupLabel };
 }
 
@@ -54,6 +59,7 @@ function monthKey(meta: IngestMeta | undefined) {
 /**
  * The planned calls of an import in groups the user can include or leave out as a whole: by the
  * other party, by folder, or by month. Items with no contact or no date form one group, last.
+ * By contact, calls with only a name join the one number saved under that name, if there is one.
  */
 export function groupItems(
   items: readonly Item[],
@@ -61,12 +67,28 @@ export function groupItems(
   by: GroupBy,
   region: string,
 ): ItemGroup[] {
+  const phonesByName = new Map<string, Set<string>>();
+  if (by === 'contact') {
+    for (const item of items) {
+      const { key, label } = contactKey(meta.get(item.key), region);
+      if (label.kind !== 'contact' || !label.phone || !label.name) continue;
+      const n = nameKey(label.name);
+      phonesByName.set(n, (phonesByName.get(n) ?? new Set()).add(key));
+    }
+  }
+  const byContact = (m: IngestMeta | undefined) => {
+    const c = contactKey(m, region);
+    const phones = c.label.kind === 'contact' && !c.label.phone ? phonesByName.get(c.key) : null;
+    if (phones?.size !== 1) return c;
+    const phone = [...phones][0]!;
+    return { key: phone, label: { ...c.label, phone } as GroupLabel };
+  };
   const groups = new Map<string, ItemGroup>();
   for (const item of items) {
     const m = meta.get(item.key);
     const { key, label } =
       by === 'contact'
-        ? contactKey(m, region)
+        ? byContact(m)
         : by === 'month'
           ? monthKey(m)
           : { key: folderOf(item), label: { kind: 'folder', path: folderOf(item) } as GroupLabel };
