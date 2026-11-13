@@ -46,12 +46,23 @@ export function useAskRoute(ctx: ClientContext, me: Me): AskRoute | null {
         const llm = p.llm;
         if (llm.mode === 'off') return setRoute({ kind: 'off' });
         if (llm.mode === 'own') {
-          return setRoute({
-            kind: 'direct',
-            provider: llm.key.provider,
-            model: llm.key.model ?? llm.key.provider,
-            key: llm.key,
-          });
+          const key = llm.key;
+          // The adapter's default model, so the consent names what will answer.
+          import('@askcalls/adapter-llm-ai-sdk').then(
+            ({ DEFAULT_MODELS }) =>
+              !stale &&
+              setRoute({
+                kind: 'direct',
+                provider: key.provider,
+                model:
+                  key.model ??
+                  DEFAULT_MODELS[key.provider as keyof typeof DEFAULT_MODELS] ??
+                  key.provider,
+                key,
+              }),
+            () => !stale && setRoute({ kind: 'off' }),
+          );
+          return;
         }
         const f = me.features.llm;
         setRoute(
