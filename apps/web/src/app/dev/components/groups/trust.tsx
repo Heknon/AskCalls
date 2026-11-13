@@ -9,8 +9,6 @@ import { PassphraseField } from '@askcalls/ui/components/PassphraseField';
 import { RecoveryCodeGrid } from '@askcalls/ui/components/RecoveryCodeGrid';
 import { SettingsSection } from '@askcalls/ui/components/SettingsSection';
 import { Stepper } from '@askcalls/ui/components/Stepper';
-import type { TrustDiagramColumn } from '@askcalls/ui/components/TrustDiagram';
-import { TrustDiagram } from '@askcalls/ui/components/TrustDiagram';
 import { UnlockMethodRow } from '@askcalls/ui/components/UnlockMethodRow';
 import { Button } from '@askcalls/ui/primitives/button';
 import { useState } from 'react';
@@ -96,36 +94,6 @@ const copy = {
       'Admin account',
     ],
     linkSteps: ['Connect', 'Compare', 'Done'],
-    trust: [
-      {
-        part: 'device',
-        title: 'Your device',
-        holds: [
-          'Transcripts, audio, names, notes',
-          'Your keys, unlocked by passkey',
-          'Search terms and decrypted results',
-        ],
-        note: 'Only your device sees plaintext',
-      },
-      {
-        part: 'server',
-        title: 'AskCalls server',
-        holds: [
-          'Ciphertext and wrapped keys',
-          'Keyed HMAC tokens for words and contacts',
-          'Vectors of redacted text, day, duration bucket',
-        ],
-      },
-      {
-        part: 'storage',
-        title: 'Storage',
-        holds: [
-          'Postgres with pgvector, in the EU',
-          'Encrypted recordings in an S3 bucket',
-          'Or your own bucket, signed by your device',
-        ],
-      },
-    ] as TrustDiagramColumn[],
     exceptions: [
       [
         'managed',
@@ -214,36 +182,6 @@ const copy = {
     steps: ['ברוכים הבאים', 'מפתח גישה', 'קוד שחזור', 'ניסיון', 'חיבור ל-AI'],
     wizard: ['מסד נתונים', 'אחסון', 'כניסה', 'תמלול ו-AI', 'מצב לא מקוון', 'חשבון מנהל'],
     linkSteps: ['חיבור', 'השוואה', 'סיום'],
-    trust: [
-      {
-        part: 'device',
-        title: 'המכשיר שלך',
-        holds: [
-          'תמלולים, שמע, שמות, הערות',
-          'המפתחות שלך, נפתחים במפתח גישה',
-          'מילות חיפוש ותוצאות מפוענחות',
-        ],
-        note: 'רק המכשיר שלך רואה טקסט גלוי',
-      },
-      {
-        part: 'server',
-        title: 'שרת AskCalls',
-        holds: [
-          'טקסט מוצפן ומפתחות עטופים',
-          'אסימוני HMAC למילים ולאנשי קשר',
-          'וקטורים של טקסט מושחר, יום, טווח משך',
-        ],
-      },
-      {
-        part: 'storage',
-        title: 'אחסון',
-        holds: [
-          'Postgres עם pgvector, באיחוד האירופי',
-          'הקלטות מוצפנות בדלי S3',
-          'או דלי משלך, חתום על ידי המכשיר שלך',
-        ],
-      },
-    ] as TrustDiagramColumn[],
     exceptions: [
       ['managed', 'השמע עובר דרך שרתי AskCalls אל ElevenLabs, בזרימה ובלי שמירה.', 'ElevenLabs'],
       [
@@ -485,10 +423,9 @@ export function TrustGroup() {
           </div>
         </State>
       </Specimen>
-      <Specimen name="TrustDiagram" note="full, with the exceptions" wide>
-        <TrustDiagram
-          columns={c.trust}
-          exceptions={c.exceptions.map(([route, text, provider]) => (
+      <Specimen name="DataFlowNote" note="the three plaintext exceptions" wide>
+        <div className="grid gap-4 md:grid-cols-3">
+          {c.exceptions.map(([route, text, provider]) => (
             <DataFlowNote
               key={text}
               route={route}
@@ -497,10 +434,7 @@ export function TrustGroup() {
               {text}
             </DataFlowNote>
           ))}
-        />
-      </Specimen>
-      <Specimen name="TrustDiagram" note='size="compact" (onboarding)' wide>
-        <TrustDiagram size="compact" columns={c.trust} />
+        </div>
       </Specimen>
     </>
   );

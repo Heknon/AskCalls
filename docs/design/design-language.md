@@ -255,8 +255,8 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 #### Logo
 - **Purpose:** the AskCalls mark, alone or with the product name.
 - **Use:** sidebar brand, mobile top bar, marketing header and footer, gates. **Don't use:** as an icon for anything else.
-- **Props:** `name?` (the visible product name), `size="sm" | "md"`.
-- **Composes:** inline SVG coloured by `primary` / `primary-foreground`. **Screens:** all. **A11y:** decorative; the surrounding link carries the name. **RTL:** never mirrored.
+- **Props:** `name?` (the visible product name), `size="sm" | "md"`, `variant` (`tile`: the mark on its accent tile, app chrome and icons; `bare`: the bars alone in the accent colour, marketing header and footer, where the wordmark runs inline with navigation on dark and light grounds).
+- **Composes:** inline SVG coloured by `primary` / `primary-foreground`. **Screens:** all; the PWA icons are the `tile` mark. **A11y:** decorative; the surrounding link carries the name. **RTL:** never mirrored.
 
 #### AppTopBar
 - **Purpose:** the 56 px bar above a page's content from `md` up: page actions at the end edge, shortcut hints before them on wide screens.
@@ -524,9 +524,11 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **A11y:** the diagram is decorative (`aria-hidden`); the sentence carries the meaning. **RTL:** the route reads from the start edge.
 
 #### TrustDiagram
-- **Purpose:** the marketing and security-page picture of what each part of the system holds.
-- **Composes:** `Card`, `DataFlowNote` (for the exceptions list). **Screens:** M1, M3.
-- **Not to be confused with:** `DataFlowNote` (one feature's path) — the diagram shows the whole system.
+- **Purpose:** the marketing and security-page picture of the privacy model: one call on the device (readable) and on the server (bytes and integers under their column names), split by the line where encryption happens.
+- **Props:** `label`, `boundary` ("Encrypted here"), `device` and `server` (`title`, `items` of `field` + `value`). The marketing pages fill the server side from a real encryption of the sample call (`apps/web/src/app/(marketing)/_data`, `scripts/marketing-diagram.ts`).
+- **Composes:** text on hairlines (marketing.css). **Screens:** M1, M3.
+- **RTL:** the zones mirror; server values stay LTR. On phones the line turns horizontal and the zones stack.
+- **Not to be confused with:** `DataFlowNote` (one feature's path) — the diagram shows what is stored.
 
 #### UnlockMethodRow
 - **Purpose:** one way of unlocking the root key on this account: a passkey, the recovery code, the passphrase or a linked device.
@@ -713,25 +715,37 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 ### 4.10 Marketing
 
+The marketing surface follows [`marketing.md`](marketing.md), not the app's type scale. Its components render markup styled by `packages/ui/src/styles/marketing.css` (`@askcalls/ui/marketing.css`), scoped to `.mk`; dark chapters are `.ink` and stay dark in both themes. None of them needs JavaScript except `DemoFrame`.
+
 #### MarketingHeader / MarketingFooter
-- **Purpose:** site navigation and the legal/trust links. **Composes:** `NavigationMenu`, `Button`, language switcher (`Select`). **Screens:** M1–M5.
+- **Purpose:** site navigation over the dark hero, and the product, trust and legal links on hairlines.
+- **Props:** header `links` (`current` marks the page), `language` (a slot: the marketing pages pass a one-button form naming the other language), `signIn`, `start`, `labels` (`brand`, `home`, `nav`, `menu`, `close`). Footer `fine` (licence and copyright lines), `columns`.
+- **Composes:** `Logo variant="bare"`, the HTML `popover` attribute for the menu below 1100 px (no script). **Screens:** M1–M5.
+- **A11y:** nav landmark per list; the menu is a `dialog` popover opened and closed by buttons with `popovertarget`. **RTL:** mirrors; the wordmark stays at the start.
 
 #### DemoFrame
-- **Purpose:** frames the looping product recording with a pause control and a static poster under reduced motion. **Screens:** M1.
+- **Purpose:** the hero's live encrypted search (marketing.md 2.4): the query types itself, Meaning turns on, three results resolve from ciphertext into the snippet.
+- **Props:** `queries` (the first is the end state), `description`, `labels` (`meaning`, `pause`, `play`, `matched`, `decrypted` with `{ms}`).
+- **States:** `data-phase` = `static` (server render and reduced motion: end state, no pause button), `typing`, `resolving`, `hold`, `paused` (end state of the current query). **A11y:** the visual is `role="img"` with the description; the pause button sits outside it and has `aria-pressed`. **RTL:** Hebrew rows resolve right to left whatever the page language; phone numbers and the latency stay LTR in `bdi`.
+- **Not to be confused with:** `SearchBox` and `CallRow`: the demo is a picture of them, never interactive.
 
 #### StepList
-- **Purpose:** a numbered sequence of how something works. **Screens:** M1, M5.
+- **Purpose:** a numbered sequence as lines of type on hairlines. **Props:** `steps` (`title`, `note`), `size` (`display`: the home page's three lines at chapter size; `compact`: reading pages). **Screens:** M1, M5.
 
 #### UseCaseCard
-- **Purpose:** one use case with a sample search. **Composes:** `Card`, `FilterBlank` (read-only). **Screens:** M1.
+- **Purpose:** one use case as the search someone in that role types, set like a search-field row, with the role and what it finds. Render inside `<ul className="qs">`. **Props:** `query` (`dir="auto"`), `role`, `result`. **Screens:** M1.
 
 #### LimitsTable
-- **Purpose:** the free-tier limits. **Composes:** `Table`. **Screens:** M1, M2.
+- **Purpose:** the free-tier limits as big numerals on hairlines. **Props:** `limits` (`value`, `unit`, `label`, `detail`), `variant` (`teaser`: five numerals on one rule, home; `sheet`: the pricing spec sheet with details). Values come from `DEFAULT_LIMITS` in the domain. **Screens:** M1, M2.
 
 #### FaqList
-- **Purpose:** questions and answers. **Composes:** `Accordion`. **Screens:** M1, M2, M3.
+- **Purpose:** questions and answers on hairlines. **Composes:** native `<details>`. **Props:** `items`, `open` (the item open on load). **Screens:** M1, M2, M3, FAQ page.
+
+#### TrustDiagram
+- **Purpose:** see 4.5. The boundary figure: the same call readable on the device and as the server stores it, split by the "Encrypted here" line.
 
 ---
+
 
 ## 5. Screen → component map
 
@@ -739,11 +753,11 @@ Screen codes are used in the catalog above and in `screens.md`.
 
 | Code | Screen | Product components |
 | --- | --- | --- |
-| M1 | Marketing home | MarketingHeader, DemoFrame, StepList, TrustDiagram, DataFlowNote, UseCaseCard, FilterBlank (read-only), CopyableCode, LimitsTable, FaqList, MarketingFooter |
+| M1 | Marketing home | MarketingHeader, DemoFrame, StepList, TrustDiagram, DataFlowNote, UseCaseCard, LimitsTable, FaqList, MarketingFooter |
 | M2 | Pricing | MarketingHeader, LimitsTable, FaqList, MarketingFooter |
-| M3 | Security | MarketingHeader, TrustDiagram, DataFlowNote, CopyableCode, FaqList, MarketingFooter |
+| M3 | Security | MarketingHeader, TrustDiagram, DataFlowNote, MarketingFooter |
 | M4 | Login | GateLayout, GateHeading, GateDivider, GateNote, LanguageSwitcher, ErrorState, Notice |
-| M5 | MCP / self-host pages | MarketingHeader, StepList, CopyableCode, MarketingFooter |
+| M5 | MCP, self-host, FAQ and legal pages | MarketingHeader, StepList, FaqList, MarketingFooter |
 | O1 | Onboarding: welcome | GateLayout, GateHeading, Stepper, TrustDiagram (compact) |
 | O2 | Onboarding: create passkey | GateLayout, GateHeading, Stepper, ChoiceCard, ErrorState |
 | O2b | Onboarding: passphrase fallback | GateLayout, GateHeading, Stepper, PassphraseField |
