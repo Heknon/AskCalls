@@ -76,9 +76,12 @@ installs it (`bun run check:infra`) and runs its checks.
 
 Rough monthly numbers for `eu-central-1`; check the AWS pricing pages before relying on them.
 
-- **S3 storage:** about $0.0245 per GB-month (S3 Standard, Frankfurt) for the encrypted
-  recordings, plus requests ($0.0054 per 1,000 PUTs, $0.00043 per 1,000 GETs). The free tier
-  covers 5 GB for the first year only. Dev's preview objects expire after 14 days.
+- **S3 storage:** recordings move to S3 Intelligent-Tiering on upload. Calls played in the last
+  30 days cost about $0.0245 per GB-month (Frankfurt), calls untouched for 30 days about $0.0135,
+  and after 90 days about $0.005, with no retrieval fee; playing a call moves it back. Monitoring
+  is about $0.0025 per 1,000 recordings a month (objects under 128 KB aren't monitored and stay
+  at the frequent rate). Requests: $0.0054 per 1,000 PUTs, $0.00043 per 1,000 GETs. Dev's
+  preview objects expire after 14 days.
 - **Egress for recording downloads:** browsers download recordings straight from the bucket with
   presigned URLs, which is internet data transfer out. The first 100 GB per month (across the
   account) are free, then about $0.09 per GB. Uploads (data in) are free.

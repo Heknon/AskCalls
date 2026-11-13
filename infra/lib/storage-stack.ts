@@ -37,6 +37,9 @@ export function bucketCors(origins: string[]): s3.CorsRule[] {
  * - Versioning off: a deleted recording (retention purge, call or account deletion) must be
  *   gone, not kept as a noncurrent version. Previous versions would also outlive the user's
  *   retention setting for no gain, since a ciphertext segment is never rewritten in place.
+ * - Recordings move to S3 Intelligent-Tiering on upload: old calls are rarely replayed, so they
+ *   drift to the infrequent (30 days) and archive-instant (90 days) tiers and come back on play,
+ *   with no retrieval fee or minimum duration. Objects under 128 KB stay in the frequent tier.
  * - Dev only: `preview/` objects expire after 14 days, behind the PR-close cleanup.
  */
 export class StorageStack extends Stack {
@@ -51,6 +54,12 @@ export class StorageStack extends Stack {
       {
         id: 'abort-incomplete-multipart-uploads',
         abortIncompleteMultipartUploadAfter: Duration.days(1),
+      },
+      {
+        id: 'intelligent-tiering',
+        transitions: [
+          { storageClass: s3.StorageClass.INTELLIGENT_TIERING, transitionAfter: Duration.days(0) },
+        ],
       },
     ];
     if (deployEnv === 'dev') {
