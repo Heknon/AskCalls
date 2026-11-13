@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "request_id": "3f6a1c2e-0000-4000-8000-000000000001",
+    "created": "2026-10-01T09:12:44.000Z",
+    "duration": 16.2,
+    "channels": 1,
+    "models": ["nova-3"]
+  },
+  "results": {
+    "channels": [
+      {
+        "detected_language": "he",
+        "alternatives": [
+          {
+            "transcript": "בוקר טוב, אני רוצה לקבוע תור לטכנאי. Sure, what's your address? רחוב הרצל 12, חולון.",
+            "confidence": 0.94,
+            "words": []
+          }
+        ]
+      }
+    ],
+    "utterances": [
+      {
+        "start": 0.32,
+        "end": 4.1,
+        "confidence": 0.95,
+        "channel": 0,
+        "transcript": "בוקר טוב, אני רוצה לקבוע תור לטכנאי.",
+        "speaker": 0,
+        "id": "u-1"
+      },
+      {
+        "start": 4.5,
+        "end": 6.8,
+        "confidence": 0.97,
+        "channel": 0,
+        "transcript": "Sure, what's your address?",
+        "speaker": 1,
+        "id": "u-2"
+      },
+      {
+        "start": 7.2,
+        "end": 16.2,
+        "confidence": 0.91,
+        "channel": 0,
+        "transcript": "רחוב הרצל 12, חולון.",
+        "speaker": 0,
+        "id": "u-3"
+      }
+    ]
+  }
+}

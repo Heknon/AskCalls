@@ -1,0 +1,17 @@
+{
+  "language": "en",
+  "utterances": [
+    {
+      "start_ms": 0,
+      "end_ms": 3500,
+      "speaker_id": 1,
+      "transcript": "Thanks for calling Shufersal online."
+    },
+    {
+      "start_ms": 3600,
+      "end_ms": 9100,
+      "speaker_id": 2,
+      "transcript": "ההזמנה שלי הגיעה בלי החלב והביצים."
+    }
+  ]
+}

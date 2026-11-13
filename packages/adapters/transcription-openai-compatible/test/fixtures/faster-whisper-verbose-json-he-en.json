@@ -1,0 +1,214 @@
+{
+  "task": "transcribe",
+  "language": "he",
+  "duration": 12.48,
+  "text": "שלום, מדבר דני מהמוסך. הרכב שלך מוכן, המחיר הוא 1,250 שקל. Great, thanks. Can I pick it up tomorrow at nine? כן, בטח. נתראה מחר.",
+  "segments": [
+    {
+      "id": 0,
+      "seek": 0,
+      "start": 0.12,
+      "end": 2.19,
+      "text": " שלום, מדבר דני מהמוסך.",
+      "tokens": [50364, 50365, 50366, 50367, 50368, 50369, 50370, 50371],
+      "temperature": 0.0,
+      "avg_logprob": -0.21,
+      "compression_ratio": 1.18,
+      "no_speech_prob": 0.012
+    },
+    {
+      "id": 1,
+      "seek": 206,
+      "start": 1.9,
+      "end": 5.27,
+      "text": " הרכב שלך מוכן, המחיר הוא 1,250 שקל.",
+      "tokens": [
+        50364, 50365, 50366, 50367, 50368, 50369, 50370, 50371, 50372, 50373, 50374, 50375, 50376,
+        50377
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.21,
+      "compression_ratio": 1.18,
+      "no_speech_prob": 0.012
+    },
+    {
+      "id": 2,
+      "seek": 542,
+      "start": 5.1,
+      "end": 9.84,
+      "text": " Great, thanks. Can I pick it up tomorrow at nine?",
+      "tokens": [
+        50364, 50365, 50366, 50367, 50368, 50369, 50370, 50371, 50372, 50373, 50374, 50375, 50376,
+        50377, 50378, 50379, 50380, 50381, 50382, 50383
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.21,
+      "compression_ratio": 1.18,
+      "no_speech_prob": 0.012
+    },
+    {
+      "id": 3,
+      "seek": 1016,
+      "start": 9.4,
+      "end": 11.26,
+      "text": " כן, בטח. נתראה מחר.",
+      "tokens": [50364, 50365, 50366, 50367, 50368, 50369, 50370, 50371],
+      "temperature": 0.0,
+      "avg_logprob": -0.21,
+      "compression_ratio": 1.18,
+      "no_speech_prob": 0.012
+    }
+  ],
+  "words": [
+    {
+      "start": 0.12,
+      "end": 0.61,
+      "word": " שלום,",
+      "probability": 0.93
+    },
+    {
+      "start": 0.67,
+      "end": 1.09,
+      "word": " מדבר",
+      "probability": 0.93
+    },
+    {
+      "start": 1.15,
+      "end": 1.5,
+      "word": " דני",
+      "probability": 0.93
+    },
+    {
+      "start": 1.56,
+      "end": 2.19,
+      "word": " מהמוסך.",
+      "probability": 0.93
+    },
+    {
+      "start": 1.9,
+      "end": 2.32,
+      "word": " הרכב",
+      "probability": 0.93
+    },
+    {
+      "start": 2.38,
+      "end": 2.73,
+      "word": " שלך",
+      "probability": 0.93
+    },
+    {
+      "start": 2.79,
+      "end": 3.28,
+      "word": " מוכן,",
+      "probability": 0.93
+    },
+    {
+      "start": 3.34,
+      "end": 3.83,
+      "word": " המחיר",
+      "probability": 0.93
+    },
+    {
+      "start": 3.89,
+      "end": 4.24,
+      "word": " הוא",
+      "probability": 0.93
+    },
+    {
+      "start": 4.3,
+      "end": 4.79,
+      "word": " 1,250",
+      "probability": 0.93
+    },
+    {
+      "start": 4.85,
+      "end": 5.27,
+      "word": " שקל.",
+      "probability": 0.93
+    },
+    {
+      "start": 5.1,
+      "end": 5.66,
+      "word": " Great,",
+      "probability": 0.93
+    },
+    {
+      "start": 5.72,
+      "end": 6.35,
+      "word": " thanks.",
+      "probability": 0.93
+    },
+    {
+      "start": 6.41,
+      "end": 6.76,
+      "word": " Can",
+      "probability": 0.93
+    },
+    {
+      "start": 6.82,
+      "end": 7.03,
+      "word": " I",
+      "probability": 0.93
+    },
+    {
+      "start": 7.09,
+      "end": 7.51,
+      "word": " pick",
+      "probability": 0.93
+    },
+    {
+      "start": 7.57,
+      "end": 7.85,
+      "word": " it",
+      "probability": 0.93
+    },
+    {
+      "start": 7.91,
+      "end": 8.19,
+      "word": " up",
+      "probability": 0.93
+    },
+    {
+      "start": 8.25,
+      "end": 8.95,
+      "word": " tomorrow",
+      "probability": 0.93
+    },
+    {
+      "start": 9.01,
+      "end": 9.29,
+      "word": " at",
+      "probability": 0.93
+    },
+    {
+      "start": 9.35,
+      "end": 9.84,
+      "word": " nine?",
+      "probability": 0.93
+    },
+    {
+      "start": 9.4,
+      "end": 9.75,
+      "word": " כן,",
+      "probability": 0.93
+    },
+    {
+      "start": 9.81,
+      "end": 10.23,
+      "word": " בטח.",
+      "probability": 0.93
+    },
+    {
+      "start": 10.29,
+      "end": 10.78,
+      "word": " נתראה",
+      "probability": 0.93
+    },
+    {
+      "start": 10.84,
+      "end": 11.26,
+      "word": " מחר.",
+      "probability": 0.93
+    }
+  ]
+}

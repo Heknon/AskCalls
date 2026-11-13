@@ -132,6 +132,17 @@ export class MemoryRateLimiter implements RateLimiter {
     const resetAt = new Date((recent[0] ?? now) + windowMs);
     return { allowed, remaining: Math.max(0, limit - recent.length), resetAt };
   }
+  private counters = new Map<string, number>();
+  async consume(key: string, windowStart: Date, amount: number, limit: number | null) {
+    const k = `${key}@${windowStart.getTime()}`;
+    const used = this.counters.get(k) ?? 0;
+    if (limit !== null && used + amount > limit) return { allowed: false, used };
+    this.counters.set(k, used + amount);
+    return { allowed: true, used: used + amount };
+  }
+  async usage(key: string, windowStart: Date) {
+    return this.counters.get(`${key}@${windowStart.getTime()}`) ?? 0;
+  }
 }
 
 /** Records events for assertions (scrubber tests, product-event tests). */
