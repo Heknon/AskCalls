@@ -302,6 +302,7 @@ packages/
   ui/                  shadcn/ui components, RTL-ready
   adapters/*           one package per adapter
 docker/                Compose files for self-hosting and air-gapped installs
+infra/                 askcalls.com's AWS (CDK): S3 for recordings, CloudFront for the model, GitHub OIDC roles
 ```
 
 Read more in [docs/architecture.md](docs/architecture.md), and see [docs/adapters.md](docs/adapters.md) to write a new adapter.
@@ -313,7 +314,7 @@ Requires [Bun](https://bun.sh) and Docker.
 ```sh
 bun install
 bun run dev                # web app with mock providers
-bun run check              # lint, typecheck, boundaries, unit and contract tests, leak test
+bun run check              # lint, typecheck, boundaries, unit and contract tests, leak test, infra/ synth
 bun run test:integration   # API routes against real Postgres and MinIO
 bun run test:e2e           # Playwright
 ```

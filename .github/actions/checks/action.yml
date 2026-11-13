@@ -2,7 +2,8 @@ name: Fast checks
 description: >-
   Lint, typecheck, boundaries, the dependency audit, the unit and contract tests (PGlite, fs and
   in-memory adapters, so no service container: they include the leak test on both, the telemetry
-  scrubber test, and the CSP check of every app page), then the bundle-size budget against a
+  scrubber test, and the CSP check of every app page), the infra/ typecheck, CDK assertion tests
+  and `cdk synth` of every stack (no AWS credentials), then the bundle-size budget against a
   production build. Run after ./.github/actions/setup. Every workflow runs these through this
   action, inside the job that deploys, so they cost no extra runner.
 runs:
@@ -24,6 +25,10 @@ runs:
     - name: Unit and contract tests
       shell: bash
       run: bun run test
+    - name: Infrastructure typecheck, tests and synth
+      shell: bash
+      working-directory: infra
+      run: bun run check
     # A preview has just built the app (vercel build runs next build in apps/web), so its
     # output is measured as is; elsewhere the action builds it. Fresh checkouts have no .next.
     - name: Build the web app

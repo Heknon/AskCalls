@@ -31,7 +31,7 @@ bun run format             # Biome autofix
 - No `console.log` outside the agent CLI and tests (Biome enforces it).
 - UI strings live in message files (next-intl); no hard-coded copy in components. Use logical CSS properties (`ms-`, `pe-`, `start-`) so RTL works. Transcript text uses `dir="auto"`.
 - Design system and screen specs: `docs/design/`.
-- Deployment (GitHub Actions → Vercel, Neon, R2), pipelines and one-time setup: `docs/deployment.md`.
+- Deployment (GitHub Actions → Vercel, Neon, AWS S3 + CloudFront via CDK in `infra/`), pipelines and one-time setup: `docs/deployment.md`.
 
 ## UI components
 

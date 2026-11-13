@@ -304,7 +304,7 @@
     },
     "where": {
       "q": "Where is my data stored?",
-      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Cloudflare R2 in its EU jurisdiction, encrypted on your device before upload. Recording backups can go to your own bucket instead."
+      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Amazon S3 (AWS, eu-central-1), encrypted on your device before upload. Recording backups can go to your own bucket instead."
     },
     "selfHost": {
       "q": "Can I self-host?",
@@ -643,9 +643,9 @@
       "neon": "Postgres database",
       "neonData": "Ciphertext, keyed tokens, embeddings of redacted text, account data",
       "neonWhere": "EU (Frankfurt)",
-      "r2": "Storage for encrypted recordings",
-      "r2Data": "Encrypted recording segments",
-      "r2Where": "EU jurisdiction",
+      "aws": "Storage for encrypted recordings (Amazon S3) and delivery of the embedding model (CloudFront)",
+      "awsData": "Encrypted recording segments; requests for the public embedding-model files",
+      "awsWhere": "EU (Frankfurt); model files from CloudFront edge locations",
       "elevenlabs": "Transcription (default)",
       "elevenlabsData": "Audio of calls you choose to transcribe, per request",
       "elevenlabsWhere": "ElevenLabs' processing regions",

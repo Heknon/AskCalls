@@ -14,7 +14,7 @@ bun run dev                # web app on :3000, in-memory database and mock provi
 ## Before you push
 
 ```sh
-bun run check              # lint, typecheck, boundaries, unit and contract tests (leak, CSP, telemetry)
+bun run check              # lint, typecheck, boundaries, unit and contract tests (leak, CSP, telemetry), infra/ tests and synth
 bun run check:bundle       # production build and the bundle-size budget
 bun run test:integration   # API routes against real Postgres and MinIO (Docker)
 bun run test:e2e           # Playwright
