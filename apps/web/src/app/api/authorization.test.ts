@@ -43,6 +43,8 @@ interface Case {
   raw?: { bytes: Uint8Array; contentType: string };
   /** `not_found`: another user gets 404. `own`: another user acts on their own (empty) data. */
   cross: 'not_found' | 'own';
+  /** Instance administration: the owner is made an admin, and a non-admin gets 403. */
+  admin?: true;
 }
 
 const CASES: Case[] = [
@@ -324,6 +326,31 @@ const CASES: Case[] = [
     json: () => ({ retentionDays: 30 }),
     cross: 'own',
   },
+  {
+    name: 'GET /api/admin/users',
+    method: 'GET',
+    path: () => '/api/admin/users?email=example',
+    auth: 'session',
+    cross: 'own',
+    admin: true,
+  },
+  {
+    name: 'GET /api/admin/users/:id',
+    method: 'GET',
+    path: (f) => `/api/admin/users/${f.a}`,
+    auth: 'session',
+    cross: 'own',
+    admin: true,
+  },
+  {
+    name: 'PATCH /api/admin/users/:id/limits',
+    method: 'PATCH',
+    path: (f) => `/api/admin/users/${f.a}/limits`,
+    auth: 'session',
+    json: () => ({ limits: { maxCalls: 1000 } }),
+    cross: 'own',
+    admin: true,
+  },
 ];
 
 const ALL_SCOPES: ApiScope[] = ['read', 'write', 'ask', 'keys'];
@@ -478,7 +505,15 @@ describe.each(CASES)('$name', (c) => {
     }
   });
 
+  it.runIf(c.admin)('refuses a signed-in user without the admin role', async () => {
+    const res = await send({ cookie: await sessionCookie(f.a) });
+    expect(res.status).toBe(403);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(await app.ports.users.findById(f.a)).toMatchObject({ limitOverrides: {} });
+  });
+
   it('serves the owner with a session', async () => {
+    if (c.admin) await app.ports.users.setRole(f.a, 'admin');
     const res = await send({ cookie: await sessionCookie(f.a) });
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.status, await res.clone().text()).toBe(200);

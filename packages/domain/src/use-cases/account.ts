@@ -2,18 +2,11 @@ import type { Page } from '../entities/common';
 import { DomainError } from '../entities/errors';
 import type { AuditAction, AuditEvent } from '../entities/other';
 import type { Plan, User, UserRole } from '../entities/user';
-import type { Limits } from '../limits';
+import { effectiveLimits, type Limits } from '../limits';
 import type { Ports } from '../ports-bundle';
-import {
-  type Actor,
-  blobKeys,
-  dayStart,
-  monthStart,
-  requireSession,
-  requireUser,
-  usageKeys,
-} from './context';
+import { type Actor, blobKeys, requireSession, requireUser } from './context';
 import type { KeyringEntrySummary } from './keyring';
+import { type AccountUsage, accountUsage } from './limits';
 
 export interface MeResult {
   user: {
@@ -29,15 +22,7 @@ export interface MeResult {
   telemetryConsent: User['telemetryConsent'];
   retentionDays: number | null;
   limits: Limits;
-  usage: {
-    calls: number;
-    recordingBytes: number;
-    transcriptionSecondsThisMonth: number;
-    asksToday: number;
-    translationCharsThisMonth: number;
-    apiTokens: number;
-    inboxPending: number;
-  };
+  usage: AccountUsage & { inboxPending: number };
   keyring: {
     entries: KeyringEntrySummary[];
     hasUserKeys: boolean;
@@ -57,19 +42,13 @@ export async function getMe(ports: Ports, actor: Actor): Promise<MeResult> {
   const user = await requireUser(ports, actor.userId);
   const now = ports.clock.now();
   const userId = user.id;
-  const [calls, recordingBytes, seconds, asks, chars, tokens, inbox, entries, keys, devices] =
-    await Promise.all([
-      ports.calls.count(userId),
-      ports.calls.totalRecordingBytes(userId),
-      ports.rateLimiter.usage(usageKeys.transcriptionSeconds(userId), monthStart(now)),
-      ports.rateLimiter.usage(usageKeys.asks(userId), dayStart(now)),
-      ports.rateLimiter.usage(usageKeys.translationChars(userId), monthStart(now)),
-      ports.apiTokens.countActive(userId, now),
-      ports.inbox.count(userId),
-      ports.keyring.list(userId),
-      ports.keyring.getUserKeys(userId),
-      ports.keyring.listDevices(userId),
-    ]);
+  const [usage, inbox, entries, keys, devices] = await Promise.all([
+    accountUsage(ports, userId, now),
+    ports.inbox.count(userId),
+    ports.keyring.list(userId),
+    ports.keyring.getUserKeys(userId),
+    ports.keyring.listDevices(userId),
+  ]);
   const t = ports.transcription;
   return {
     user: {
@@ -84,16 +63,8 @@ export async function getMe(ports: Ports, actor: Actor): Promise<MeResult> {
     },
     telemetryConsent: user.telemetryConsent,
     retentionDays: user.retentionDays,
-    limits: ports.limits,
-    usage: {
-      calls,
-      recordingBytes,
-      transcriptionSecondsThisMonth: seconds,
-      asksToday: asks,
-      translationCharsThisMonth: chars,
-      apiTokens: tokens,
-      inboxPending: inbox,
-    },
+    limits: effectiveLimits(ports.limits, user.limitOverrides),
+    usage: { ...usage, inboxPending: inbox },
     keyring: {
       entries: entries.map(({ wrappedRootKey: _w, userId: _u, ...e }) => e),
       hasUserKeys: keys !== null,

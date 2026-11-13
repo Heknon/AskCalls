@@ -8,10 +8,12 @@ export const APP_HREFS: Record<AppRoute, string> = {
   contacts: '/app/contacts',
   settings: '/app/settings',
   admin: '/admin/instance',
+  accounts: '/admin/accounts',
 };
 
 /** The navigation item a path belongs to (the call view belongs to Calls). */
 export function routeOf(pathname: string): AppRoute {
+  if (pathname.startsWith('/admin/accounts')) return 'accounts';
   if (pathname.startsWith('/admin')) return 'admin';
   const seg = pathname.split('/')[2];
   switch (seg) {

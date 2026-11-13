@@ -2,7 +2,7 @@ import type { ElementType } from 'react';
 import { cn } from '../lib/cn';
 import { type AppRoute, appRouteIcons } from './AppSidebar';
 
-type TabRoute = Exclude<AppRoute, 'admin'>;
+type TabRoute = Exclude<AppRoute, 'admin' | 'accounts'>;
 
 export type MobileTabBarProps = {
   active: AppRoute;
@@ -24,7 +24,8 @@ export function MobileTabBar({ active, hrefs, labels, linkAs: Link = 'a' }: Mobi
     >
       {tabs.map((t) => {
         const Icon = appRouteIcons[t];
-        const current = t === active || (t === 'settings' && active === 'admin');
+        const current =
+          t === active || (t === 'settings' && (active === 'admin' || active === 'accounts'));
         return (
           <Link
             key={t}

@@ -73,6 +73,8 @@ function cosine(a: Float32Array, b: Float32Array): number {
   return na && nb ? dot / Math.sqrt(na * nb) : 0;
 }
 
+const copyUser = (u: User): User => ({ ...u, limitOverrides: { ...u.limitOverrides } });
+
 /**
  * One in-memory database backing every repository mock, so cascades (user deletion,
  * call deletion removing chunks) behave like the real schema.
@@ -108,13 +110,14 @@ export class MemoryDb {
         locale: null,
         telemetryConsent: { productEvents: false, errorReports: false },
         retentionDays: null,
+        limitOverrides: {},
         createdAt: new Date(),
         deletedAt: null,
       };
       this.users.set(user.id, user);
       return { ...user };
     },
-    findById: async (id) => (this.users.has(id) ? { ...this.users.get(id)! } : null),
+    findById: async (id) => (this.users.has(id) ? copyUser(this.users.get(id)!) : null),
     findByEmail: async (email) => {
       for (const u of this.users.values()) if (u.email === email) return { ...u };
       return null;
@@ -133,7 +136,20 @@ export class MemoryDb {
       const u = this.users.get(id);
       if (u) u.role = role;
     },
+    setLimitOverrides: async (id, overrides) => {
+      const u = this.users.get(id);
+      if (u) u.limitOverrides = { ...overrides };
+    },
     count: async () => this.users.size,
+    list: async ({ email, cursor, limit }) => {
+      const all = [...this.users.values()]
+        .filter((u) => !u.deletedAt)
+        .filter((u) => !email || (u.email ?? '').toLowerCase().includes(email.toLowerCase()))
+        .filter((u) => !cursor || u.id < cursor)
+        .sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+      const items = all.slice(0, limit).map(copyUser);
+      return { items, nextCursor: all.length > limit ? items[items.length - 1]!.id : null };
+    },
     listWithRetention: async () =>
       [...this.users.values()]
         .filter((u) => u.retentionDays !== null)

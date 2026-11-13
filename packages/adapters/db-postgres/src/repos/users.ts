@@ -1,11 +1,30 @@
-import { DomainError, type User, type UserRepository } from '@askcalls/domain';
-import { and, eq, isNotNull, sql } from 'drizzle-orm';
+import {
+  DomainError,
+  LIMIT_FIELDS,
+  type LimitOverrides,
+  type User,
+  type UserRepository,
+} from '@askcalls/domain';
+import { and, desc, eq, ilike, isNotNull, isNull, lt, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import type { Driver } from '../driver';
 import { accounts, users, verificationTokens } from '../schema';
 import { healthCheck } from './health';
 
 type UserRow = typeof users.$inferSelect;
+
+/** Keeps the known fields with whole-number values; anything else in the column is ignored. */
+function overridesFrom(raw: Record<string, unknown>): LimitOverrides {
+  const out: LimitOverrides = {};
+  for (const f of LIMIT_FIELDS) {
+    const v = raw[f];
+    if (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0) out[f] = v;
+  }
+  return out;
+}
+
+/** `%` and `_` are literal in an email search. */
+const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 const toUser = (r: UserRow): User => ({
   id: r.id,
@@ -20,6 +39,7 @@ const toUser = (r: UserRow): User => ({
     errorReports: r.telemetryConsent.errorReports === true,
   },
   retentionDays: r.retentionDays,
+  limitOverrides: overridesFrom(r.limitOverrides),
   createdAt: r.createdAt,
   deletedAt: r.deletedAt,
 });
@@ -44,6 +64,7 @@ export function createUserRepository(d: Driver): UserRepository {
         locale: null,
         telemetryConsent: { productEvents: false, errorReports: false },
         retentionDays: null,
+        limitOverrides: {},
         createdAt: new Date(),
         deletedAt: null,
       };
@@ -93,6 +114,32 @@ export function createUserRepository(d: Driver): UserRepository {
 
     setRole: async (id, role) => {
       await d.asUser(id, (tx) => tx.update(users).set({ role }).where(eq(users.id, id)));
+    },
+
+    setLimitOverrides: async (id, overrides) => {
+      const value = overridesFrom(overrides);
+      await d.asUser(id, (tx) =>
+        tx.update(users).set({ limitOverrides: value }).where(eq(users.id, id)),
+      );
+    },
+
+    list: async ({ email, cursor, limit }) => {
+      const rs = await d.asSystem((db) =>
+        db
+          .select()
+          .from(users)
+          .where(
+            and(
+              isNull(users.deletedAt),
+              email ? ilike(users.email, `%${likeEscape(email)}%`) : undefined,
+              cursor ? lt(users.id, cursor) : undefined,
+            ),
+          )
+          .orderBy(desc(users.id))
+          .limit(limit + 1),
+      );
+      const items = rs.slice(0, limit).map(toUser);
+      return { items, nextCursor: rs.length > limit ? items[items.length - 1]!.id : null };
     },
 
     count: async () => {

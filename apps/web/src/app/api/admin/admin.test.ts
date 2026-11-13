@@ -213,6 +213,34 @@ describe('/api/admin', () => {
         .status,
     ).toBe(404);
   });
+
+  it('lists accounts and sets and clears limit overrides', async () => {
+    const list = await call('GET', '/api/admin/users?email=member&limit=10', c.adminCookie);
+    expect(list.headers.get('cache-control')).toBe('no-store');
+    const page = await list.json();
+    expect(page.items.map((u: { id: string }) => u.id)).toEqual([c.user]);
+    expect(page.items[0].usage.calls).toBe(0);
+
+    const set = await call('PATCH', `/api/admin/users/${c.user}/limits`, c.adminCookie, {
+      limits: { maxCalls: 2000, recordingBytes: 10 * 1024 ** 3 },
+    });
+    expect(set.status).toBe(200);
+    expect((await set.json()).limits).toMatchObject({ maxCalls: 2000 });
+    const me = await (await call('GET', '/api/me', c.userCookie)).json();
+    expect(me.limits).toMatchObject({ maxCalls: 2000, recordingBytes: 10 * 1024 ** 3 });
+
+    const bad = await call('PATCH', `/api/admin/users/${c.user}/limits`, c.adminCookie, {
+      limits: { maxCalls: -1 },
+    });
+    expect(bad.status).toBe(400);
+    const cleared = await call('PATCH', `/api/admin/users/${c.user}/limits`, c.adminCookie, {
+      limits: { maxCalls: null, recordingBytes: null },
+    });
+    const detail = await cleared.json();
+    expect(detail.overrides).toEqual({});
+    expect(detail.limits).toEqual(detail.instanceLimits);
+    expect((await call('GET', `/api/admin/users/${c.user}`, c.userCookie)).status).toBe(403);
+  });
 });
 
 describe('/api/admin with the LLM set by env', () => {

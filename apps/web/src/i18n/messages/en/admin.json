@@ -248,5 +248,65 @@
       "finishing": "Setting up…",
       "failed": "Setup didn't finish: {reason}"
     }
+  },
+  "accounts": {
+    "title": "Accounts",
+    "search": "Search by email",
+    "searchLabel": "Search accounts",
+    "clear": "Clear",
+    "col": {
+      "account": "Account",
+      "plan": "Plan",
+      "created": "Created",
+      "calls": "Calls",
+      "recordings": "Recordings",
+      "transcription": "Transcription",
+      "asks": "Asks today",
+      "translation": "Translation",
+      "tokens": "Tokens"
+    },
+    "plan": {
+      "free": "Free",
+      "pro": "Pro"
+    },
+    "admin": "Admin",
+    "custom": "Custom limits",
+    "noEmail": "No email",
+    "empty": "No accounts match.",
+    "clearSearch": "Clear search",
+    "loadMore": "Load more",
+    "loadFailed": "Couldn't load accounts.",
+    "notFound": "No account with this id.",
+    "joined": "{plan} · Joined {date}",
+    "usage": "Usage this period",
+    "limits": "Limits",
+    "instanceLimit": "Instance limit: {value}",
+    "field": {
+      "maxCalls": "Calls stored",
+      "transcriptionMinutesPerMonth": "Managed transcription per month",
+      "recordingBytes": "Recording storage",
+      "maxApiTokens": "API tokens",
+      "mcpFetchesPerTokenPerHour": "Fetches per token per hour",
+      "asksPerDay": "Asks per day",
+      "translationCharsPerMonth": "Translation characters per month"
+    },
+    "unit": {
+      "calls": "calls",
+      "min": "min",
+      "gb": "GB",
+      "tokens": "tokens",
+      "fetches": "fetches",
+      "asks": "asks",
+      "chars": "characters"
+    },
+    "cell": {
+      "gb": "{n} GB",
+      "min": "{n} min"
+    },
+    "save": "Save limits",
+    "saved": "Saved",
+    "discard": "Discard",
+    "saveFailed": "Couldn't save the limits. Try again.",
+    "invalid": "Enter a whole number from 0, or leave empty for the instance limit."
   }
 }

@@ -1,3 +1,4 @@
+import type { LimitOverrides } from '../limits';
 import type { UserId } from './common';
 
 export type Plan = 'free' | 'pro';
@@ -16,6 +17,8 @@ export interface User {
   telemetryConsent: { productEvents: boolean; errorReports: boolean };
   /** Retention in days; null keeps calls forever. Plaintext policy, holds no content. */
   retentionDays: number | null;
+  /** Limits an admin set for this account; empty uses the instance limits. Numbers only. */
+  limitOverrides: LimitOverrides;
   createdAt: Date;
   deletedAt: Date | null;
 }
