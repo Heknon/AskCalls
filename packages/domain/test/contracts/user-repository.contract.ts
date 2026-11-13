@@ -56,7 +56,10 @@ export function describeUserRepositoryContract(name: string, harness: Harness<Us
         }),
       ).rejects.toMatchObject({ code: 'conflict' });
       expect(await users.listAccounts(u.id)).toHaveLength(1);
-      await users.unlinkAccount('google', 'g-1');
+      const other = await users.create({ email: `other-${u.id}@example.test` });
+      await users.unlinkAccount(other.id, 'google', 'g-1');
+      expect((await users.findByAccount('google', 'g-1'))?.id).toBe(u.id);
+      await users.unlinkAccount(u.id, 'google', 'g-1');
       expect(await users.findByAccount('google', 'g-1')).toBeNull();
     });
 
