@@ -495,7 +495,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### AskMessage
 - **Purpose:** one question or answer in the ask conversation.
-- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. **Composes:** `TimestampLink`. **Screens:** C3.
+- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. Answers render a Markdown subset (headings, lists, bold, italic, code, quotes, line breaks) as React elements, never HTML; links stay text. Questions keep their line breaks. **Composes:** `TimestampLink`. **Screens:** C3. **RTL:** each answer block is `dir="auto"`.
 
 #### ConsentSheet
 - **Purpose:** asks for consent before a call's plaintext is sent to an LLM provider, naming who receives it.
