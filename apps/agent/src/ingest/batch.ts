@@ -7,10 +7,12 @@ import {
   type ClientContext,
   createBulkRunner,
   type FailureReason,
+  type ImportPlan,
   loadManifest,
   type PreflightSummary,
   pairFiles,
   planBatch,
+  planImport,
   preflight,
 } from '@askcalls/client-core';
 import { openIngestSource } from '../adapters/files';
@@ -87,6 +89,26 @@ export async function prepareBatch(ctx: ClientContext, opts: BatchOptions): Prom
     ignored: pairing.ignored.length,
     manifestIssues: manifest?.issues.length ?? 0,
   };
+}
+
+/**
+ * The dry run: how the folder's files pair into calls, what is skipped and what the manifest
+ * says, without keys, a login or a request. File names are read as `prepareBatch` reads them.
+ */
+export async function planFolder(opts: {
+  path: string;
+  manifestPath?: string;
+  region?: string;
+}): Promise<ImportPlan> {
+  const source = await openIngestSource(opts.path, opts.manifestPath);
+  const pairing = pairFiles(source.files);
+  const manifestRef = source.manifest ?? pairing.manifest;
+  const manifest = await loadManifest(source.reader, manifestRef);
+  return planImport(
+    { ...pairing, manifest: manifestRef },
+    manifest,
+    opts.region ? { region: opts.region } : {},
+  );
 }
 
 export interface BatchReport {

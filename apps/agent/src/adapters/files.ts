@@ -14,7 +14,8 @@ async function walk(root: string, dir: string, out: FileRef[]): Promise<void> {
     if (entry.name.startsWith('.') || entry.name === '__MACOSX') continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) await walk(root, full, out);
-    else if (entry.isFile() && classifyFile(entry.name) !== 'other') {
+    // Every file, so pairing reports the ones it skips (a dry run lists them).
+    else if (entry.isFile()) {
       out.push({
         ref: full,
         name: relative(root, full).split(sep).join('/'),

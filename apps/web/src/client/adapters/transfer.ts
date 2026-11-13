@@ -7,6 +7,7 @@ import {
   readBody,
   send,
 } from '@askcalls/client-core/recording-stores/http';
+import { sendWithRetry } from '@askcalls/client-core/retry';
 
 /**
  * Presigned PUT of ciphertext to the instance bucket. S3 needs a Content-Length, so the body is
@@ -22,11 +23,13 @@ export class FetchRecordingUploader implements RecordingUploader {
     request: { url: string; method: 'PUT'; headers: Record<string, string> },
     body: Uint8Array,
   ): Promise<void> {
-    const res = await send(
-      this.fetchImpl,
-      request.url,
-      { method: 'PUT', headers: request.headers, body: body as BodyInit },
-      'recording upload',
+    const res = await sendWithRetry(() =>
+      send(
+        this.fetchImpl,
+        request.url,
+        { method: 'PUT', headers: request.headers, body: body as BodyInit },
+        'recording upload',
+      ),
     );
     await assertOk(res, 'recording upload');
     await res.body?.cancel().catch(() => {});
@@ -42,11 +45,13 @@ export class FetchBlobFetcher implements BlobFetcher {
   ) {}
 
   async get(request: { url: string; headers?: Record<string, string> }): Promise<Uint8Array> {
-    const res = await send(
-      this.fetchImpl,
-      request.url,
-      { method: 'GET', headers: request.headers ?? {} },
-      'blob download',
+    const res = await sendWithRetry(() =>
+      send(
+        this.fetchImpl,
+        request.url,
+        { method: 'GET', headers: request.headers ?? {} },
+        'blob download',
+      ),
     );
     return readBody(await assertOk(res, 'blob download'), this.onProgress);
   }

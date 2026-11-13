@@ -61,7 +61,8 @@
     "done": "Done",
     "duplicate": "Duplicate",
     "failed": "Failed",
-    "translating": "Translating"
+    "translating": "Translating",
+    "excluded": "Left out"
   },
   "reason": {
     "audio_unreadable": "Couldn't decode the audio. The file may be damaged or in an unsupported format.",
@@ -105,7 +106,7 @@
     "overCalls": "This import has {n} calls and your plan has room for {m} more. Delete calls to make room for the rest.",
     "storage": "Recording storage is {n}% full. Recordings that don't fit aren't backed up; their calls still import.",
     "backup": "Back up recordings",
-    "start": "Start import",
+    "start": "Import {n, plural, one {# call} other {# calls}}",
     "change": "Choose different files",
     "progressDone": "{done} of {total} files done.",
     "progressDetail": "{active} in progress, {failed} failed, {dup, plural, one {# duplicate} other {# duplicates}} skipped.",
@@ -143,7 +144,41 @@
     "pickFailed": "Couldn't open this folder. Choose it again.",
     "planning": "Reading the files",
     "showMore": "Show {n} more",
-    "noneInTab": "Nothing here."
+    "noneInTab": "Nothing here.",
+    "review": {
+      "groupBy": "Group by",
+      "by": {
+        "contact": "Contact",
+        "folder": "Folder",
+        "month": "Month"
+      },
+      "all": "All calls",
+      "selected": "{n} of {total} selected",
+      "count": "{n, plural, one {# call} other {# calls}}",
+      "countOf": "{n} of {total}",
+      "include": "Include {name}",
+      "noContact": "No contact",
+      "topFolder": "Top folder",
+      "noDate": "No date",
+      "filter": "Filter groups",
+      "noMatch": "No group matches.",
+      "noneSelected": "Select calls to import.",
+      "moreGroups": "Show {n} more groups"
+    },
+    "guide": {
+      "title": "Folder layout and manifest.csv",
+      "pairing": "A recording and a transcript with the same name in the same folder are one call. The transcript name may end in .transcript or _tx.",
+      "manifest": "manifest.csv is optional and sets each call's number, date, direction, contact and tags. Only the file column is required.",
+      "col": {
+        "file": "Recording or transcript file name",
+        "phone": "With country code",
+        "started_at": "ISO 8601, or YYYY-MM-DD HH:MM read as UTC",
+        "direction": "in, out or unknown",
+        "contact_name": "Contact name",
+        "tags": "Separated by ;"
+      },
+      "download": "Download example"
+    }
   },
   "flowTr": {
     "managed": "Calls your translation rules cover are also translated as they upload: the transcript passes through AskCalls to {provider}, streamed and not stored. No prompt each time; change the rules in Settings → Providers.",

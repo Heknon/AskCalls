@@ -80,6 +80,7 @@ describe('manifest.csv', () => {
     );
     expect(m.entries).toEqual([
       {
+        line: 2,
         file: 'calls/a.mp3',
         phone: '054-123-4567',
         startedAt: '2026-03-01T09:30:00.000Z',
@@ -88,6 +89,7 @@ describe('manifest.csv', () => {
         tags: ['vip', 'lead'],
       },
       {
+        line: 3,
         file: 'b.txt',
         phone: null,
         startedAt: '2026-03-02T08:00:00.000Z',
@@ -96,6 +98,7 @@ describe('manifest.csv', () => {
         tags: [],
       },
       {
+        line: 5,
         file: 'c.mp3',
         phone: null,
         startedAt: null,

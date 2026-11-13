@@ -9,6 +9,7 @@ import {
   ensureTags,
   getCall,
   type IngestResult,
+  importFormatGuide,
   ingestCall,
   intentTagId,
   knownIntentIds,
@@ -23,7 +24,7 @@ import { toTxt } from '@askcalls/transcript-formats';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { batchReport, prepareBatch } from '../ingest/batch';
+import { batchReport, planFolder, prepareBatch } from '../ingest/batch';
 import { callSummary, tagNames, untrusted } from './format';
 
 export const UNTRUSTED_NOTICE =
@@ -33,6 +34,7 @@ const INSTRUCTIONS = [
   "AskCalls holds the user's end-to-end encrypted phone call transcripts. This server decrypts them on the user's computer.",
   UNTRUSTED_NOTICE,
   'Search with search_calls, then read a call with get_call (each read counts toward a per-session decrypt budget).',
+  'To import a folder of recordings and transcripts, read import_format, prepare the folder or a manifest.csv, check it with ingest_batch dry_run: true, then import.',
 ].join(' ');
 
 /** Thrown inside a tool for an answer the model should read as an error. */
@@ -147,6 +149,17 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
     };
 
   const describe = (text: string) => `${text} ${UNTRUSTED_NOTICE}`;
+
+  /** Tools that read only this computer's files: no keys, so they work while locked. */
+  const local =
+    <A>(fn: (args: A) => Promise<CallToolResult>) =>
+    async (args: A): Promise<CallToolResult> => {
+      try {
+        return await fn(args);
+      } catch (e) {
+        return failure(errorText(e));
+      }
+    };
 
   server.registerTool(
     'search_calls',
@@ -337,48 +350,106 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
   );
 
   server.registerTool(
+    'import_format',
+    {
+      title: 'Import format',
+      description: describe(
+        'How a folder must be laid out for ingest_batch: which files pair into a call, the file types, and every manifest.csv column with the values it accepts, with an example. Read it before preparing a folder or writing a manifest.csv from another layout.',
+      ),
+      inputSchema: {},
+    },
+    local(async () => ({ content: [{ type: 'text', text: importFormatGuide() }] })),
+  );
+
+  server.registerTool(
     'ingest_batch',
     {
       title: 'Import a folder',
       description: describe(
-        'Import every call in a folder (or ZIP): audio and transcripts are paired by file name, an optional manifest.csv (file, phone, started_at, direction, contact_name, tags) supplies metadata. Returns a summary and per-file results. Paths must be absolute.',
+        'Import every call in a folder (or ZIP): audio and transcripts are paired by file name, an optional manifest.csv supplies metadata (see import_format). Run with dry_run: true first: it sends nothing and lists how the files pair, the metadata each call gets, skipped files and manifest problems by line. Then run without it to import. Returns a summary and per-file results. Paths must be absolute.',
       ),
       inputSchema: {
         folder_path: z.string().min(1).max(4096),
         manifest_path: z.string().max(4096).optional(),
         backup_recordings: z.boolean().optional(),
+        dry_run: z
+          .boolean()
+          .optional()
+          .describe('List what the import would do without importing anything.'),
       },
     },
-    handle(async (ctx, a) => {
-      const batch = await prepareBatch(ctx, {
-        path: absolute(a.folder_path, 'folder_path'),
-        ...(a.manifest_path && { manifestPath: absolute(a.manifest_path, 'manifest_path') }),
-        backupRecordings: a.backup_recordings ?? false,
-        transcribe: 'auto',
-        store: new MemoryBulkStore(),
-      });
-      batch.queue.start();
-      await batch.queue.whenIdle();
-      const report = batchReport(batch.queue);
-      return json({
-        summary: {
-          total: report.counts.total,
-          done: report.counts.done,
-          duplicate: report.counts.duplicate,
-          failed: report.counts.failed,
-          failure_reasons: report.failures,
-          skipped_files: batch.ignored,
-          manifest_issues: batch.manifestIssues,
-        },
-        files: report.items.map((i) => ({
-          file: (i.audio ?? i.transcript)?.name ?? i.name,
-          status: i.status,
-          ...(i.callId && { call_id: i.callId }),
-          ...(i.existingId && { existing_call_id: i.existingId }),
-          ...(i.reason && { reason: i.reason }),
-        })),
-      });
-    }),
+    async (a) =>
+      a.dry_run
+        ? local(async () => {
+            const plan = await planFolder({
+              path: absolute(a.folder_path, 'folder_path'),
+              ...(a.manifest_path && {
+                manifestPath: absolute(a.manifest_path, 'manifest_path'),
+              }),
+            });
+            return json({
+              summary: {
+                calls: plan.calls.length,
+                with_audio: plan.calls.filter((c) => c.audio).length,
+                with_transcript: plan.calls.filter((c) => c.transcript).length,
+                skipped_files: plan.skipped.length,
+                ...(plan.manifest && {
+                  manifest_issues: plan.manifest.issues.length,
+                  manifest_rows_without_file: plan.manifest.unmatched.length,
+                  calls_without_manifest_row: plan.manifest.callsWithoutRow,
+                }),
+              },
+              calls: plan.calls.map((c) => ({
+                name: c.name,
+                audio: c.audio,
+                transcript: c.transcript,
+                manifest_line: c.manifestLine,
+                phone: c.phone,
+                started_at: c.startedAt,
+                direction: c.direction,
+                contact_name: c.contactName,
+                tags: c.tags,
+              })),
+              skipped: plan.skipped,
+              manifest: plan.manifest && {
+                file: plan.manifest.file,
+                issues: plan.manifest.issues,
+                rows_without_file: plan.manifest.unmatched,
+              },
+            });
+          })(undefined)
+        : handle(async (ctx, args: typeof a) => {
+            const batch = await prepareBatch(ctx, {
+              path: absolute(args.folder_path, 'folder_path'),
+              ...(args.manifest_path && {
+                manifestPath: absolute(args.manifest_path, 'manifest_path'),
+              }),
+              backupRecordings: args.backup_recordings ?? false,
+              transcribe: 'auto',
+              store: new MemoryBulkStore(),
+            });
+            batch.queue.start();
+            await batch.queue.whenIdle();
+            const report = batchReport(batch.queue);
+            return json({
+              summary: {
+                total: report.counts.total,
+                done: report.counts.done,
+                duplicate: report.counts.duplicate,
+                failed: report.counts.failed,
+                failure_reasons: report.failures,
+                skipped_files: batch.ignored,
+                manifest_issues: batch.manifestIssues,
+              },
+              files: report.items.map((i) => ({
+                file: (i.audio ?? i.transcript)?.name ?? i.name,
+                status: i.status,
+                ...(i.callId && { call_id: i.callId }),
+                ...(i.existingId && { existing_call_id: i.existingId }),
+                ...(i.reason && { reason: i.reason }),
+              })),
+            });
+          })(a),
   );
 
   const currentTags = async (ctx: ClientContext, id: string) => {

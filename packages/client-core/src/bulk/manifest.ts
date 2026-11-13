@@ -4,6 +4,8 @@ import { baseName } from './pairing';
 
 /** One `manifest.csv` row (spec 8). Values override anything parsed from file names. */
 export interface ManifestEntry {
+  /** 1-based line of the CSV. */
+  line: number;
   file: string;
   phone: string | null;
   startedAt: string | null;
@@ -25,7 +27,14 @@ export interface Manifest {
   lookup(path: string): ManifestEntry | undefined;
 }
 
-const COLUMNS = ['file', 'phone', 'started_at', 'direction', 'contact_name', 'tags'] as const;
+export const MANIFEST_COLUMNS = [
+  'file',
+  'phone',
+  'started_at',
+  'direction',
+  'contact_name',
+  'tags',
+] as const;
 
 /** RFC 4180 records: quoted fields, doubled quotes, CRLF or LF, commas or semicolons. */
 export function parseCsv(text: string): Array<{ line: number; fields: string[] }> {
@@ -71,7 +80,8 @@ export function parseCsv(text: string): Array<{ line: number; fields: string[] }
   return rows;
 }
 
-const DIRECTIONS: Record<string, CallDirection> = {
+/** The words `direction` accepts, in any letter case. */
+export const MANIFEST_DIRECTIONS: Readonly<Record<string, CallDirection>> = {
   in: 'in',
   incoming: 'in',
   inbound: 'in',
@@ -111,7 +121,7 @@ export function parseManifest(input: string | Uint8Array): Manifest {
   const issues: ManifestIssue[] = [];
   const seen = new Set<string>();
   for (const { line, fields } of rows) {
-    const col = (name: (typeof COLUMNS)[number]) => {
+    const col = (name: (typeof MANIFEST_COLUMNS)[number]) => {
       const i = index.get(name);
       const v = i === undefined ? '' : (fields[i] ?? '').trim();
       return v === '' ? null : v;
@@ -130,9 +140,12 @@ export function parseManifest(input: string | Uint8Array): Manifest {
     const startedAt = rawDate ? parseDate(rawDate) : null;
     if (rawDate && !startedAt) issues.push({ line, code: 'bad_date' });
     const rawDirection = col('direction');
-    const direction = rawDirection ? (DIRECTIONS[rawDirection.toLowerCase()] ?? null) : null;
+    const direction = rawDirection
+      ? (MANIFEST_DIRECTIONS[rawDirection.toLowerCase()] ?? null)
+      : null;
     if (rawDirection && !direction) issues.push({ line, code: 'bad_direction' });
     entries.push({
+      line,
       file,
       phone: col('phone'),
       startedAt,

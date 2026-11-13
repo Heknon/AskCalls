@@ -1,5 +1,7 @@
 /** Client use cases shared by the browser and the agent: ingest, search, decrypt, vocabulary sync. */
 export * from './bulk/filenames';
+export * from './bulk/format-guide';
+export * from './bulk/import-plan';
 export * from './bulk/manifest';
 export * from './bulk/pairing';
 export * from './bulk/queue';

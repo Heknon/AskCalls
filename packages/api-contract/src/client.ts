@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CLIENT_SHARE, RATE_LIMITS } from './rate-limits';
 import { buildPath, type RouteDef } from './route';
 import { ErrorBody } from './wire';
 
@@ -50,6 +51,66 @@ export interface ApiClientOptions {
   /** Personal access token (`ac_…`) for the agent; browsers use the session cookie. */
   token?: string;
   headers?: Record<string, string>;
+  /**
+   * Requests per minute this client sends at most. Defaults to a share of the server's limit for
+   * the caller (per token with `token`, else per user); 0 sends without pacing.
+   */
+  maxPerMinute?: number;
+  /** For tests. */
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}
+
+/** Waits between attempts: network errors and 502–504 on requests that are safe to repeat. */
+const BACKOFF_MS = [1_000, 3_000, 7_000];
+/** A 429 asking for a longer wait (a daily limit) is reported instead of waited out. */
+const MAX_RETRY_AFTER_SEC = 60;
+const IDEMPOTENT = new Set(['GET', 'HEAD', 'PUT', 'DELETE']);
+const RETRY_STATUS = new Set([502, 503, 504]);
+
+/**
+ * A token bucket shared by every request of one client, so a bulk import never sends faster
+ * than the server accepts; a 429 stops every request until its Retry-After has passed.
+ */
+function createPacer(perMinute: number, now: () => number, sleep: (ms: number) => Promise<void>) {
+  const capacity = Math.max(1, Math.round(perMinute / 30));
+  const perMs = perMinute / 60_000;
+  let tokens = capacity;
+  let last = now();
+  let blockedUntil = 0;
+  let turn: Promise<void> = Promise.resolve();
+  const take = async () => {
+    for (;;) {
+      const t = now();
+      if (t < blockedUntil) {
+        await sleep(blockedUntil - t);
+        continue;
+      }
+      if (perMinute <= 0) return;
+      tokens = Math.min(capacity, tokens + (t - last) * perMs);
+      last = t;
+      if (tokens >= 1) {
+        tokens -= 1;
+        return;
+      }
+      await sleep(Math.ceil((1 - tokens) / perMs));
+    }
+  };
+  return {
+    acquire(): Promise<void> {
+      turn = turn.then(take);
+      return turn;
+    },
+    block(ms: number) {
+      blockedUntil = Math.max(blockedUntil, now() + ms);
+      tokens = 0;
+    },
+  };
+}
+
+function retryAfterSec(res: Response): number | null {
+  const retry = res.headers.get('Retry-After');
+  return retry && /^\d+$/.test(retry) ? Number.parseInt(retry, 10) : null;
 }
 
 function encodeQuery(schema: z.ZodType, value: unknown): string {
@@ -61,8 +122,7 @@ function encodeQuery(schema: z.ZodType, value: unknown): string {
 }
 
 async function toApiError(res: Response): Promise<ApiError> {
-  const retry = res.headers.get('Retry-After');
-  const retryAfterSec = retry && /^\d+$/.test(retry) ? Number.parseInt(retry, 10) : null;
+  const retryAfter = retryAfterSec(res);
   let body: unknown = null;
   try {
     body = await res.json();
@@ -72,14 +132,18 @@ async function toApiError(res: Response): Promise<ApiError> {
   const parsed = ErrorBody.safeParse(body);
   if (parsed.success) {
     const { code, message, details } = parsed.data.error;
-    return new ApiError(res.status, code, message, details ?? {}, retryAfterSec);
+    return new ApiError(res.status, code, message, details ?? {}, retryAfter);
   }
-  return new ApiError(res.status, 'http_error', `HTTP ${res.status}`, {}, retryAfterSec);
+  return new ApiError(res.status, 'http_error', `HTTP ${res.status}`, {}, retryAfter);
 }
 
 export function createApiClient(opts: ApiClientOptions = {}) {
   const baseUrl = (opts.baseUrl ?? '').replace(/\/$/, '');
   const doFetch: FetchLike = opts.fetch ?? ((input, init) => globalThis.fetch(input, init));
+  const now = opts.now ?? (() => Date.now());
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const limit = opts.token ? RATE_LIMITS.perToken.limit : RATE_LIMITS.perUser.limit;
+  const pacer = createPacer(opts.maxPerMinute ?? Math.floor(limit * CLIENT_SHARE), now, sleep);
 
   async function send<D extends RouteDef>(route: D, input: RequestFor<D>): Promise<Response> {
     const i = input as {
@@ -102,14 +166,41 @@ export function createApiClient(opts: ApiClientOptions = {}) {
       headers['Content-Type'] = i.raw.contentType;
       body = i.raw.bytes as BodyInit;
     }
-    const res = await doFetch(`${baseUrl}${buildPath(route.path, params)}${query}`, {
-      method: route.method,
-      headers,
-      ...(body !== undefined && { body }),
-      cache: 'no-store',
-    });
-    if (!res.ok) throw await toApiError(res);
-    return res;
+    const url = `${baseUrl}${buildPath(route.path, params)}${query}`;
+    const repeatable = IDEMPOTENT.has(route.method);
+    for (let attempt = 1; ; attempt++) {
+      const last = attempt > BACKOFF_MS.length;
+      await pacer.acquire();
+      let res: Response;
+      try {
+        res = await doFetch(url, {
+          method: route.method,
+          headers,
+          ...(body !== undefined && { body }),
+          cache: 'no-store',
+        });
+      } catch (e) {
+        if (last || !repeatable || (e as Error)?.name === 'AbortError') throw e;
+        await sleep(BACKOFF_MS[attempt - 1]!);
+        continue;
+      }
+      if (res.ok) return res;
+      if (!last && res.status === 429) {
+        // Refused before the handler ran, so any method is safe to send again.
+        const sec = retryAfterSec(res);
+        if (sec === null || sec <= MAX_RETRY_AFTER_SEC) {
+          await res.body?.cancel().catch(() => {});
+          pacer.block(sec === null ? BACKOFF_MS[attempt - 1]! : sec * 1_000);
+          continue;
+        }
+      }
+      if (!last && repeatable && RETRY_STATUS.has(res.status)) {
+        await res.body?.cancel().catch(() => {});
+        await sleep(BACKOFF_MS[attempt - 1]!);
+        continue;
+      }
+      throw await toApiError(res);
+    }
   }
 
   return {

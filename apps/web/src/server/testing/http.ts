@@ -214,7 +214,14 @@ export function startTestApp(
         new Request(`http://localhost${path}`, { method, headers, ...(body && { body }) }),
       );
     },
-    client: (as) => createApiClient({ baseUrl: 'http://localhost', fetch: fetchLike(as) }),
+    // In process: no pacing, and retries don't wait.
+    client: (as) =>
+      createApiClient({
+        baseUrl: 'http://localhost',
+        fetch: fetchLike(as),
+        maxPerMinute: 0,
+        sleep: async () => {},
+      }),
     close: () => setContainerForTests(null),
   };
 }
