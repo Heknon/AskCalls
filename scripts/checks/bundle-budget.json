@@ -4,7 +4,7 @@
     "/admin/accounts": 262,
     "/admin/accounts/[id]": 261,
     "/admin/instance": 279,
-    "/app": 359,
+    "/app": 360,
     "/app/calls/[id]": 363,
     "/app/contacts": 336,
     "/app/settings": 260,
@@ -18,6 +18,6 @@
     "/app/settings/security": 341,
     "/app/tags": 351,
     "/app/upload": 359,
-    "/app/welcome": 345
+    "/app/welcome": 346
   }
 }
