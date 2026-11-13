@@ -8,6 +8,30 @@ import { ConsentSheet } from './ConsentSheet';
 afterEach(cleanup);
 
 describe('ConfirmDialog', () => {
+  test('typeToConfirm keeps the action disabled until the value is typed', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Delete your account?"
+        description="Everything is deleted."
+        confirmLabel="Delete account"
+        cancelLabel="Cancel"
+        onConfirm={onConfirm}
+        typeToConfirm={{ label: 'Type a@b.test to confirm', value: 'a@b.test' }}
+      />,
+    );
+    const action = screen.getByRole('button', { name: 'Delete account' }) as HTMLButtonElement;
+    expect(action.disabled).toBe(true);
+    await user.type(screen.getByLabelText('Type a@b.test to confirm'), 'a@b.tes');
+    expect(action.disabled).toBe(true);
+    await user.type(screen.getByLabelText('Type a@b.test to confirm'), 't');
+    expect(action.disabled).toBe(false);
+    await user.click(action);
+    expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
   test('focus starts on Cancel, Esc closes and returns focus to the trigger', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
