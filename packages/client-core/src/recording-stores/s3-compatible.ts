@@ -1,15 +1,10 @@
-import type { OwnBucketStore } from '@askcalls/client-core/context';
-import type { UserDataDocs } from '@askcalls/client-core/userdata';
 import { DomainError } from '@askcalls/domain';
+import type { RecordingStore, RecordingStoreInfo, RecordingStoreProbe } from '../ports/index';
+import { assertOk, discard, type Fetch, type Progress, readBody } from './http';
+import type { BucketConfig } from './refs';
 import { queryString, sha256Hex, signRequest, uriEncode } from './sigv4';
-import { assertOk, type Progress, readBody } from './transfer';
 
-export type BucketConfig = Extract<
-  UserDataDocs['providers']['recordings'],
-  { mode: 'own' }
->['bucket'];
-
-type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
+export type { BucketConfig };
 
 export interface BucketTarget {
   url: URL;
@@ -58,19 +53,13 @@ export function corsRulesFor(appOrigin: string) {
   ];
 }
 
-export type BucketProbe =
-  | { ok: true }
-  | {
-      ok: false;
-      reason: 'cors_or_network' | 'unauthorized' | 'not_found' | 'http';
-      status?: number;
-    };
+export type BucketProbe = RecordingStoreProbe;
 
 /**
  * Recordings in the user's own bucket, signed on the device with SigV4 (spec 11.2a).
  * `resolve` maps a call's `bucketRef` to the decrypted bucket settings.
  */
-export class SigV4BucketStore implements OwnBucketStore {
+export class SigV4BucketStore implements RecordingStore {
   private readonly fetchImpl: Fetch;
   private readonly now: () => Date;
   private readonly onProgress: Progress | undefined;
@@ -84,25 +73,37 @@ export class SigV4BucketStore implements OwnBucketStore {
     this.onProgress = opts.onProgress;
   }
 
-  async put(bucketRef: string, objectKey: string, body: Uint8Array): Promise<void> {
+  async put(bucketRef: string, callId: string, body: Uint8Array): Promise<{ objectKey: string }> {
+    const objectKey = `askcalls/${callId}/${crypto.randomUUID()}`;
     const res = await this.#send(await this.resolve(bucketRef), 'PUT', objectKey, body);
     await assertOk(res, 'bucket upload');
-    await res.body?.cancel().catch(() => {});
+    await discard(res);
+    return { objectKey };
   }
 
-  async get(bucketRef: string, objectKey: string): Promise<Uint8Array> {
+  /** One buffered read, as before Drive existed: S3 serves the whole object in one response. */
+  async *get(bucketRef: string, objectKey: string): AsyncGenerator<Uint8Array> {
     const res = await this.#send(await this.resolve(bucketRef), 'GET', objectKey);
-    return readBody(await assertOk(res, 'bucket download'), this.onProgress);
+    yield await readBody(await assertOk(res, 'bucket download'), this.onProgress);
   }
 
   async delete(bucketRef: string, objectKey: string): Promise<void> {
     const res = await this.#send(await this.resolve(bucketRef), 'DELETE', objectKey);
     if (res.status !== 404) await assertOk(res, 'bucket delete');
-    await res.body?.cancel().catch(() => {});
+    await discard(res);
+  }
+
+  async probe(bucketRef: string): Promise<BucketProbe> {
+    return this.probeBucket(await this.resolve(bucketRef));
+  }
+
+  async describe(bucketRef: string): Promise<RecordingStoreInfo> {
+    const b = await this.resolve(bucketRef);
+    return { account: null, location: b.bucket, usedBytes: null, limitBytes: null };
   }
 
   /** Settings → Providers "Test connection": a signed list of at most one key. */
-  async probe(bucket: BucketConfig): Promise<BucketProbe> {
+  async probeBucket(bucket: BucketConfig): Promise<BucketProbe> {
     let res: Response;
     try {
       res = await this.#send(bucket, 'GET', undefined, undefined, [
@@ -112,7 +113,7 @@ export class SigV4BucketStore implements OwnBucketStore {
     } catch {
       return { ok: false, reason: 'cors_or_network' };
     }
-    await res.body?.cancel().catch(() => {});
+    await discard(res);
     if (res.ok) return { ok: true };
     if (res.status === 401 || res.status === 403) {
       return { ok: false, reason: 'unauthorized', status: res.status };

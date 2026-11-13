@@ -31,6 +31,9 @@ import * as setupComplete from '../../app/api/setup/complete/route';
 import * as setupPasskey from '../../app/api/setup/passkey/route';
 import * as setup from '../../app/api/setup/route';
 import * as setupTest from '../../app/api/setup/test/route';
+import * as storageCallback from '../../app/api/storage/callback/[provider]/route';
+import * as storageConnect from '../../app/api/storage/connect/[provider]/route';
+import * as storageToken from '../../app/api/storage/token/[provider]/route';
 import * as consent from '../../app/api/telemetry/consent/route';
 import * as telemetryErrors from '../../app/api/telemetry/errors/route';
 import * as telemetryEvents from '../../app/api/telemetry/events/route';
@@ -79,6 +82,9 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/audit', audit],
   ['/api/settings/retention', retention],
   ['/api/settings/direct-access', directAccess],
+  ['/api/storage/connect/[provider]', storageConnect],
+  ['/api/storage/callback/[provider]', storageCallback],
+  ['/api/storage/token/[provider]', storageToken],
   ['/api/cron/retention', cron],
   ['/api/admin/instance', adminInstance],
   ['/api/admin/instance/test', adminInstanceTest],

@@ -85,6 +85,13 @@ export const BucketSchema = z.object({
   accessKeyId: z.string().min(1).max(256),
   secretAccessKey: z.string().min(1).max(4_096),
 });
+/** A linked Google Drive (scope `drive.file`): the refresh token never leaves this document. */
+export const DriveSchema = z.object({
+  id: Id,
+  refreshToken: z.string().min(1),
+  /** The "AskCalls recordings" folder, once a device has created or found it. */
+  folderId: z.string().nullable(),
+});
 const Iso6391 = z.string().regex(/^[a-z]{2}$/);
 /** `from: 'any'`: every language no other rule names. */
 export const TranslationRuleSchema = z.object({
@@ -116,8 +123,17 @@ export const ProvidersDocSchema = z.object({
       z.object({ mode: z.literal('managed') }),
       z.object({ mode: z.literal('off') }),
       z.object({ mode: z.literal('own'), bucket: BucketSchema }),
+      z.object({ mode: z.literal('drive'), drive: DriveSchema }),
     ])
     .default({ mode: 'managed' }),
+  /**
+   * Own stores this account switched away from. They may still hold recordings, so the device
+   * keeps their credentials to move or delete those.
+   */
+  previousStores: z
+    .array(z.union([BucketSchema, DriveSchema]))
+    .max(16)
+    .default([]),
 });
 
 export const USER_DATA_SCHEMAS = {

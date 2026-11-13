@@ -284,7 +284,7 @@
     "fetches": "MCP fetches an hour, per token",
     "callsDetail": "A call is one transcript, with or without a recording. Deleting a call frees its place.",
     "minutesDetail": "Counted by audio length. Transcripts you upload ready-made don't count.",
-    "storageDetail": "Encrypted and compressed on your device. With your own bucket, there is no limit from us.",
+    "storageDetail": "Encrypted and compressed on your device. With your own bucket or Google Drive, there is no limit from us.",
     "asksDetail": "One question about one call. Resets at midnight UTC.",
     "tokensDetail": "For the local agent, remote MCP and scripts. Each token has its own scopes.",
     "fetchesDetail": "Ciphertext fetches over remote MCP. The local agent decrypts on your machine."
@@ -304,7 +304,7 @@
     },
     "where": {
       "q": "Where is my data stored?",
-      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Amazon S3 (AWS, eu-central-1), encrypted on your device before upload. Recording backups can go to your own bucket instead."
+      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Amazon S3 (AWS, eu-central-1), encrypted on your device before upload. Recording backups can go to your own bucket or Google Drive instead."
     },
     "selfHost": {
       "q": "Can I self-host?",

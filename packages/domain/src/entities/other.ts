@@ -74,6 +74,8 @@ export type AuditAction =
   | 'recording.upload'
   | 'recording.read'
   | 'recording.orphaned'
+  | 'storage.link'
+  | 'storage.unlink'
   | 'keyring.add'
   | 'keyring.revoke'
   | 'keyring.read'

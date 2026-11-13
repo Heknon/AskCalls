@@ -272,6 +272,7 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    | `AUTH_PROVIDERS` | `google` (plus `github` if used) | same as dev | `google` (plus `github`) |
    | `ADMIN_EMAILS` | the admin accounts (`oeharel@gmail.com`) | same | same |
    | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | prod OAuth client | non-prod OAuth client | non-prod OAuth client |
+   | `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET` | optional: prod Drive client | optional: non-prod Drive client | optional: non-prod Drive client |
    | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | prod OAuth app (if used) | non-prod OAuth app | non-prod OAuth app |
    | `AUTH_REDIRECT_PROXY_URL` | — (unset) | `https://<DEV_DOMAIN>/api/auth` | `https://<DEV_DOMAIN>/api/auth` |
    | `DB_DRIVER` | `postgres` | — (set per deploy) | `postgres` |
@@ -369,6 +370,36 @@ Google Cloud (one project, APIs & Services → Credentials → OAuth client IDs,
 - **Non-prod client:** redirect URIs `https://<DEV_DOMAIN>/api/auth/callback/google` and
   `http://localhost:3000/api/auth/callback/google`; origins `https://<DEV_DOMAIN>` and
   `http://localhost:3000`.
+
+### Google Drive as a recording store
+
+Users can keep recording backups in their own Google Drive (Settings → Providers → Recording
+backups). The device uploads ciphertext to Drive itself; the server only runs the OAuth code
+exchange and trades refresh tokens for access tokens, because the client secret can't live in
+the browser or the agent. It never stores the tokens.
+
+The Drive OAuth client is `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET`. Unset, the sign-in
+client (`AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`) is used, so one client per environment is
+enough. Set a dedicated pair to keep the Drive consent screen and its quota apart from sign-in.
+Without either, or in offline mode, the Google Drive choice is hidden. Previews can't connect
+Drive (the callback must be a registered redirect URI); dev and production can.
+
+In the same Google Cloud project:
+
+1. **APIs & Services → Library:** enable the **Google Drive API**.
+2. **OAuth consent screen → Data access:** add the scope
+   `https://www.googleapis.com/auth/drive.file` (non-sensitive: the app sees only files it
+   created). No other Drive scope.
+3. **Credentials → the OAuth client (Web application):** add the redirect URIs
+   - prod client: `https://askcalls.com/api/storage/callback/google`
+   - non-prod client: `https://<DEV_DOMAIN>/api/storage/callback/google` and
+     `http://localhost:3000/api/storage/callback/google`
+   No JavaScript origin is needed: the browser never loads Google's script and calls Drive at
+   `https://www.googleapis.com` with a bearer token.
+4. With a dedicated client, set `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET` per environment
+   (prod client for Production, non-prod client for Preview).
+
+Self-hosters register `https://<your origin>/api/storage/callback/google` the same way.
 
 GitHub OAuth apps allow one callback URL each: prod `https://askcalls.com/api/auth/callback/github`,
 non-prod `https://<DEV_DOMAIN>/api/auth/callback/github` (local development uses a third app or

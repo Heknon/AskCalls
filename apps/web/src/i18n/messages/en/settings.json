@@ -176,6 +176,7 @@
     "place": {
       "managed": "AskCalls",
       "own": "your bucket",
+      "drive": "Google Drive",
       "off": "nowhere: backups are off"
     }
   },
@@ -191,7 +192,7 @@
     "confirmTitle": "Delete calls older than {n} days?",
     "confirm": "{count, plural, one {# call is older than this and will be deleted tonight.} other {# calls are older than this and will be deleted tonight.}}",
     "confirmAction": "Keep {n} days",
-    "bucket": "Recordings in your bucket are deleted by your device at the next unlock.",
+    "bucket": "Recordings in your own storage are deleted by your device at the next unlock.",
     "saved": "Retention saved"
   },
   "api": {
@@ -276,6 +277,7 @@
       "managed": "AskCalls managed",
       "own": "Your own key",
       "bucket": "Your own bucket",
+      "drive": "Google Drive",
       "off": "Off"
     },
     "status": {
@@ -333,6 +335,7 @@
       "askOff": "Ask about a call is off.",
       "recManaged": "Recordings are kept in the AskCalls bucket, unreadable without your keys.",
       "recOwn": "Recordings and bucket credentials go from your device to your bucket, not through AskCalls.",
+      "recDrive": "Recordings go from your device to your Google Drive, not through AskCalls. AskCalls only renews Drive's access token.",
       "recOff": "New recordings aren't backed up. Calls keep their transcripts.",
       "trManaged": "When you upload a call your rules cover, its transcript passes through AskCalls servers to {provider} to be translated, streamed and never stored. This happens for every such call, without asking each time.",
       "trOwn": "When you upload a call your rules cover, its transcript goes from your device straight to {provider} under your account to be translated. AskCalls doesn't see it. This happens for every such call, without asking each time.",
@@ -352,9 +355,44 @@
       "cors": "Add this CORS rule to your bucket, then test again.",
       "provider": "your bucket"
     },
+    "drive": {
+      "connect": "Connect Google Drive",
+      "connecting": "Connecting…",
+      "finishInPopup": "Finish in the Google window.",
+      "error": {
+        "denied": "Google Drive wasn't connected. Connect again to allow access.",
+        "scope": "AskCalls needs access to the files it creates. Connect again and allow it.",
+        "failed": "Couldn't connect Google Drive. Try again.",
+        "popup": "The Google window was blocked. Allow pop-ups for this site, then try again."
+      },
+      "where": "Folder <b>{folder}</b> in <b>{email}</b>",
+      "space": "Google Drive space used",
+      "spaceUnlimited": "{used} GB used",
+      "describeFailed": "Couldn't reach Google Drive. Test the connection, or disconnect and connect again.",
+      "testOk": "Connected. Uploads to Google Drive work.",
+      "revoked": "Google Drive access was removed. Disconnect, then connect again.",
+      "disconnect": "Disconnect",
+      "disconnectTitle": "Disconnect Google Drive?",
+      "disconnectBody": "AskCalls loses access to your Drive. Files already there stay.",
+      "disconnectMove": "{count, plural, one {# recording in Google Drive moves to the AskCalls bucket first, on this device. Then AskCalls loses access to your Drive.} other {# recordings in Google Drive move to the AskCalls bucket first, on this device. Then AskCalls loses access to your Drive.}}",
+      "moveAndDisconnect": "Move and disconnect",
+      "moving": "Moving recordings: {done} of {total}",
+      "disconnectFailed": "Couldn't disconnect Google Drive. Try again."
+    },
     "move": {
       "title": "Move existing recordings",
-      "body": "{count, plural, one {# recording is in the AskCalls bucket. This device can move it to your bucket.} other {# recordings are in the AskCalls bucket. This device can move them to your bucket.}}",
+      "body": "{count, plural, one {# recording is {from}. This device can move it to {to}.} other {# recordings are {from}. This device can move them to {to}.}}",
+      "from": {
+        "managed": "in the AskCalls bucket",
+        "bucket": "in your bucket",
+        "drive": "in Google Drive",
+        "mixed": "in other storage"
+      },
+      "to": {
+        "managed": "the AskCalls bucket",
+        "bucket": "your bucket",
+        "drive": "Google Drive"
+      },
       "start": "Move existing recordings",
       "progress": "Moving recordings: {done} of {total}",
       "progressLabel": "Moving recordings",
@@ -457,6 +495,10 @@
         "read": "Play recording",
         "orphaned": "Recording to delete from your bucket"
       },
+      "storage": {
+        "link": "Connect storage",
+        "unlink": "Disconnect storage"
+      },
       "keyring": {
         "add": "Add unlock method",
         "revoke": "Remove unlock method",
@@ -506,8 +548,8 @@
     "deleteConfirm": "Every call, recording, key and setting is deleted. This can't be undone.",
     "deleteType": "Type {email} to confirm",
     "deleteAction": "Delete account",
-    "bucket": "Recordings in your own bucket are deleted from this device next. Keep it open until it finishes.",
-    "deleting": "Deleting recordings in your bucket: {done} of {total}",
+    "bucket": "Recordings in your own storage are deleted from this device next. Keep it open until it finishes.",
+    "deleting": "Deleting recordings in your storage: {done} of {total}",
     "deleteFailed": "Couldn't delete the account. Try again."
   }
 }

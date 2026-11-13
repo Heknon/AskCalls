@@ -49,6 +49,7 @@ import {
   providerRefusal,
 } from './errors';
 import type { AudioSource, DecodedAudio } from './ports/index';
+import { activeStoreRef } from './recording-stores/refs';
 import { ensureTags, intentTagId } from './tags';
 import { RECORDING_BITRATE_KBPS, transcribeAudio } from './transcription';
 
@@ -414,11 +415,10 @@ async function backupRecording(
   if (!ctx.audio) throw new IngestError('audio_unreadable', 'no audio codec on this device');
   const encoded = await ctx.audio.encodeOpus(audio, { bitrateKbps: RECORDING_BITRATE_KBPS });
   const ct = await encryptRecording(dek, encoded.bytes, recordingAad(keyCtx));
-  if (providers.recordings.mode === 'own') {
-    if (!ctx.ownBuckets) throw new IngestError('upload_failed', 'no own-bucket adapter');
-    const bucketRef = providers.recordings.bucket.id;
-    const objectKey = `askcalls/${keyCtx.callId}/${uuidv7()}`;
-    await ctx.ownBuckets.put(bucketRef, objectKey, ct);
+  const bucketRef = activeStoreRef(providers);
+  if (bucketRef) {
+    if (!ctx.ownStores) throw new IngestError('upload_failed', 'no own-store adapter');
+    const { objectKey } = await ctx.ownStores.put(bucketRef, keyCtx.callId, ct);
     await ctx.api.request(updateCall, {
       params: { id: keyCtx.callId },
       body: { recording: { bucketRef, objectKey, bytes: ct.length } },

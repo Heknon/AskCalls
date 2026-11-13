@@ -654,10 +654,10 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### ProviderCard
 - **Purpose:** one capability (transcription, ask, recording backups, or an instance port) and which provider serves it.
-- **Props:** `capability`, `choice="managed" | "own" | "off" | "local"`, `locked` (instance-level env lock), `health`.
+- **Props:** `capability`, `choice="managed" | "own" | "drive" | "off" | "local"` (`drive`: recording backups in the user's Google Drive), `locked` (instance-level env lock), `health`.
 - **Composes:** `Card`, `ToggleGroup` (choice), `Select` (provider, model), `MaskedSecret`, `DataFlowNote`, `TestConnectionResult`, `UsageMeter`, `EnvLockedField`.
 - **Screens:** S5, A1, W1 (wizard steps 2 and 4 reuse it).
-- **States:** managed, own key (configured / not configured), off, testing, test failed, locked by env, "planned" option disabled (Local on-device).
+- **States:** managed, own key (configured / not configured), Google Drive (not connected / connecting / connected with account and space used), off, testing, test failed, locked by env, "planned" option disabled (Local on-device).
 
 #### MaskedSecret
 - **Purpose:** shows that a secret is saved without revealing it.

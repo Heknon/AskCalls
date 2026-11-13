@@ -282,8 +282,8 @@ export async function openRecording(
     if (!ctx.fetcher) throw new DomainError('unsupported', 'no blob fetcher on this device');
     source = [await ctx.fetcher.get({ url: res.url, headers: res.headers })];
   } else {
-    if (!ctx.ownBuckets) throw new DomainError('unsupported', 'no own-bucket adapter');
-    source = [await ctx.ownBuckets.get(res.bucketRef, res.objectKey)];
+    if (!ctx.ownStores) throw new DomainError('unsupported', 'no own-store adapter');
+    source = ctx.ownStores.get(res.bucketRef, res.objectKey);
   }
   return decryptRecordingStream(
     call.dek,

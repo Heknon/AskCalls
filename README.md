@@ -270,9 +270,9 @@ Each capability uses the instance's managed provider by default. In **Settings â
 | --- | --- |
 | Transcription | ElevenLabs Scribe v2 (default), OpenAI, Deepgram, Soniox, any OpenAI-compatible speech endpoint (local Whisper included), or Off |
 | Ask about a call | Anthropic (default), OpenAI, Google, any OpenAI-compatible endpoint (Ollama and LM Studio included), or Off |
-| Recording backups | The instance bucket, your own S3-compatible bucket (AWS S3, Cloudflare R2, MinIO, Backblaze B2), or Off |
+| Recording backups | The instance bucket, your own S3-compatible bucket (AWS S3, Cloudflare R2, MinIO, Backblaze B2), your Google Drive, or Off |
 
-Your own keys and bucket credentials are encrypted with your keys and used only on your device. Your device signs bucket requests itself, so neither your recordings nor your credentials pass through AskCalls.
+Your own keys and bucket credentials are encrypted with your keys and used only on your device. Your device signs bucket requests itself, so neither your recordings nor your credentials pass through AskCalls. With Google Drive, your device uploads encrypted recordings to a folder in your Drive; AskCalls only renews the Drive access token, because Google's client secret can't live in the browser.
 
 ## Verify what you run
 
