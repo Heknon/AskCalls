@@ -1,6 +1,6 @@
 {
   "overBudget": {
-    "/admin": 251,
+    "/admin": 252,
     "/admin/accounts": 263,
     "/admin/accounts/[id]": 262,
     "/admin/instance": 279,
@@ -18,6 +18,6 @@
     "/app/settings/security": 342,
     "/app/tags": 351,
     "/app/upload": 362,
-    "/app/welcome": 346
+    "/app/welcome": 347
   }
 }

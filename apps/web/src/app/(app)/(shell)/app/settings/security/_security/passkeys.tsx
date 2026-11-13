@@ -17,7 +17,7 @@ import { useUnlocked } from '../../../../../../../client/session/session';
 import { useDates } from '../../_settings/format';
 import { activeOf, type Keyring } from './types';
 
-type AddError = 'cancelled' | 'exists' | 'noPrf' | 'failed';
+type AddError = 'cancelled' | 'exists' | 'noPrf' | 'passwordManager' | 'failed';
 
 /** S1 Passkeys: one row per passkey, Add passkey (PRF), Remove. */
 export function PasskeysSection({
@@ -44,7 +44,7 @@ export function PasskeysSection({
     try {
       if ((await detectPrfSupport()) === 'unsupported') return setError('noPrf');
       const { browser, os } = describeDevice(navigator.userAgent);
-      const { added } = await addUnlockMethod(
+      const result = await addUnlockMethod(
         { api: client.api, session: client.session },
         {
           method: 'passkey',
@@ -53,12 +53,22 @@ export function PasskeysSection({
           label: t('passkeys.label', { browser, os }),
         },
       );
-      if (!added) return setError('noPrf');
+      if (!result.added) {
+        return setError(result.reason === 'passwordManager' ? 'passwordManager' : 'noPrf');
+      }
       notify({ kind: 'event', icon: KeyRound, title: t('passkeys.added') });
       onChanged();
     } catch (e) {
       const code = isDomainError(e) ? e.code : null;
-      setError(code === 'forbidden' ? 'cancelled' : code === 'conflict' ? 'exists' : 'failed');
+      setError(
+        code === 'forbidden'
+          ? 'cancelled'
+          : code === 'conflict'
+            ? 'exists'
+            : code === 'unsupported'
+              ? 'noPrf'
+              : 'failed',
+      );
     } finally {
       setAdding(false);
     }

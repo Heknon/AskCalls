@@ -224,6 +224,20 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   await expect(page.getByRole('dialog', { name: /Send this call to/ })).toHaveCount(0);
   await expect(answers.nth(1)).toContainText('mock answer');
 
+  // On a phone the panel is a sheet: closing and reopening it keeps the conversation.
+  const desktop = page.viewportSize()!;
+  await page.setViewportSize({ width: 390, height: 844 });
+  const sheet = page.getByRole('dialog', { name: 'Ask and notes' });
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole('button', { name: 'Ask', exact: true }).click();
+    await expect(sheet.locator('[data-component="AskMessage"][data-role="answer"]')).toHaveCount(2);
+    await page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+  }
+  await expect(page).toHaveURL(/\/app\/calls\//);
+  await page.setViewportSize(desktop);
+  await expect(answers).toHaveCount(2);
+
   // Notes save on their own, encrypted.
   await page.getByRole('tab', { name: 'Notes' }).click();
   await page.getByRole('textbox', { name: 'Notes' }).fill('Send the quote by Sunday');

@@ -186,7 +186,8 @@ export async function passkeyRegister() {
 }
 
 export async function passkeyAssert(credentialIds: string[]) {
-  const r = await authenticator.assert({ credentialIds, prfSalt: PRF_SALT });
+  const credentials = credentialIds.map((id) => ({ id }));
+  const r = await authenticator.assert({ credentials, prfSalt: PRF_SALT });
   return { credentialId: r.credentialId, prf: toHex(r.prfOutput) };
 }
 
@@ -201,7 +202,7 @@ export async function passkeyUnlock() {
   if (!created.prfOutput) return { prf: false };
   const entry = await createPasskeyEntry({ userId, rootKey, prfOutput: created.prfOutput });
   const asserted = await authenticator.assert({
-    credentialIds: [created.credentialId],
+    credentials: [{ id: created.credentialId, transports: created.transports }],
     prfSalt: PRF_SALT,
   });
   const unwrapped = await unlockWithPasskey({

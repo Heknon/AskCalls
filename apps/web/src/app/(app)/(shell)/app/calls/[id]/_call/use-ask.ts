@@ -4,7 +4,7 @@ import { ApiError } from '@askcalls/api-contract';
 import { ask } from '@askcalls/api-contract/routes/providers';
 import type { ClientContext } from '@askcalls/client-core/context';
 import type { UserDataDocs } from '@askcalls/client-core/userdata';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { ownKeyLlm } from '../../../../../../../client/adapters/own-key-llm';
 import type { Me } from '../../../../../../../client/session/session';
 
@@ -104,25 +104,87 @@ async function* askDirect(
   yield* (await ownKeyLlm(key)).ask(req);
 }
 
+type Conversation = {
+  messages: AskMessageState[];
+  state: AskState;
+  lastQuestion: string | null;
+  abort: AbortController | null;
+};
+
+/**
+ * Ask conversations by call id, kept while the session stays unlocked so closing the panel
+ * (the phone sheet unmounts it) neither erases one nor stops an answer. Memory only: a lock
+ * aborts every answer and drops them all.
+ */
+class AskStore {
+  readonly #byCall = new Map<string, Conversation>();
+  readonly #listeners = new Set<() => void>();
+
+  get(callId: string): Conversation | undefined {
+    return this.#byCall.get(callId);
+  }
+
+  update(callId: string, initial: AskState, change: (c: Conversation) => Partial<Conversation>) {
+    const c = this.#byCall.get(callId) ?? {
+      messages: [],
+      state: initial,
+      lastQuestion: null,
+      abort: null,
+    };
+    this.#byCall.set(callId, { ...c, ...change(c) });
+    for (const l of this.#listeners) l();
+  }
+
+  subscribe = (listener: () => void) => {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
+  };
+
+  clear() {
+    for (const c of this.#byCall.values()) c.abort?.abort();
+    this.#byCall.clear();
+    for (const l of this.#listeners) l();
+  }
+}
+
+const stores = new WeakMap<ClientContext['session'], AskStore>();
+
+function storeOf(session: ClientContext['session']): AskStore {
+  let store = stores.get(session);
+  if (!store) {
+    const created = new AskStore();
+    session.onWipe(() => created.clear());
+    stores.set(session, created);
+    store = created;
+  }
+  return store;
+}
+
 /** One call's ask conversation: streams each answer from AskCalls or the user's own provider. */
 export function useAsk(
   ctx: ClientContext,
+  callId: string,
   /** The transcript as timed lines (`[00:00:48] Dana: …`), so answers can cite times. */
   transcriptText: string,
   route: AskRoute | null,
   quotaReached: boolean,
 ) {
-  const [messages, setMessages] = useState<AskMessageState[]>([]);
-  const [state, setState] = useState<AskState>(quotaReached ? 'quota' : 'idle');
-  const abort = useRef<AbortController | null>(null);
-  const lastQuestion = useRef<string | null>(null);
-  useEffect(() => () => abort.current?.abort(), []);
+  const store = storeOf(ctx.session);
+  const initial: AskState = quotaReached ? 'quota' : 'idle';
+  const conversation = useSyncExternalStore(
+    store.subscribe,
+    () => store.get(callId),
+    () => undefined,
+  );
+  const messages = conversation?.messages ?? EMPTY;
+  const state = conversation?.state ?? initial;
 
   const send = useCallback(
     async (question: string) => {
       if (!route || route.kind === 'off') return;
-      lastQuestion.current = question;
-      const history = messages
+      const update = (change: (c: Conversation) => Partial<Conversation>) =>
+        store.update(callId, initial, change);
+      const history = (store.get(callId)?.messages ?? [])
         .filter((m) => !m.streaming && m.text)
         .slice(-MAX_HISTORY)
         .map((m) => ({
@@ -131,14 +193,21 @@ export function useAsk(
         }));
       const qid = `q${Date.now()}`;
       const aid = `a${Date.now()}`;
-      setMessages((list) => [
-        ...list,
-        { id: qid, kind: 'question', text: question },
-        { id: aid, kind: 'answer', text: '', streaming: true },
-      ]);
-      setState('sending');
       const controller = new AbortController();
-      abort.current = controller;
+      update((c) => ({
+        messages: [
+          ...c.messages,
+          { id: qid, kind: 'question', text: question },
+          { id: aid, kind: 'answer', text: '', streaming: true },
+        ],
+        state: 'sending',
+        lastQuestion: question,
+        abort: controller,
+      }));
+      const answer = (change: Partial<AskMessageState>) =>
+        update((c) => ({
+          messages: c.messages.map((m) => (m.id === aid ? { ...m, ...change } : m)),
+        }));
       try {
         const stream =
           route.kind === 'direct' && route.key
@@ -148,26 +217,33 @@ export function useAsk(
         for await (const chunk of stream) {
           if (controller.signal.aborted) return;
           text += chunk;
-          setState('idle');
-          setMessages((list) => list.map((m) => (m.id === aid ? { ...m, text } : m)));
+          update(() => ({ state: 'idle' }));
+          answer({ text });
         }
-        setMessages((list) => list.map((m) => (m.id === aid ? { ...m, streaming: false } : m)));
-        setState('idle');
+        if (controller.signal.aborted) return;
+        answer({ streaming: false });
+        update(() => ({ state: 'idle', abort: null }));
         ctx.session.touch();
       } catch (e) {
         if (controller.signal.aborted) return;
-        setMessages((list) => list.filter((m) => m.id !== aid && m.id !== qid));
         const quota =
           e instanceof ApiError && e.code === 'rate_limited' && e.details.quota === 'asks';
-        setState(quota ? 'quota' : 'error');
+        update((c) => ({
+          messages: c.messages.filter((m) => m.id !== aid && m.id !== qid),
+          state: quota ? 'quota' : 'error',
+          abort: null,
+        }));
       }
     },
-    [ctx, transcriptText, route, messages],
+    [ctx, store, callId, initial, transcriptText, route],
   );
 
   const retry = useCallback(() => {
-    if (lastQuestion.current) void send(lastQuestion.current);
-  }, [send]);
+    const question = store.get(callId)?.lastQuestion;
+    if (question) void send(question);
+  }, [store, callId, send]);
 
   return { messages, state, send, retry };
 }
+
+const EMPTY: AskMessageState[] = [];
