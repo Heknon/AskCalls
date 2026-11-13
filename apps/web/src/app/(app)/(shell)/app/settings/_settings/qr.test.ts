@@ -21,7 +21,6 @@ const ECC_M: Record<number, [blocks: number, ecc: number]> = {
 
 /** Reads a symbol back: format, unmask, de-interleave, RS check, byte-mode payload. */
 function decode(modules: boolean[][], version: number) {
-  const size = modules.length;
   let format = 0;
   const firstCopy: Array<[number, number]> = [
     ...[0, 1, 2, 3, 4, 5].map((i) => [8, i] as [number, number]),
@@ -60,7 +59,8 @@ function decode(modules: boolean[][], version: number) {
     data.push(...b.slice(0, b.length - eccLen));
   }
   const bitsOf = data.flatMap((w) => [7, 6, 5, 4, 3, 2, 1, 0].map((i) => (w >>> i) & 1));
-  const read = (from: number, n: number) => bitsOf.slice(from, from + n).reduce((a, b) => a * 2 + b);
+  const read = (from: number, n: number) =>
+    bitsOf.slice(from, from + n).reduce((a, b) => a * 2 + b);
   expect(read(0, 4)).toBe(0b0100);
   const countBits = version <= 9 ? 8 : 16;
   const len = read(4, countBits);

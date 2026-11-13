@@ -87,7 +87,8 @@ export async function listApiTokens(
   const now = ports.clock.now().getTime();
   return (await ports.apiTokens.list(actor.userId)).map(({ fetchWindow, ...t }) => ({
     ...strip(t),
-    fetchesThisHour: fetchWindow && now - fetchWindow.start.getTime() < HOUR_MS ? fetchWindow.count : 0,
+    fetchesThisHour:
+      fetchWindow && now - fetchWindow.start.getTime() < HOUR_MS ? fetchWindow.count : 0,
   }));
 }
 
