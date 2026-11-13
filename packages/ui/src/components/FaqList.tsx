@@ -1,31 +1,24 @@
-'use client';
-
 import type { ReactNode } from 'react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '../primitives/accordion';
 
 export type FaqListProps = {
   items: { key: string; question: string; answer: ReactNode }[];
+  /** The item open on load. */
+  open?: string;
 };
 
-/** Questions and answers. */
-export function FaqList({ items }: FaqListProps) {
+/** Questions and answers on hairlines. Native `<details>`: keyboard and screen readers for free. */
+export function FaqList({ items, open }: FaqListProps) {
   return (
-    <Accordion
-      data-component="FaqList"
-      type="multiple"
-      className="max-w-3xl border-border border-t"
-    >
+    <div data-component="FaqList" className="faq">
       {items.map((it) => (
-        <AccordionItem key={it.key} value={it.key}>
-          <AccordionTrigger className="font-semibold">{it.question}</AccordionTrigger>
-          <AccordionContent className="max-w-176">{it.answer}</AccordionContent>
-        </AccordionItem>
+        <details key={it.key} open={it.key === open}>
+          <summary>
+            <span>{it.question}</span>
+            <span className="pm" aria-hidden />
+          </summary>
+          <div className="ans-b">{it.answer}</div>
+        </details>
       ))}
-    </Accordion>
+    </div>
   );
 }
