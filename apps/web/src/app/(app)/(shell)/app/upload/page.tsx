@@ -38,7 +38,7 @@ export default function UploadPage() {
                 <TabsTrigger value="single">{t('tab.single')}</TabsTrigger>
                 <TabsTrigger value="bulk">{t('tab.bulk')}</TabsTrigger>
               </TabsList>
-              <TabsContent value="single">
+              <TabsContent value="single" className="max-w-180">
                 <SingleUpload
                   flow={flow}
                   settings={settings}

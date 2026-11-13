@@ -104,7 +104,7 @@
     "start": "התחלת ייבוא",
     "change": "בחירת קבצים אחרים",
     "progressDone": "{done} מתוך {total} קבצים הושלמו.",
-    "progressDetail": "{active} בתהליך, {failed} נכשלו, {dup} כפילויות דולגו.",
+    "progressDetail": "{active} בתהליך, {failed} נכשלו, {dup, plural, one {כפילות אחת דולגה} other {# כפילויות דולגו}}.",
     "eta": "נותרו כ-{t}.",
     "progressLabel": "התקדמות הייבוא",
     "closeHint": "אפשר לסגור את הלשונית ולהמשיך אחר כך.",

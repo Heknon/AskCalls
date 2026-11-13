@@ -247,7 +247,7 @@ function Summary({
         { n: counts.duplicates, label: t('sum.dup') },
       ]}
       usage={
-        left !== null && counts.audioOnly > 0 ? (
+        left !== null && counts.audioOnly > 0 && minutes > 0 ? (
           <UsageMeter
             label={t('usage')}
             used={usedNow + minutes}
@@ -259,7 +259,7 @@ function Summary({
       }
       note={
         [
-          counts.audioOnly > 0 && flow.route !== 'off' ? t('minutes', { n: minutes }) : null,
+          minutes > 0 && flow.route !== 'off' ? t('minutes', { n: minutes }) : null,
           manifestCovered > 0 ? t('manifestApplied', { n: manifestCovered }) : null,
           unreadable > 0 ? t('unreadable', { n: unreadable }) : null,
         ]
@@ -511,8 +511,12 @@ function QueuePanel({
       </Card>
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b ps-3 pe-3 pt-2">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)} className="min-w-0">
-            <TabsList aria-label={t('filter')} className="border-0">
+          <Tabs
+            value={filter}
+            onValueChange={(v) => setFilter(v as Filter)}
+            className="min-w-0 max-w-full"
+          >
+            <TabsList aria-label={t('filter')} className="overflow-x-auto border-0">
               {(['all', 'active', 'failed', 'dup'] as const).map((f) => (
                 <TabsTrigger key={f} value={f}>
                   {t(`tab.${f}`)}

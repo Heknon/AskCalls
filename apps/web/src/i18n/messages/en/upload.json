@@ -104,7 +104,7 @@
     "start": "Start import",
     "change": "Choose different files",
     "progressDone": "{done} of {total} files done.",
-    "progressDetail": "{active} in progress, {failed} failed, {dup} duplicates skipped.",
+    "progressDetail": "{active} in progress, {failed} failed, {dup, plural, one {# duplicate} other {# duplicates}} skipped.",
     "eta": "About {t} left.",
     "progressLabel": "Import progress",
     "closeHint": "You can close this tab and resume later.",
