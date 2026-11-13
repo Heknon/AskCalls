@@ -267,6 +267,7 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    | `ASKCALLS_HOSTED` | `true` | — | — |
    | `AUTH_SECRET` | prod secret | non-prod secret | **same** non-prod secret |
    | `AUTH_PROVIDERS` | `google` (plus `github` if used) | same as dev | `google` (plus `github`) |
+   | `ADMIN_EMAILS` | the admin accounts (`oeharel@gmail.com`) | same | same |
    | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | prod OAuth client | non-prod OAuth client | non-prod OAuth client |
    | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | prod OAuth app (if used) | non-prod OAuth app | non-prod OAuth app |
    | `AUTH_REDIRECT_PROXY_URL` | — (unset) | `https://<DEV_DOMAIN>/api/auth` | `https://<DEV_DOMAIN>/api/auth` |

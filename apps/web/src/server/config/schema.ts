@@ -31,6 +31,11 @@ export const InstanceConfigSchema = z.object({
       redirectProxyUrl: z.string().url().optional(),
       /** Test-only sign-in provider for e2e. Never active when NODE_ENV=production. */
       testProvider: z.boolean().default(false),
+      /**
+       * Sign-in emails that are the instance admins. Set: exactly these accounts are admins and
+       * the first-user rule is off. Empty: the first user becomes admin and admins can promote.
+       */
+      adminEmails: z.array(z.string().email()).default([]),
     })
     .default({
       providers: ['google'],
@@ -39,6 +44,7 @@ export const InstanceConfigSchema = z.object({
       github: {},
       email: {},
       testProvider: false,
+      adminEmails: [],
     }),
 
   db: z
@@ -218,6 +224,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['AUTH_EMAIL_FROM', 'auth.email.from', str],
   ['AUTH_REDIRECT_PROXY_URL', 'auth.redirectProxyUrl', str],
   ['AUTH_TEST_PROVIDER', 'auth.testProvider', bool],
+  ['ADMIN_EMAILS', 'auth.adminEmails', list],
   ['DB_DRIVER', 'db.driver', str],
   ['DATABASE_URL', 'db.url', str],
   ['PGLITE_DATA_DIR', 'db.pgliteDir', str],

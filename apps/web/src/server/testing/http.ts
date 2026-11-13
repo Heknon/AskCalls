@@ -38,6 +38,7 @@ import * as transcribeToken from '../../app/api/transcribe/token/route';
 import * as translate from '../../app/api/translate/route';
 import * as userdata from '../../app/api/userdata/[kind]/route';
 import * as vocab from '../../app/api/vocab/route';
+import { usersFor } from '../auth/admin-emails';
 import { SESSION_COOKIES } from '../auth/secret';
 import { ConfigService } from '../config/config-service';
 import { setContainerForTests } from '../container';
@@ -172,6 +173,7 @@ export function startTestApp(
     }),
     ...opts.adapters,
   };
+  ports.users = usersFor(ports.users, config.config.auth.adminEmails);
   setContainerForTests({ config, ports, restartRequired: [], close: async () => {} });
 
   const headersFor = (as: Credential | undefined): Record<string, string> => {

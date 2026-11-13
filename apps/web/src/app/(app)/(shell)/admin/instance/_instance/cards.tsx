@@ -414,7 +414,7 @@ export function UsersCard() {
   return (
     <ProviderCard capability="sign-in" context="instance" title={t('cards.users')}>
       <p className="text-muted-foreground">{t('users.count', { n: view.usage.users })}</p>
-      {view.hosted ? null : (
+      {view.hosted || view.locked.includes('auth.adminEmails') ? null : (
         <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
           <Field label={t('users.email')} htmlFor={id}>
             <div className="flex gap-2">
