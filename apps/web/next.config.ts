@@ -26,6 +26,10 @@ const config: NextConfig = {
     '@askcalls/adapter-transcription-soniox',
     '@askcalls/adapter-transcription-openai-compatible',
     '@askcalls/adapter-llm-ai-sdk',
+    '@askcalls/adapter-telemetry-otel',
+    '@askcalls/adapter-telemetry-posthog',
+    '@askcalls/adapter-telemetry-sentry',
+    '@askcalls/adapter-telemetry-umami',
     '@askcalls/adapter-db-postgres',
   ],
   // Database drivers load native/WebAssembly assets at runtime: keep them out of the bundle.

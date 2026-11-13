@@ -30,3 +30,26 @@ export async function reportProductEvent(input: ClientEvent): Promise<void> {
   if (!limit.allowed) return;
   ports.telemetry.event(userId, parsed.data);
 }
+
+const ClientError = z.object({
+  errorName: z.string().max(64).optional(),
+  stack: z.string().max(8_000).optional(),
+});
+export type ClientError = z.infer<typeof ClientError>;
+
+/**
+ * A browser error report (spec 11.3a): sent only when the account opted in to error reports.
+ * The scrubber keeps the class name and `file:line:col` frames; the message never leaves here.
+ */
+export async function reportClientError(input: ClientError): Promise<void> {
+  const parsed = ClientError.safeParse(input);
+  if (!parsed.success) return;
+  const { config, ports } = await getContainer();
+  const userId = await readSessionUserId(await headers(), config);
+  if (!userId) return;
+  const user = await ports.users.findById(userId);
+  if (!user?.telemetryConsent.errorReports) return;
+  const limit = await ports.rateLimiter.hit(`rl:client-errors:${userId}`, 10, 60_000);
+  if (!limit.allowed) return;
+  ports.telemetry.error({ code: 'client', ...parsed.data });
+}
