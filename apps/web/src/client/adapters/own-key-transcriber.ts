@@ -18,6 +18,7 @@ const PROVIDERS: Record<string, (k: OwnKey) => Promise<TranscriptionProvider>> =
       apiKey: k.apiKey,
       ...(k.model && { model: k.model }),
       ...(k.baseUrl && { baseUrl: k.baseUrl }),
+      zeroRetention: k.zeroRetention,
     }),
   openai: async (k) =>
     new (await import('@askcalls/adapter-transcription-openai')).OpenAiTranscriptionProvider({

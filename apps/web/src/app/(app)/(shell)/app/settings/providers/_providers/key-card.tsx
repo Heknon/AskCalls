@@ -7,6 +7,7 @@ import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { HealthBadge } from '@askcalls/ui/components/HealthBadge';
 import { MaskedSecret } from '@askcalls/ui/components/MaskedSecret';
 import { ProviderCard, type ProviderChoice } from '@askcalls/ui/components/ProviderCard';
+import { SettingSwitch } from '@askcalls/ui/components/SettingSwitch';
 import { TestConnectionResult } from '@askcalls/ui/components/TestConnectionResult';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Input } from '@askcalls/ui/primitives/input';
@@ -68,9 +69,14 @@ export function testDetail(
   provider: string,
 ): string {
   if (outcome.ok) return ok;
+  const status = String(outcome.status ?? '');
   switch (outcome.reason) {
     case 'key':
-      return t('test401');
+      return t('test401', { status: status || '401' });
+    case 'permission':
+      return t('testPermission', { status, provider });
+    case 'zeroRetention':
+      return t('testZeroRetention', { provider });
     case 'cors':
       return t('testCors');
     case 'unreachable':
@@ -80,7 +86,7 @@ export function testDetail(
     case 'quota':
       return t('testQuota');
     default:
-      return t('testFailed', { provider, status: String(outcome.status ?? '') });
+      return t('testFailed', { provider, status });
   }
 }
 
@@ -109,12 +115,19 @@ interface Draft {
   model: string;
   baseUrl: string;
   apiKey: string;
+  zeroRetention: boolean;
 }
 
 const draftOf = (cap: KeyCapability, c: Capability): Draft => {
   const first = OWN_KEY_PROVIDERS[cap][0]!;
   if (c.mode !== 'own') {
-    return { provider: first.id, model: first.models[0]?.id ?? '', baseUrl: '', apiKey: '' };
+    return {
+      provider: first.id,
+      model: first.models[0]?.id ?? '',
+      baseUrl: '',
+      apiKey: '',
+      zeroRetention: false,
+    };
   }
   const info = providerInfo(cap, c.key.provider);
   return {
@@ -122,6 +135,7 @@ const draftOf = (cap: KeyCapability, c: Capability): Draft => {
     model: c.key.model ?? info?.models[0]?.id ?? '',
     baseUrl: c.key.baseUrl ?? '',
     apiKey: '',
+    zeroRetention: c.key.zeroRetention,
   };
 };
 
@@ -220,6 +234,7 @@ export function KeyCard({
         apiKey: apiKey || 'none',
         baseUrl: info.baseUrl === 'required' ? draft.baseUrl.trim() : null,
         model: draft.model.trim() || null,
+        zeroRetention: Boolean(info.zeroRetention) && draft.zeroRetention,
       },
     });
   };
@@ -273,7 +288,8 @@ export function KeyCard({
       needsKeyInput ||
       draft.provider !== value.key.provider ||
       (draft.model || null) !== (value.key.model ?? info?.models[0]?.id ?? null) ||
-      (draft.baseUrl || null) !== value.key.baseUrl);
+      (draft.baseUrl || null) !== value.key.baseUrl ||
+      (Boolean(info?.zeroRetention) && draft.zeroRetention !== value.key.zeroRetention));
 
   return (
     <ProviderCard
@@ -418,6 +434,15 @@ export function KeyCard({
               />
             )}
           </Field>
+          {info?.zeroRetention ? (
+            <SettingSwitch
+              label={t('zeroRetention')}
+              hint={t('zeroRetentionHint', { provider: info.name })}
+              checked={draft.zeroRetention}
+              disabled={saving}
+              onChange={(on) => setDraft((d) => ({ ...d, zeroRetention: on }))}
+            />
+          ) : null}
           {info ? (
             <p className="text-muted-foreground text-sm">{t('billed', { provider: info.name })}</p>
           ) : null}

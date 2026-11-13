@@ -57,7 +57,7 @@ jobs:
           docker run -d --name minio -p 9000:9000
           -e MINIO_ROOT_USER="$S3_TEST_ACCESS_KEY_ID"
           -e MINIO_ROOT_PASSWORD="$S3_TEST_SECRET_ACCESS_KEY"
-          minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          pgsty/minio:RELEASE.2026-08-04T00-00-00Z server /data
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - uses: ./.github/actions/checks
