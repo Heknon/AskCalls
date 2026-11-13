@@ -102,7 +102,12 @@ export function ProviderCard({
             className="flex w-full md:inline-flex md:w-auto md:self-start"
           >
             {choice.options.map((o) => (
-              <ToggleGroupItem key={o.value} value={o.value} disabled={o.disabled}>
+              <ToggleGroupItem
+                key={o.value}
+                value={o.value}
+                disabled={o.disabled}
+                className="max-md:min-w-0 max-md:whitespace-normal max-md:px-1 max-md:text-center max-md:leading-4"
+              >
                 {o.label}
               </ToggleGroupItem>
             ))}

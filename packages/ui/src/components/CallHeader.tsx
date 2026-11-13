@@ -82,15 +82,19 @@ export function CallHeader({
               label={labels.direction[call.direction]}
               withLabel
             />
-            <span aria-hidden>·</span>
-            <CallMeta
-              context="header"
-              startedAt={call.startedAt}
-              durationSec={call.durationSec}
-              locale={locale}
-            />
-            <span aria-hidden>·</span>
-            <SignatureBadge {...signature} />
+            <span className="inline-flex items-center gap-3">
+              <span aria-hidden>·</span>
+              <CallMeta
+                context="header"
+                startedAt={call.startedAt}
+                durationSec={call.durationSec}
+                locale={locale}
+              />
+            </span>
+            <span className="inline-flex items-center gap-3">
+              <span aria-hidden>·</span>
+              <SignatureBadge {...signature} />
+            </span>
           </div>
         </div>
         <StarToggle

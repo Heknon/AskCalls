@@ -149,7 +149,7 @@ const copy = {
     },
     folded: 'Show search and filters',
     foldedAll: 'All calls',
-    foldedSummary: ['“מחיר”', ' · Purchase interest · the last 30 days'],
+    foldedSummary: ['“', 'מחיר', '” · Purchase interest · the last 30 days'],
     blankA11y: (frag: string, facet: string) => `${frag}, change ${facet} filter`,
     sampleText: ['Today, 14:32 · 8 min', '3 Nov, 10:05 · 12 min'],
   },
@@ -280,7 +280,7 @@ const copy = {
     },
     folded: 'הצגת החיפוש והמסננים',
     foldedAll: 'כל השיחות',
-    foldedSummary: ['„מחיר”', ' · עניין ברכישה · ב-30 הימים האחרונים'],
+    foldedSummary: ['„', 'מחיר', '” · עניין ברכישה · ב-30 הימים האחרונים'],
     blankA11y: (frag: string, facet: string) => `${frag}, שינוי המסנן ${facet}`,
     sampleText: ['היום, 14:32 · 8 דק׳', '3 בנוב׳, 10:05 · 12 דק׳'],
   },
@@ -575,8 +575,9 @@ export function SearchGroup() {
             <FoldedFilterSummary
               summary={
                 <>
-                  <bdi>{c.foldedSummary[0]}</bdi>
-                  {c.foldedSummary[1]}
+                  {c.foldedSummary[0]}
+                  <bdi>{c.foldedSummary[1]}</bdi>
+                  {c.foldedSummary[2]}
                 </>
               }
               total={18}

@@ -142,7 +142,7 @@ function PickerBody({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={labels.search}
             aria-label={labels.search}
-            className="h-10 w-full rounded-lg border border-input bg-card ps-9 pe-3 text-md text-ui-start placeholder:text-subtle-foreground focus-visible:border-ring focus-visible:outline-offset-1 md:text-base"
+            className="h-10 w-full rounded-lg border border-input bg-card px-9 text-md text-ui-start placeholder:text-subtle-foreground focus-visible:border-ring focus-visible:outline-offset-1 md:text-base"
           />
         </div>
       ) : null}
