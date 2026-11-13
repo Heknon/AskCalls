@@ -1,4 +1,651 @@
 {
-  "heroTitle": "Ask your calls anything.",
-  "heroBody": "End-to-end encrypted. We can't read your calls."
+  "meta": {
+    "siteName": "AskCalls",
+    "home": {
+      "title": "AskCalls · Ask your calls anything",
+      "description": "Search your phone calls by who, what or what they meant, and ask an AI about any of them. End-to-end encrypted: we can't read your calls."
+    },
+    "pricing": {
+      "title": "Pricing · AskCalls",
+      "description": "AskCalls is free during beta: 500 calls, 300 transcription minutes a month, 2 GB of recording backups and 50 questions a day."
+    },
+    "security": {
+      "title": "Security · AskCalls",
+      "description": "What the AskCalls server stores, what it never sees, where plaintext goes when you ask, and how to check all of it yourself."
+    },
+    "faq": {
+      "title": "Questions · AskCalls",
+      "description": "Answers about recording, lost devices, where data lives, AI providers, self-hosting and the limits."
+    },
+    "mcp": {
+      "title": "Connect your AI · AskCalls",
+      "description": "Set up the askcalls agent as a local MCP server for Claude Code, Claude Desktop, Cursor, VS Code, Windsurf or Codex CLI."
+    },
+    "selfHost": {
+      "title": "Self-host · AskCalls",
+      "description": "Run AskCalls on your own server with Docker Compose: Postgres with pgvector, MinIO and the web app."
+    },
+    "privacy": {
+      "title": "Privacy policy · AskCalls",
+      "description": "Draft privacy policy for askcalls.com, to be reviewed by counsel."
+    },
+    "terms": {
+      "title": "Terms · AskCalls",
+      "description": "Draft terms of service for askcalls.com, to be reviewed by counsel."
+    },
+    "dpa": {
+      "title": "Data processing agreement · AskCalls",
+      "description": "Draft data processing agreement for askcalls.com, to be reviewed by counsel."
+    },
+    "subprocessors": {
+      "title": "Subprocessors · AskCalls",
+      "description": "The companies askcalls.com uses to run the service, what each receives and where."
+    }
+  },
+  "nav": {
+    "brand": "AskCalls",
+    "home": "AskCalls home",
+    "site": "Site",
+    "menu": "Menu",
+    "close": "Close menu",
+    "security": "Security",
+    "pricing": "Pricing",
+    "selfHost": "Self-host",
+    "faq": "FAQ",
+    "mcp": "MCP",
+    "github": "GitHub",
+    "signIn": "Sign in",
+    "start": "Start free",
+    "otherLanguage": "עברית",
+    "otherLanguageLabel": "Switch to Hebrew",
+    "skip": "Skip to content"
+  },
+  "footer": {
+    "fine": "Open source, MIT licensed.",
+    "copyright": "© 2026 AskCalls",
+    "product": "Product",
+    "trust": "Trust",
+    "legal": "Legal",
+    "subprocessors": "Subprocessors",
+    "privacy": "Privacy policy",
+    "terms": "Terms",
+    "dpa": "DPA"
+  },
+  "common": {
+    "start": "Start free",
+    "source": "Source on GitHub",
+    "closerTitle": "Ask your calls anything.",
+    "closerSub": "Free during beta. Open source under MIT. Self-host it if you prefer.",
+    "onThisPage": "On this page",
+    "draft": "Draft — to be reviewed by counsel",
+    "updated": "Last updated 13 November 2026"
+  },
+  "home": {
+    "hero": {
+      "titleA": "Ask your calls",
+      "titleB": "anything.",
+      "subA": "End-to-end encrypted.",
+      "subB": "We can't read your calls."
+    },
+    "demo": {
+      "description": "Demo: searching “people interested in buying” returns three calls that decrypt on the device.",
+      "meaning": "Meaning",
+      "pause": "Pause",
+      "play": "Play",
+      "matched": "matched by meaning",
+      "decrypted": "decrypted on this device · {ms} ms",
+      "queries": {
+        "first": {
+          "query": "people interested in buying",
+          "rows": {
+            "a": {
+              "name": "Dana Levi",
+              "phone": "+972 50-555-0112",
+              "when": "Today, 14:32 · 8 min",
+              "dir": "ltr",
+              "before": "We measured the dining room. ",
+              "hit": "If the oak one is still available, I’d like to reserve it",
+              "after": " before the weekend."
+            },
+            "b": {
+              "name": "יוסי מזרחי",
+              "phone": "+972 54-555-0178",
+              "when": "Yesterday, 18:05 · 3 min",
+              "dir": "rtl",
+              "before": "",
+              "hit": "אם המחיר מתאים, אני סוגר איתך עוד היום",
+              "after": " על שלושת הארונות."
+            },
+            "c": {
+              "name": "Maya Cohen",
+              "phone": "+972 52-555-0140",
+              "when": "10 Nov, 09:12 · 6 min",
+              "dir": "ltr",
+              "before": "Send me the quote in writing and ",
+              "hit": "I’ll get the deposit to you tomorrow",
+              "after": "."
+            }
+          }
+        },
+        "second": {
+          "query": "who asked about the delivery date",
+          "rows": {
+            "a": {
+              "name": "Maya Cohen",
+              "phone": "+972 52-555-0140",
+              "when": "Tue, 11:20 · 4 min",
+              "dir": "ltr",
+              "before": "",
+              "hit": "Can it arrive before the 20th?",
+              "after": " We have the whole family over that weekend."
+            },
+            "b": {
+              "name": "Avi Ben David",
+              "phone": "+972 58-555-0161",
+              "when": "Wed, 16:02 · 6 min",
+              "dir": "ltr",
+              "before": "So the installers come Thursday, ",
+              "hit": "and the table on Sunday morning",
+              "after": ", right?"
+            },
+            "c": {
+              "name": "נועה פרידמן",
+              "phone": "+972 53-555-0199",
+              "when": "Thu, 08:47 · 2 min",
+              "dir": "rtl",
+              "before": "",
+              "hit": "מתי בדיוק ההובלה מגיעה?",
+              "after": " אני צריכה לבקש יום חופש."
+            }
+          }
+        }
+      }
+    },
+    "how": {
+      "label": "How it works",
+      "upload": {
+        "title": "Upload a year of calls.",
+        "note": "Audio, transcripts or a whole folder. Audio is transcribed, and duplicates are skipped so nothing is transcribed twice."
+      },
+      "find": {
+        "title": "Find one by who, what, or what they meant.",
+        "note": "Contact, date, exact or fuzzy words, tag or intent. Hebrew prefixes and typos included."
+      },
+      "ask": {
+        "title": "Ask it what was promised.",
+        "note": "Only that call goes to the AI, and only with your consent. The answer comes from that call alone."
+      }
+    },
+    "callView": {
+      "label": "The call view",
+      "when": "13 Nov, 14:32",
+      "duration": "8 min 14 s",
+      "tagQuote": "Quote sent",
+      "askTitle": "Ask about this call",
+      "question": "What price did I quote, and on what condition?",
+      "answer": "9,400 for the table and six chairs, delivery included, if Dana confirms by Sunday.",
+      "flow": "Only this call went to Anthropic, with your consent.",
+      "followUp": "Ask a follow-up"
+    },
+    "privacy": {
+      "titleA": "Your device encrypts.",
+      "titleB": "Our server keeps only what it can't read.",
+      "diagramLabel": "The same call on your device and on our server",
+      "device": "On your device",
+      "server": "On our server",
+      "boundary": "Encrypted here",
+      "when": "13 Nov 2026, 14:32 · 8 min 14 s",
+      "bytes": "{count} bytes",
+      "caption": "Real bytes: the sample call encrypted with the app's own code under a published demo key. Field names are the server's column names.",
+      "exceptionsTitle": "Where plaintext does go, and only when you ask.",
+      "route": "Route",
+      "leaves": "What leaves your device",
+      "receives": "Who receives it",
+      "transcription": {
+        "name": "Transcription",
+        "what": "Audio of a call you upload. Never written to disk or storage.",
+        "who": "ElevenLabs, from your browser with a single-use token or streamed through our server. With your own key, your device sends it directly and we are not in the path."
+      },
+      "ask": {
+        "name": "Ask about a call",
+        "what": "That one call and your question, after you agree.",
+        "who": "Anthropic, streamed through our server. With your own key, your device sends it directly."
+      },
+      "inbox": {
+        "name": "Inbox uploads",
+        "what": "A transcript a remote AI tool sent for you.",
+        "who": "Our server, in transit only. Encrypted to your key the moment it arrives."
+      },
+      "leakA": "Seeded words and phone numbers found in a full dump of our database and storage bucket.",
+      "leakB": "The leak test runs on every pull request, and fails if one appears in UTF-8, UTF-16 or any normalized form.",
+      "proofModel": "The security model",
+      "proofSource": "The source",
+      "proofLeak": "The leak test",
+      "proofVerify": "Verify the code we serve"
+    },
+    "uses": {
+      "titleA": "For people whose work",
+      "titleB": "happens on the phone.",
+      "lead": "Sales and service teams, lawyers, advisers and clinics. This is what they type.",
+      "sales": {
+        "query": "asked for a quote this month, no reply yet",
+        "role": "Sales follow-up",
+        "result": "14 calls, by meaning"
+      },
+      "disputes": {
+        "query": "what Maya agreed about the delivery date",
+        "role": "Service disputes",
+        "result": "3 calls, in her words"
+      },
+      "records": {
+        "query": "client calls about the lease renewal",
+        "role": "Professional records",
+        "result": "22 calls since March"
+      },
+      "coaching": {
+        "query": "price objections, and how we answered",
+        "role": "Team coaching",
+        "result": "31 calls, 6 people"
+      }
+    },
+    "ai": {
+      "titleA": "Connect Claude",
+      "titleB": "or any MCP client.",
+      "lead": "The askcalls agent runs on your computer and holds your keys. Your assistant searches, reads and imports calls through it, decrypted on your machine.",
+      "question": "Which customers asked about delivery dates this week?",
+      "toolResult": "4 calls · decrypted locally",
+      "answer": "Four calls. <b>Maya Cohen</b> (Tue) needs the table before the 20th. <b>Avi Ben David</b> (Wed) confirmed installation on Thursday. The other two mention delivery without a date.",
+      "step1": "1 · Link the agent to your account",
+      "step2": "2 · Add it to Claude Code",
+      "more": "Claude Desktop, Cursor and more"
+    },
+    "pricing": {
+      "title": "Free during beta.",
+      "foot": "No card needed. Your own provider keys don't count. A self-hosted instance sets its own limits.",
+      "more": "How the limits work"
+    },
+    "faq": {
+      "titleA": "Questions people",
+      "titleB": "ask first."
+    }
+  },
+  "limits": {
+    "label": "Free beta limits",
+    "calls": "calls",
+    "minutes": "transcription minutes a month",
+    "storage": "of recording backups",
+    "asks": "questions a day",
+    "tokens": "access tokens",
+    "fetches": "MCP fetches an hour, per token",
+    "callsDetail": "A call is one transcript, with or without a recording. Deleting a call frees its place.",
+    "minutesDetail": "Counted by audio length. Transcripts you upload ready-made don't count.",
+    "storageDetail": "Encrypted and compressed on your device. With your own bucket, there is no limit from us.",
+    "asksDetail": "One question about one call. Resets at midnight UTC.",
+    "tokensDetail": "For the local agent, remote MCP and scripts. Each token has its own scopes.",
+    "fetchesDetail": "Ciphertext fetches over remote MCP. The local agent decrypts on your machine."
+  },
+  "faq": {
+    "legal": {
+      "q": "Is recording calls legal?",
+      "a": "It depends on where you and the other person are. Many places allow recording a call you take part in; some require everyone on the call to agree. Check the rules where you work. AskCalls doesn't record calls; it stores what you upload."
+    },
+    "lost": {
+      "q": "What if I lose my phone?",
+      "a": "Unlock on another device with your passkey, if it syncs, or with your recovery code. If you lose every passkey and the recovery code, your calls can't be recovered: we never had your keys."
+    },
+    "staff": {
+      "q": "Can AskCalls staff see my calls?",
+      "a": "No. We store ciphertext and keyed tokens. Without your keys, which never reach us, there is nothing to read."
+    },
+    "where": {
+      "q": "Where is my data stored?",
+      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Cloudflare R2 in its EU jurisdiction, encrypted on your device before upload. Recording backups can go to your own bucket instead."
+    },
+    "selfHost": {
+      "q": "Can I self-host?",
+      "a": "Yes. Run docker compose up and a setup wizard walks you through the database, storage, sign-in and providers."
+    },
+    "hebrew": {
+      "q": "Does it work in Hebrew?",
+      "a": "Yes. The interface, search and transcription work in Hebrew and English, mixed in one call. Search handles Hebrew prefixes, so “בחולון” finds “חולון”."
+    },
+    "providers": {
+      "q": "Which AI and transcription providers can I use?",
+      "a": "Transcription: ElevenLabs Scribe v2 by default, or OpenAI, Deepgram, Soniox or any OpenAI-compatible speech endpoint. Questions: Anthropic by default, or OpenAI, Google or any OpenAI-compatible endpoint, Ollama and LM Studio included. You can switch each to your own key or turn it off."
+    },
+    "remote": {
+      "q": "What does the remote MCP endpoint see?",
+      "a": "It has no keys, so it offers only inbox uploads, recent call ids with their days and durations, and your account status. Inbox uploads are visible to the server in transit, then encrypted to your inbox key."
+    },
+    "delete": {
+      "q": "How do I delete my account?",
+      "a": "In Settings. Deleting the account deletes the wrapped keys, so the remaining ciphertext can never be decrypted, and then deletes the data. Export first if you want a decrypted copy; the export is decrypted on your device."
+    },
+    "open": {
+      "q": "Is AskCalls open source?",
+      "a": "Yes, under the MIT licence. Every release publishes the SHA-256 of each client JavaScript asset, so you can check that askcalls.com serves the code in the repository."
+    },
+    "limit": {
+      "q": "What happens at the limit?",
+      "a": "Uploads pause until you delete calls or the month resets. Search, reading, playback and export keep working, and nothing is deleted."
+    },
+    "ownKeys": {
+      "q": "What about my own keys?",
+      "a": "Transcription and questions with your own key don't count toward the limits. The key is encrypted with your keys and used only on your device."
+    },
+    "selfHostFree": {
+      "q": "Is self-hosting free?",
+      "a": "Yes. The code is MIT-licensed. You pay only for the server, storage and providers you choose, or nothing if it all runs locally."
+    }
+  },
+  "pricingPage": {
+    "titleA": "Free during",
+    "titleB": "beta.",
+    "subA": "No card needed.",
+    "subB": "These are the beta limits on askcalls.com. A self-hosted instance sets its own.",
+    "limitsTitle": "The limits",
+    "caption": "Beta limits, per account on askcalls.com",
+    "countsTitle": "What counts.",
+    "ownKeys": {
+      "t": "Your own keys don't count.",
+      "d": "Transcription and questions with your own provider key go straight from your device to the provider and don't count toward the limits."
+    },
+    "duplicates": {
+      "t": "Duplicates aren't transcribed twice.",
+      "d": "The same call, even re-encoded, is recognised by its audio fingerprint and skipped before any minutes count."
+    },
+    "free": {
+      "t": "Search and reading are always free.",
+      "d": "They run on your device, so they have no limit."
+    },
+    "atLimitLabel": "At the limit",
+    "atLimitA": "At the limit, uploads pause until you delete calls or the month resets.",
+    "atLimitB": "Search and reading keep working.",
+    "meterCalls": "Calls",
+    "paused": "Upload paused",
+    "search": "Search",
+    "reading": "Reading and playback",
+    "export": "Export",
+    "selfTitleA": "Self-hosted.",
+    "selfTitleB": "Your limits.",
+    "selfLead": "AskCalls is open source under MIT. On your own instance the admin sets the limits, the providers and where data lives.",
+    "selfLink": "The self-hosting guide",
+    "faqTitleA": "Pricing",
+    "faqTitleB": "questions."
+  },
+  "securityPage": {
+    "titleA": "We can't read",
+    "titleB": "your calls.",
+    "lead": "This is the whole privacy model: what we store, what we never see, where plaintext goes when you ask, and how to check all of it yourself.",
+    "toc": {
+      "stores": "What we store",
+      "plaintext": "Where plaintext goes",
+      "keys": "Your keys",
+      "unlock": "Unlocking",
+      "link": "Linking a device",
+      "verify": "Verify what you run",
+      "leak": "The leak test",
+      "report": "Reporting"
+    },
+    "stores": {
+      "title": "What we store, and what we never see.",
+      "body": "Your device indexes and encrypts before anything leaves it. The server receives ciphertext and tokens, and returns them when you search.",
+      "yes": "The server stores",
+      "no": "The server never sees",
+      "yes1": "Encrypted transcripts, metadata, notes and recordings",
+      "yes2": "HMAC tokens for keywords, contacts and tags",
+      "yes3": "Embeddings of redacted text",
+      "yes4": "The day of each call and a duration bucket",
+      "yes5": "Wrapped keys and public keys",
+      "no1": "Transcript text or individual words",
+      "no2": "Phone numbers or contact names",
+      "no3": "Tag names, notes or rule definitions",
+      "no4": "Your keys, unwrapped",
+      "no5": "Decrypted recordings"
+    },
+    "plaintext": {
+      "title": "Where plaintext goes.",
+      "body": "Only when you ask, one request at a time. These routes stream straight through and never write to disk, storage or logs.",
+      "device": "device",
+      "remoteTool": "remote AI tool",
+      "sealed": "sealed to your key",
+      "transcription": "Transcription",
+      "transcriptionBody": "Audio of a call you upload. Where the provider issues single-use tokens, your browser sends the audio to it directly and our server never sees it; otherwise it streams through our server. With your own key, your device always sends it directly.",
+      "ask": "Ask about a call",
+      "askBody": "That one call and your question, after you agree in a dialog that names the receiver. The transcript is wrapped as untrusted data, so instructions inside it aren't followed.",
+      "inbox": "Inbox uploads",
+      "inboxBody": "A transcript a remote AI tool sends for you is visible to our server in transit, sealed at once to your inbox public key, and the plaintext is discarded. The app says so next to each such item.",
+      "retentionTitle": "What each provider keeps",
+      "retentionBody": "The terms each adapter works under, as documented in its README in the repository.",
+      "provider": "Provider",
+      "terms": "Retention",
+      "elevenlabs": "Requests carry <code>enable_logging=false</code>, which ElevenLabs honours only for workspaces with Zero Retention Mode, an Enterprise feature. Until that is in place, ElevenLabs may keep request logs under its standard policy.",
+      "deepgram": "Requests carry <code>mip_opt_out=true</code>, opting out of Deepgram's Model Improvement Program; Deepgram then keeps the data only as long as needed to process the request.",
+      "openaiStt": "No per-request retention flag. API inputs aren't used for training by default; zero data retention is an account-level agreement with OpenAI.",
+      "soniox": "No no-retention flag. The adapter deletes the uploaded file and the transcription as soon as it has the transcript; Soniox's 30-day expiry is the backstop.",
+      "anthropic": "No per-request retention flag; retention follows the instance's agreement with Anthropic.",
+      "openaiLlm": "Requests send <code>store: false</code>, so the Responses API doesn't store them.",
+      "local": "Ollama, LM Studio or a local Whisper server: requests stay on the network you run them on.",
+      "localName": "OpenAI-compatible, local"
+    },
+    "keys": {
+      "title": "Your keys.",
+      "body": "One root key is created on your first device and never leaves a device unwrapped. Every other key comes from it.",
+      "label": "Key hierarchy",
+      "passkey": "Passkey",
+      "recovery": "Recovery code",
+      "passphrase": "Passphrase",
+      "linked": "Linked device",
+      "each": "each unwraps its own copy",
+      "root": "Root key",
+      "rootDetail": "32 random bytes · wiped from memory on lock",
+      "perCall": "Per-call key",
+      "perCallDetail": "transcript, meta, snippets, recording",
+      "tokens": "Tokens",
+      "tokensDetail": "words, contacts, tags · 64-bit"
+    },
+    "unlock": {
+      "title": "Unlocking.",
+      "body": "Each method keeps its own wrapped copy of the root key. Sign-up can't finish until you create a recovery code and type part of it back.",
+      "passkey": "Face ID, Touch ID, Windows Hello or a security key. The PRF extension yields 32 bytes the server never sees.",
+      "recovery": "8 groups of 4 characters, shown once. 128 bits of randomness, so no slow derivation is needed.",
+      "passphrase": "Only where the browser lacks PRF. Argon2id at 64 MiB, at least 12 characters.",
+      "locking": "Locking",
+      "lockingBody": "After 15 idle minutes and on tab close. Keys and decrypted text are dropped from memory."
+    },
+    "link": {
+      "title": "Linking a device.",
+      "body": "The local agent or another browser receives the root key straight from your existing device, encrypted to a key made for it. The server only relays.",
+      "newDevice": "on the new device",
+      "trusted": "on your trusted device",
+      "compare": "compare",
+      "step1": "In Settings › Devices, choose Link a device to get a short code and a QR code.",
+      "step2": "The new device makes a key pair and posts its public key.",
+      "step3": "Both devices show a 6-digit fingerprint. You confirm they match.",
+      "step4": "The trusted device sends the root key encrypted to the new public key.",
+      "step5": "The link expires in 10 minutes, is written to the audit log and can be revoked."
+    },
+    "verify": {
+      "title": "Verify what you run.",
+      "body": "AskCalls builds reproducibly. Every release publishes the SHA-256 of each client JavaScript asset, so you can check that askcalls.com serves exactly the code in the repository. App routes load no third-party scripts and run under a strict CSP."
+    },
+    "leak": {
+      "title": "The leak test.",
+      "zero": "seeded words and phone numbers found in a full dump of the database and the storage bucket.",
+      "body": "Every pull request runs it: seed calls with known words and numbers, dump the entire database and bucket, and search for them in UTF-8, UTF-16 and every normalized and token form. If anything turns up, the build fails.",
+      "link": "Read the test"
+    },
+    "report": {
+      "title": "Threat model and reporting.",
+      "body": "AskCalls protects your calls from the server and anyone who gets at it. It can't protect what an unlocked device shows: a compromised device that is unlocked can read it. Report a vulnerability privately through the repository's security advisories, not in a public issue.",
+      "advisory": "Report a vulnerability",
+      "subprocessors": "Subprocessors"
+    }
+  },
+  "faqPage": {
+    "titleA": "Questions.",
+    "lead": "About recording, keys, where data lives, providers and limits. The security page covers the privacy model in full.",
+    "groupStart": "Getting started",
+    "groupPrivacy": "Privacy and keys",
+    "groupLimits": "Limits"
+  },
+  "mcpPage": {
+    "title": "Connect your AI.",
+    "lead": "The askcalls agent is a local MCP server that holds your keys. It searches, decrypts and ingests on your machine, so Claude, Cursor or any MCP client can work with your calls.",
+    "toc": {
+      "link": "Link the agent",
+      "clients": "Add it to your client",
+      "tools": "Tools",
+      "ingest": "Bulk import",
+      "remote": "Remote MCP"
+    },
+    "link": {
+      "title": "Link the agent.",
+      "body": "Sign in, then link this computer from a device that is already unlocked. Both show the same 6-digit fingerprint before the key moves."
+    },
+    "clients": {
+      "title": "Add it to your client.",
+      "claudeDesktop": "Open Settings → Developer → Edit Config, or edit the file directly. Restart Claude Desktop after saving.",
+      "cursor": "<code>~/.cursor/mcp.json</code> for all projects, or <code>.cursor/mcp.json</code> for one.",
+      "vscode": "<code>.vscode/mcp.json</code> in your workspace.",
+      "windsurf": "<code>~/.codeium/windsurf/mcp_config.json</code>.",
+      "codex": "Or in <code>~/.codex/config.toml</code>.",
+      "path": "Desktop apps don't always inherit your shell's PATH. If a client can't start the server, replace <code>bunx</code> with its full path from <code>which bunx</code>."
+    },
+    "tools": {
+      "title": "Tools.",
+      "body": "Transcripts are returned as untrusted content in a delimited field, never as instructions.",
+      "tool": "Tool",
+      "does": "What it does",
+      "search": "Keyword, contact, tag, intent, date and semantic search, with decrypted results",
+      "get": "Full transcript and metadata, within a per-session decrypt budget",
+      "recent": "Recent calls with decrypted metadata",
+      "ingest": "Import a single call or a whole folder",
+      "update": "Update stars and tags",
+      "catalogs": "Your decrypted catalogs"
+    },
+    "ingest": {
+      "title": "Bulk import.",
+      "body": "Bulk import from the command line uses the same pipeline as the app."
+    },
+    "remote": {
+      "title": "Remote MCP.",
+      "body": "A remote MCP endpoint serves clients that can't run a local process. It has no keys, so it offers only <code>inbox_upload</code>, <code>list_recent_calls</code> (ids, days and durations) and <code>account_status</code>. Inbox uploads are visible to the server in transit, encrypted to your inbox public key on arrival, and indexed the next time one of your devices unlocks.",
+      "token": "Create a personal access token in Settings → API and MCP, then:",
+      "json": "For clients configured with JSON:"
+    }
+  },
+  "selfHostPage": {
+    "title": "Self-host.",
+    "lead": "Run the whole product on your own server. The code is MIT-licensed, and your instance sets its own limits, providers and storage.",
+    "toc": {
+      "compose": "Docker Compose",
+      "configure": "Configure",
+      "offline": "Offline",
+      "local": "On one computer"
+    },
+    "compose": {
+      "title": "Docker Compose.",
+      "body": "This brings up Postgres with pgvector, MinIO and the web app. Open the app, and the first-run wizard walks you through the database, storage, sign-in, transcription and LLM. The first user to sign in becomes the admin."
+    },
+    "configure": {
+      "title": "Configure.",
+      "body": "Every setting is editable at <code>/admin/instance</code>. Any environment variable you set locks its setting. <code>.env.example</code> in the repository lists them all.",
+      "stepDb": "Database: Postgres with pgvector from any provider.",
+      "stepBlob": "Storage: any S3-compatible bucket or the local file system.",
+      "stepAuth": "Sign-in: Google, GitHub, email links or local accounts.",
+      "stepProviders": "Transcription and questions: a managed provider, an OpenAI-compatible server on your network, or off."
+    },
+    "offline": {
+      "title": "Offline.",
+      "body": "With <code>OFFLINE_MODE=true</code>, the instance serves the embedding model, ffmpeg and fonts itself, and the browser calls no provider directly. Point transcription and questions at a local Whisper server and Ollama to keep every request on your network.",
+      "planned": "Planned: a Compose file for air-gapped installs that adds the local Whisper server and Ollama."
+    },
+    "local": {
+      "title": "On one computer.",
+      "body": "<code>askcalls local</code> runs the whole product on your machine, with no server, no Docker and no account: an embedded Postgres, local file storage, and the app bound to 127.0.0.1. Your data stays encrypted on disk, and you still unlock it with a passkey, recovery code or passphrase.",
+      "planned": "Not available in this version: the command is registered in the CLI and lands with local mode."
+    },
+    "guide": "Source and Compose files on GitHub"
+  },
+  "legal": {
+    "toc": "Sections",
+    "contact": "Questions about this document go to the address published on askcalls.com once the operating entity is chosen.",
+    "privacy": {
+      "title": "Privacy policy.",
+      "lead": "How askcalls.com handles personal data. The service is built so that we can't read your calls; this policy covers what we can see.",
+      "s1t": "Who we are",
+      "s1": "AskCalls is operated by the entity named here once it is chosen. For your call content, we act as a processor on your behalf; for your account data, we are the controller.",
+      "s2t": "What we collect",
+      "s2": "Your email address and sign-in provider, account settings, usage counts for the limits, and an audit log of reads and writes to your account (ids, times and event types). Your calls, contacts, tags and notes reach us only as ciphertext and keyed tokens we can't reverse.",
+      "s3t": "What we can't see",
+      "s3": "Transcript text, words, phone numbers, contact names, tag names, notes, decrypted recordings and your unwrapped keys. Encryption happens on your device before upload.",
+      "s4t": "When content leaves your device",
+      "s4": "Only when you ask: audio you choose to transcribe goes to the transcription provider, and one call goes to the AI provider when you ask about it. These requests stream through and are not stored by us. The subprocessors page lists who receives what.",
+      "s5t": "Analytics and cookies",
+      "s5": "The marketing pages may count page views without cookies or personal data. Signing in sets a session cookie, and the language you choose is kept in a cookie. Product analytics in the app are off unless you turn them on in Settings → Privacy.",
+      "s6t": "Retention and deletion",
+      "s6": "Your data stays until you delete it or a retention rule you set removes it. Deleting your account deletes the wrapped keys first, which makes any remaining ciphertext unreadable, then the data.",
+      "s7t": "Your rights",
+      "s7": "You can access, export, correct and delete your data from Settings. The export is decrypted on your device."
+    },
+    "terms": {
+      "title": "Terms.",
+      "lead": "The agreement between you and the operator of askcalls.com for using the hosted service.",
+      "s1t": "The service",
+      "s1": "AskCalls stores and indexes call transcripts and recordings you upload, encrypted on your device, and lets you search them and ask an AI about them. The software is open source under the MIT licence; these terms cover the hosted service only.",
+      "s2t": "Your account and keys",
+      "s2": "You are responsible for your passkeys, recovery code and passphrase. We never hold your keys, so we can't recover your calls if you lose every unlock method.",
+      "s3t": "Your content",
+      "s3": "You keep all rights to what you upload. You confirm you are allowed to record and store the calls you upload under the laws that apply to you and to the other people on them.",
+      "s4t": "Beta and limits",
+      "s4": "The service is free during beta, within the published limits. Features and limits may change; we will say so on the pricing page before a change takes effect.",
+      "s5t": "Acceptable use",
+      "s5": "Don't use AskCalls to break the law, to store content you have no right to, or to attack the service or other users.",
+      "s6t": "Liability",
+      "s6": "The service is provided as is during beta. Liability terms are set out here once reviewed by counsel.",
+      "s7t": "Ending the agreement",
+      "s7": "You can delete your account at any time from Settings. We may suspend accounts that break these terms, after notice where the law allows."
+    },
+    "dpa": {
+      "title": "Data processing agreement.",
+      "lead": "For customers who process other people's personal data, such as callers, through askcalls.com.",
+      "s1t": "Roles",
+      "s1": "You are the controller of the call content you upload. The operator of askcalls.com processes it on your instructions as your processor.",
+      "s2t": "Nature of the processing",
+      "s2": "Storage of ciphertext and keyed tokens, search over them, and on your request, streaming of audio to a transcription provider and of one call to an AI provider.",
+      "s3t": "Security measures",
+      "s3": "Encryption on your device with AES-256-GCM under keys we never hold, keyed HMAC tokens for search, a strict content security policy on app routes, audit logging of reads and writes, and a leak test on every change.",
+      "s4t": "Subprocessors",
+      "s4": "The subprocessors page lists every subprocessor, what it receives and where. We will update it before adding one.",
+      "s5t": "Transfers",
+      "s5": "Data is stored in the EU (Frankfurt). Transcription and AI requests go to the providers listed, which may process them outside the EU.",
+      "s6t": "Deletion and return",
+      "s6": "You can export your data at any time, decrypted on your device, and delete it. Account deletion removes the wrapped keys first, then the data."
+    },
+    "subprocessors": {
+      "title": "Subprocessors.",
+      "lead": "The companies askcalls.com uses to run the service. A self-hosted instance uses only the services its admin configures.",
+      "name": "Subprocessor",
+      "purpose": "Purpose",
+      "receives": "What it receives",
+      "location": "Location",
+      "vercel": "Hosting of the web app and API",
+      "vercelData": "Requests to the app: ciphertext, tokens, and the audio and call you send for transcription or questions, in transit",
+      "vercelWhere": "EU (Frankfurt functions)",
+      "neon": "Postgres database",
+      "neonData": "Ciphertext, keyed tokens, embeddings of redacted text, account data",
+      "neonWhere": "EU (Frankfurt)",
+      "r2": "Storage for encrypted recordings",
+      "r2Data": "Encrypted recording segments",
+      "r2Where": "EU jurisdiction",
+      "elevenlabs": "Transcription (default)",
+      "elevenlabsData": "Audio of calls you choose to transcribe, per request",
+      "elevenlabsWhere": "ElevenLabs' processing regions",
+      "anthropic": "Answers about a call (default)",
+      "anthropicData": "One call's transcript and your question, per request, after you agree",
+      "anthropicWhere": "Anthropic's processing regions",
+      "note": "With your own provider key, your device calls the provider directly under your own account, and that provider is not our subprocessor."
+    }
+  }
 }

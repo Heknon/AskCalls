@@ -1,25 +1,39 @@
 export type LimitsTableProps = {
   /** Names the list: "Free beta limits". */
   label: string;
-  /** "500" + "calls", "300 min" + "transcription a month". */
-  limits: { key: string; value: string; label: string }[];
+  /** `value` "2" + `unit` "GB" + `label` "of recording backups"; `detail` for the sheet. */
+  limits: { key: string; value: string; unit?: string; label: string; detail?: string }[];
+  /** `teaser`: five numerals on one rule (home). `sheet`: the pricing page, with details. */
+  variant?: 'teaser' | 'sheet';
 };
 
-/** The free-tier limits. */
-export function LimitsTable({ label, limits }: LimitsTableProps) {
+/** The free-tier limits as big numerals on hairlines. */
+export function LimitsTable({ label, limits, variant = 'teaser' }: LimitsTableProps) {
+  const value = (l: LimitsTableProps['limits'][number]) => (
+    <>
+      {l.value}
+      {l.unit ? <small>{l.unit}</small> : null}
+    </>
+  );
+  if (variant === 'sheet') {
+    return (
+      <dl data-component="LimitsTable" aria-label={label} className="sheet">
+        {limits.map((l) => (
+          <div key={l.key}>
+            <dt>{l.label}</dt>
+            <dd className="v">{value(l)}</dd>
+            {l.detail ? <dd className="d">{l.detail}</dd> : null}
+          </div>
+        ))}
+      </dl>
+    );
+  }
   return (
-    <dl
-      data-component="LimitsTable"
-      aria-label={label}
-      className="m-0 grid grid-cols-2 gap-4 md:grid-cols-5"
-    >
+    <dl data-component="LimitsTable" aria-label={label} className="nums">
       {limits.map((l) => (
-        <div
-          key={l.key}
-          className="flex flex-col-reverse rounded-lg border border-border bg-card p-5"
-        >
-          <dt className="text-muted-foreground text-sm">{l.label}</dt>
-          <dd className="m-0 font-semibold text-2xl tabular tracking-tight">{l.value}</dd>
+        <div key={l.key}>
+          <dt>{l.label}</dt>
+          <dd>{value(l)}</dd>
         </div>
       ))}
     </dl>

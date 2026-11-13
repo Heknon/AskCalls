@@ -1,26 +1,22 @@
-import type { ReactNode } from 'react';
+import { cn } from '../lib/cn';
 
 export type StepListProps = {
-  steps: { key: string; title: string; body: ReactNode }[];
+  steps: { key: string; title: string; note: string }[];
+  /** `display`: the home page's three lines at chapter size. `compact`: reading pages. */
+  size?: 'display' | 'compact';
 };
 
-/** A numbered sequence of how something works. */
-export function StepList({ steps }: StepListProps) {
+/** A numbered sequence of how something works, as lines of type on hairlines. */
+export function StepList({ steps, size = 'display' }: StepListProps) {
   return (
-    <ol data-component="StepList" className="m-0 grid list-none gap-6 p-0 md:grid-cols-3">
+    <ol data-component="StepList" className={cn('lines', size === 'compact' && 'compact')}>
       {steps.map((s, i) => (
-        <li
-          key={s.key}
-          className="flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card p-6"
-        >
-          <span
-            aria-hidden
-            className="inline-flex size-8 items-center justify-center rounded-full bg-primary-subtle font-semibold text-primary-subtle-foreground"
-          >
-            {i + 1}
+        <li key={s.key}>
+          <span className="n" aria-hidden>
+            {String(i + 1).padStart(2, '0')}
           </span>
-          <h3 className="font-semibold text-lg">{s.title}</h3>
-          <div className="text-muted-foreground leading-6">{s.body}</div>
+          <span className="t">{s.title}</span>
+          <span className="a">{s.note}</span>
         </li>
       ))}
     </ol>

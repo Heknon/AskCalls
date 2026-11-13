@@ -45,7 +45,9 @@ export type TelemetryEvent =
       name: 'search';
       filters: Array<'keyword' | 'contact' | 'tag' | 'intent' | 'starred' | 'date' | 'semantic'>;
     }
-  | { name: 'agent_linked' };
+  | { name: 'agent_linked' }
+  /** A marketing page view: the route only (one of the fixed marketing paths), no visitor id. */
+  | { name: 'page_view'; route: string };
 
 export interface ErrorReport {
   code: string;

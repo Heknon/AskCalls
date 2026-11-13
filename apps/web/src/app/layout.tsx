@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { AppProviders } from '../client/i18n/providers';
 import { THEME_SCRIPT } from '../client/theme/script';
 import { localeDir } from '../i18n/locales';
+import { MARKETING_HEADER } from '../server/http/csp';
 import { requestLocale } from '../server/i18n/locale';
 import './globals.css';
 
@@ -20,11 +21,11 @@ export const metadata: Metadata = {
  * nonce where middleware set one.
  */
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [locale, messages, nonce] = await Promise.all([
-    requestLocale(),
-    getMessages(),
-    headers().then((h) => h.get('x-nonce') ?? undefined),
-  ]);
+  const [locale, messages, h] = await Promise.all([requestLocale(), getMessages(), headers()]);
+  const nonce = h.get('x-nonce') ?? undefined;
+  // Marketing pages (set by middleware) use no client providers: their markup is server-rendered
+  // with the messages they need, so the message catalog stays out of the page.
+  const marketing = h.get(MARKETING_HEADER) === '1';
   return (
     <html lang={locale} dir={localeDir(locale)} suppressHydrationWarning>
       <head>
@@ -36,9 +37,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         />
       </head>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <AppProviders>{children}</AppProviders>
-        </NextIntlClientProvider>
+        {marketing ? (
+          children
+        ) : (
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <AppProviders>{children}</AppProviders>
+          </NextIntlClientProvider>
+        )}
       </body>
     </html>
   );
