@@ -1,0 +1,20 @@
+{
+  "name": "@askcalls/indexing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@askcalls/domain": "workspace:*",
+    "libphonenumber-js": "1.13.16"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  }
+}
