@@ -170,6 +170,7 @@ export function AppSessionProvider({
       (report) => {
         const added = report.processed;
         if (added > 0) {
+          refreshMe().catch(() => {});
           notify({
             kind: 'event',
             icon: Inbox,

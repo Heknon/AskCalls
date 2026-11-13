@@ -120,7 +120,12 @@ export function CallList({
   let firstLocked = true;
   return (
     <Card className="overflow-hidden max-md:-mx-4 max-md:rounded-none max-md:border-x-0">
-      <ul ref={listRef} aria-label={t('row.list')} className="m-0 list-none p-0">
+      <ul
+        ref={listRef}
+        aria-label={t('row.list')}
+        aria-busy={feed.refreshing || undefined}
+        className="m-0 list-none p-0"
+      >
         <li aria-hidden className="border-0 p-0" style={{ height: win.before }} />
         {rows.map((item, i) => {
           const index = win.start + i;

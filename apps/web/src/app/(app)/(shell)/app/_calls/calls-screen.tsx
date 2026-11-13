@@ -104,6 +104,9 @@ export function CallsScreen() {
     else setExcluded([]);
   }, [searched]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new query starts without a cursor
+  useEffect(() => setCursor(-1), [searched, query]);
+
   const urlFilters = useMemo(() => parseFilters(new URLSearchParams(query)), [query]);
   const filters: Filters = useMemo(() => ({ ...urlFilters, numbers }), [urlFilters, numbers]);
   const setFilters = (next: Filters, facet: FilterFacet) => {
@@ -122,6 +125,14 @@ export function CallsScreen() {
     useCallback((l) => client.onEmbedderStatus(l), [client]),
     client.embedderStatus(),
   );
+
+  // Calls that arrive while the list is open (inbox imports after unlock) reload it.
+  const knownCalls = useRef(me.usage.calls);
+  const { reload } = feed;
+  useEffect(() => {
+    if (me.usage.calls > knownCalls.current) reload();
+    knownCalls.current = me.usage.calls;
+  }, [me.usage.calls, reload]);
 
   const ids = useMemo(() => feed.items.map((i) => i.id), [feed.items]);
   useEffect(() => {

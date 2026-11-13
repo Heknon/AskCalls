@@ -251,6 +251,8 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     );
   }, [fetchMore, loadingMore]);
 
+  const reload = useCallback(() => setAttempt((a) => a + 1), []);
+
   const patch = useCallback<Feed['patch']>((id, change) => {
     setState((s) => ({ ...s, raw: s.raw.map((i) => (i.id === id ? { ...i, ...change } : i)) }));
   }, []);
@@ -283,7 +285,7 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     hasMore: state.cursor !== null,
     loadingMore,
     loadMore,
-    reload: () => setAttempt((a) => a + 1),
+    reload,
     mode: state.mode,
     alsoMatched: state.alsoMatched,
     forms: state.forms,
