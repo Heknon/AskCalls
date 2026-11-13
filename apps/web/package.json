@@ -24,6 +24,7 @@
     "@askcalls/adapter-transcription-soniox": "workspace:*",
     "@askcalls/api-contract": "workspace:*",
     "@askcalls/client-core": "workspace:*",
+    "@askcalls/crypto": "workspace:*",
     "@askcalls/domain": "workspace:*",
     "@askcalls/ui": "workspace:*",
     "@electric-sql/pglite": "0.5.16",
@@ -39,11 +40,13 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@askcalls/indexing": "workspace:*",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.5",
     "@types/nodemailer": "8.0.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "fflate": "0.8.3",
     "tailwindcss": "4.3.5",
     "uuidv7": "1.2.1",
     "vitest": "5.1.0"
