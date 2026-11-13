@@ -95,6 +95,18 @@ async function clearSearch(page: Page) {
 }
 
 test('search, open, act on and ask about calls; lock wipes the list', async ({ page, context }) => {
+  // zod probes `new Function` once and catches the refusal: that `eval` report is expected.
+  const violations: string[] = [];
+  await context.exposeFunction('reportCsp', (v: string) => violations.push(v));
+  await context.addInitScript(() =>
+    document.addEventListener('securitypolicyviolation', (e) => {
+      if (e.blockedURI !== 'eval') {
+        (window as unknown as { reportCsp: (v: string) => void }).reportCsp(
+          `${e.violatedDirective} ${e.blockedURI} ${location.pathname}`,
+        );
+      }
+    }),
+  );
   await addAuthenticator(context, page, true);
   await onboard(page);
   await seed(page);
@@ -247,4 +259,6 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   await lockFromSidebar(page);
   await expect(page.locator('[data-component="CallRow"]')).toHaveCount(0);
   await expect(page.getByText('דנה לוי')).toHaveCount(0);
+
+  expect(violations, 'CSP violations').toEqual([]);
 });

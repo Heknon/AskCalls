@@ -473,7 +473,7 @@ function CallView({
                 router.push(back.href);
               }}
               hits={
-                hitSegments.length
+                hitSegments.length && !isPhone
                   ? {
                       index: hitIndex + 1,
                       count: hitSegments.length,
