@@ -86,7 +86,7 @@ Sign up at [askcalls.com](https://askcalls.com). It's free during beta.
 ### On your own computer
 
 ```sh
-npx askcalls local
+bunx askcalls local
 ```
 
 This runs the whole product on your machine, with no server, no Docker and no account: an embedded Postgres (PGlite with pgvector), local file storage, and the app bound to `127.0.0.1`. Your data stays encrypted on disk, and you still unlock it with a passkey, recovery code or passphrase.
@@ -115,14 +115,14 @@ Every setting is editable at `/admin/instance`. Any environment variable you set
 The `askcalls` agent is a local MCP server that holds your keys. It searches, decrypts and ingests on your machine, so Claude, Cursor or any MCP client can work with your calls.
 
 ```sh
-npx askcalls login --url https://askcalls.com
-npx askcalls link
+bunx askcalls login --url https://askcalls.com
+bunx askcalls link
 ```
 
 **Claude Code**
 
 ```sh
-claude mcp add askcalls -- npx -y askcalls mcp
+claude mcp add askcalls -- bunx askcalls mcp
 ```
 
 **Claude Desktop, Cursor and other clients**
@@ -131,8 +131,8 @@ claude mcp add askcalls -- npx -y askcalls mcp
 {
   "mcpServers": {
     "askcalls": {
-      "command": "npx",
-      "args": ["-y", "askcalls", "mcp"]
+      "command": "bunx",
+      "args": ["askcalls", "mcp"]
     }
   }
 }
