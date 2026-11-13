@@ -23,7 +23,10 @@ test('no request leaves the origin on app pages', async ({ page, context }) => {
   const foreign: string[] = [];
   context.on('request', (r) => {
     const u = new URL(r.url());
-    if (!['data:', 'blob:'].includes(u.protocol) && u.host !== 'localhost:3417')
+    if (
+      !['data:', 'blob:'].includes(u.protocol) &&
+      u.host !== new URL(test.info().project.use.baseURL!).host
+    )
       foreign.push(u.origin);
   });
   await signIn(page, uniqueEmail('origins'));
