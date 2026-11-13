@@ -1,10 +1,9 @@
 name: Deploy
 
 # dev    → the dev environment on every push (dev Neon branch, askcalls-dev under dev/, DEV_DOMAIN)
-# master → production, only when started by hand: Actions → Deploy → Run workflow → master.
-#          Merging into master deploys nothing; that click is the approval (environment
-#          reviewers need a paid GitHub plan on private repos). The production environment
-#          only accepts master.
+# master → production on every push (a merged pull request), after the full suite passes.
+#          The production environment only accepts master. Run workflow re-deploys a branch
+#          without a new commit.
 #
 # Order: AWS (CDK stacks, then the embedding model) → migrations → app. Migrations run before
 # the code that needs them is live, so every migration must be backward compatible with the
@@ -15,7 +14,7 @@ name: Deploy
 # checks, nothing is migrated or deployed, and the run says so.
 on:
   push:
-    branches: [dev]
+    branches: [dev, master]
     paths-ignore:
       - "**/*.md"
       - "docs/**"

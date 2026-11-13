@@ -1,8 +1,12 @@
 import { type FormOptions, wordForms } from './forms';
 import { tokenize } from './normalize';
 
-/** Spec 7.5: at most this many keyword tokens per call. */
-export const MAX_KEYWORDS_PER_CALL = 5000;
+/**
+ * Spec 7.5: at most this many keyword tokens per text. A call is indexed from its original and
+ * up to four translations, each capped on its own, so one long text never crowds out another.
+ */
+export const MAX_KEYWORDS_PER_TEXT = 5000;
+export const MAX_KEYWORDS_PER_CALL = 5 * MAX_KEYWORDS_PER_TEXT;
 
 export interface KeywordExtraction {
   /** Distinct forms, at most `cap`, in the deterministic keep order. */
@@ -24,7 +28,7 @@ export function extractKeywords(
   text: string,
   opts: FormOptions & { cap?: number } = {},
 ): KeywordExtraction {
-  const cap = opts.cap ?? MAX_KEYWORDS_PER_CALL;
+  const cap = opts.cap ?? MAX_KEYWORDS_PER_TEXT;
   const counts = new Map<string, number>();
   const ranks = new Map<string, number>();
   const cache = new Map<string, ReturnType<typeof wordForms>>();

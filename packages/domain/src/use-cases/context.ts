@@ -68,6 +68,7 @@ export function dayWindow(now: Date) {
 export const usageKeys = {
   transcriptionSeconds: (userId: UserId) => `usage:transcribe-sec:${userId}`,
   asks: (userId: UserId) => `usage:ask:${userId}`,
+  translationChars: (userId: UserId) => `usage:translate-chars:${userId}`,
 };
 
 /** Blob keys. Opaque: user and call ids plus a random suffix, never content. */

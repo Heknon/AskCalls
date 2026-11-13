@@ -18,7 +18,7 @@ AskCalls stores phone-call transcripts and recordings so the server can index an
 1. **The server operator, or anyone who takes over the server or its database and bucket.** Sees everything the server stores and every request it handles. The design goal: they learn no content. On askcalls.com this includes the infrastructure providers: Vercel (the app), Neon (Postgres) and AWS (recordings in private S3 buckets in `eu-central-1`, reachable only through per-environment IAM users and presigned URLs; `infra/`).
 2. **Another user of the same instance.** Must never read or change your rows.
 3. **A network attacker.** Defeated by TLS; nothing in this document depends on the network being private.
-4. **A third-party provider** (transcription, LLM, telemetry backend). Receives plaintext only when you ask for it, one request at a time, and telemetry backends never receive content.
+4. **A third-party provider** (transcription, LLM, telemetry backend). Receives plaintext only for what you choose: a call you upload for transcription, a call you ask about, and the calls your translation rules cover. Telemetry backends never receive content.
 5. **Script injected into the app** (a compromised dependency, XSS). Limited by the CSP and by keeping keys non-extractable, but script running in the app origin while you are unlocked can read what you can read. This is the residual risk of any web app that decrypts in the browser.
 6. **Someone with your unlocked device.** Out of scope beyond auto-lock.
 
@@ -83,11 +83,14 @@ Plaintext reaches the server only on these routes, each by your explicit action,
 | --- | --- | --- |
 | `POST /api/transcribe` | One audio chunk of a call you upload without a transcript, when the instance's managed provider transcribes it | The server in transit, and the transcription provider |
 | `POST /api/ask` | One decrypted call and your question, after a consent prompt per request | The server in transit, and the LLM provider |
+| `POST /api/translate` | Batches of the segments of a call your translation rules cover (for example Hebrew → English), at upload or when you apply new rules to existing calls. Consent is the rules themselves, set in Settings → Providers and stated on the upload screen; with no rules nothing is sent. New accounts start with Hebrew → English, shown during setup | The server in transit, and the LLM provider |
 | `POST /api/inbox`, remote MCP `inbox_upload` | A transcript or audio sent by a client without keys | The server in transit only, until it is encrypted to your inbox public key |
 
 Own-key mode skips the server entirely: your device calls the provider (or your own bucket) directly with credentials kept in your encrypted provider settings. The browser can only reach those origins because the server signs a direct-access cookie listing them (HMAC over your user id and the origins, HttpOnly, set by `PUT /api/settings/direct-access`), and the middleware adds the signed origins to `connect-src` for your pages only. Page script cannot widen it, and one user's cookie does nothing for another.
 
-LLM prompts wrap the transcript in delimiters with a system instruction to treat it as untrusted data (`wrapTranscript`, `ASK_SYSTEM_PROMPT`), because a transcript can contain text that looks like instructions.
+LLM prompts wrap the transcript in delimiters with a system instruction to treat it as untrusted data (`wrapTranscript`, `ASK_SYSTEM_PROMPT`, `TRANSLATE_SYSTEM_PROMPT`), because a transcript can contain text that looks like instructions. A translation must come back as exactly one string per segment; any other shape is repaired or refused, never stored.
+
+Translations come back to the device and are encrypted into `transcriptCt` with the original. Keyword tokens and chunk embeddings are derived from every language a call holds, and each chunk row records its language (`CallChunk.lang`, an ISO 639-1 code, which the server can see). Search queries are never translated and never leave the device as text.
 
 ## The inbox
 
@@ -115,7 +118,7 @@ On every pull request, the fast checks seed calls with known words, Hebrew and E
 - Metadata listed under "What the server sees".
 - A malicious server serving modified JavaScript to a target (detectable through published hashes, not preventable in a browser).
 - Malware or a malicious extension on your device, or an attacker with your unlocked device.
-- Plaintext you send to providers by choice (transcription, ask), which their retention terms govern. The default providers are configured for zero or minimal retention.
+- Plaintext you send to providers by choice (transcription, ask, translation by your rules), which their retention terms govern. The default providers are configured for zero or minimal retention.
 - Inbox uploads in transit.
 - Key rotation after revoking a device (R1 deletes the wrapped key but does not re-encrypt).
 - Deleting an account crypto-shreds the wrapped keys and deletes the rows and blobs; backups the operator keeps are their own policy, and they hold ciphertext only.

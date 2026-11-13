@@ -35,7 +35,7 @@ export type CallRowCall = {
   starred: boolean;
   tags: (TagChipProps & { id: string })[];
   /** Search context only: the best passage and the words it matched. */
-  snippet?: { text: string; hits: string[] };
+  snippet?: { text: string; hits: string[]; marker?: { label: string; title: string } };
 };
 
 export type CallRowAction = {
@@ -208,6 +208,7 @@ export function CallRow({
         <SearchSnippet
           text={call.snippet.text}
           hits={call.snippet.hits}
+          {...(call.snippet.marker && { marker: call.snippet.marker })}
           className="col-span-2 col-start-2 mt-0.5"
         />
       ) : null}

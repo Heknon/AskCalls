@@ -20,6 +20,7 @@ import {
 import { type Driver, rows } from '../driver';
 import { calls } from '../schema';
 import { dayCursor, dayCursorPredicate } from './calls';
+import { writeChunks } from './chunks';
 import { healthCheck } from './health';
 
 const MAX_SEARCH_LIMIT = 50;
@@ -53,6 +54,7 @@ interface HitRow {
   tagToks: unknown;
   hasRecording: boolean;
   bestOrd: number | null;
+  bestLang: string | null;
   bestSnippetCt: unknown;
   dist: number | null;
 }
@@ -69,6 +71,7 @@ function toHit(r: HitRow): SearchHit {
     hasRecording: r.hasRecording === true,
     bestSnippetCt: toBytesOrNull(r.bestSnippetCt),
     bestChunkOrd: r.bestOrd === null ? null : toNumber(r.bestOrd),
+    bestChunkLang: r.bestLang ?? null,
     // Cosine distance is 1 - similarity.
     score: dist === null ? null : 1 - dist,
   };
@@ -91,10 +94,6 @@ export function createSearchIndex(d: Driver): SearchIndex {
     healthCheck: () => healthCheck(d),
 
     upsertChunks: async (userId, callId, chunks) => {
-      const values = chunks.map((c) => {
-        if (!Number.isInteger(c.ord) || c.ord < 0) throw new DomainError('invalid', 'invalid ord');
-        return sql`(${callId}, ${userId}, ${c.ord}::int, ${vectorLiteral(c.embedding)}::halfvec, ${Buffer.from(c.snippetCt)})`;
-      });
       await d.asUser(userId, async (tx) => {
         const [own] = await tx
           .select({ id: calls.id })
@@ -102,15 +101,7 @@ export function createSearchIndex(d: Driver): SearchIndex {
           .where(and(eq(calls.userId, userId), eq(calls.id, callId)))
           .for('update');
         if (!own) throw new DomainError('not_found', 'call not found');
-        await tx.execute(
-          sql`DELETE FROM "CallChunk" WHERE "userId" = ${userId} AND "callId" = ${callId}`,
-        );
-        // Batches keep each statement well under the bind-parameter limit.
-        for (let i = 0; i < values.length; i += 500) {
-          await tx.execute(
-            sql`INSERT INTO "CallChunk" ("callId", "userId", "ord", "embedding", "snippetCt") VALUES ${sql.join(values.slice(i, i + 500), sql`, `)}`,
-          );
-        }
+        await writeChunks(tx, userId, callId, chunks);
       });
     },
 
@@ -131,7 +122,7 @@ export function createSearchIndex(d: Driver): SearchIndex {
         const rs = await d.asUser(userId, (tx) =>
           rows<HitRow>(
             tx,
-            sql`SELECT ${summarySelect}, NULL::int AS "bestOrd", NULL::bytea AS "bestSnippetCt",
+            sql`SELECT ${summarySelect}, NULL::int AS "bestOrd", NULL::text AS "bestLang", NULL::bytea AS "bestSnippetCt",
                   NULL::float8 AS "dist"
                 FROM "Call"
                 WHERE ${sql.join(where, sql` AND `)}
@@ -153,11 +144,11 @@ export function createSearchIndex(d: Driver): SearchIndex {
       const rs = await d.asUser(userId, (tx) =>
         rows<HitRow>(
           tx,
-          sql`SELECT ${summarySelect}, best."ord" AS "bestOrd", best."snippetCt" AS "bestSnippetCt",
+          sql`SELECT ${summarySelect}, best."ord" AS "bestOrd", best."lang" AS "bestLang", best."snippetCt" AS "bestSnippetCt",
                 best."dist" AS "dist"
               FROM "Call"
               CROSS JOIN LATERAL (
-                SELECT ch."ord", ch."snippetCt",
+                SELECT ch."ord", ch."lang", ch."snippetCt",
                        (ch."embedding" <=> ${vec}::halfvec(384))::float8 AS "dist"
                 FROM "CallChunk" ch
                 WHERE ch."callId" = ${calls.id} AND ch."userId" = ${userId}

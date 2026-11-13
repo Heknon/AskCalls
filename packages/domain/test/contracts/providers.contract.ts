@@ -35,5 +35,19 @@ export function describeLlmProviderContract(name: string, harness: Harness<LlmPr
       }
       expect(out.length).toBeGreaterThan(0);
     });
+
+    it('translates one string per segment, in order', async () => {
+      const llm = await harness.setup();
+      const out = await llm.translate({
+        segments: LLM_CONTRACT_SEGMENTS,
+        source: 'en',
+        target: 'he',
+      });
+      expect(out).toHaveLength(LLM_CONTRACT_SEGMENTS.length);
+      expect(out.every((s) => typeof s === 'string')).toBe(true);
+    });
   });
 }
+
+/** The segments the LlmProvider contract translates; scripted adapters answer for exactly these. */
+export const LLM_CONTRACT_SEGMENTS = ['Hello, this is Dana.', 'The price is 1,250 shekels.'];

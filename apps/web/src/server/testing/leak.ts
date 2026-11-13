@@ -38,6 +38,15 @@ const SEEDED_TEXT = [
   TAG_NAME,
   NOTES,
   'Quote call about Orbitex',
+  // Words only the mock translations hold: the Hebrew version of the English call, the English
+  // version of the Hebrew one. They live inside transcriptCt and as tokens only.
+  'מחסן',
+  'חוזה',
+  'התקנה',
+  'פאנלים',
+  'refrigerators',
+  'delivery',
+  'Tuesday morning',
 ];
 
 const PHONES = [
@@ -179,6 +188,15 @@ export async function seedLeakData(h: ClientHarness): Promise<void> {
     customIntents: [
       { id: 'orbitex', label: 'Orbitex deals', examples: ['Orbitex warehouse panels'] },
     ],
+  }));
+  await ctx.userData.update('providers', (d) => ({
+    ...d,
+    translation: {
+      rules: [
+        { from: 'he', to: ['en'] },
+        { from: 'en', to: ['he'] },
+      ],
+    },
   }));
   const tag = await createTag(ctx.userData, { name: TAG_NAME });
 

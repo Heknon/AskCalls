@@ -66,6 +66,7 @@ describe('direct origins', () => {
             zeroRetention: false,
           },
         },
+        translation: { rules: [] },
         llm: {
           mode: 'own',
           key: {
@@ -97,6 +98,7 @@ describe('direct origins', () => {
         v: 1,
         transcription: { mode: 'managed' },
         llm: { mode: 'off' },
+        translation: { rules: [] },
         recordings: { mode: 'managed' },
       }),
     ).toEqual({ providers: [], origins: [] });

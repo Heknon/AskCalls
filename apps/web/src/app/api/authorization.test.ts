@@ -27,6 +27,7 @@ interface Fixture {
   a: string;
   b: string;
   callId: string;
+  callUpdatedAt: string;
   keyringId: string;
   inboxId: string;
   tokenId: string;
@@ -161,6 +162,14 @@ const CASES: Case[] = [
     cross: 'own',
   },
   {
+    name: 'POST /api/translate',
+    method: 'POST',
+    path: () => '/api/translate',
+    auth: 'write',
+    json: () => ({ segments: ['What is the price?'], source: 'en', target: 'he' }),
+    cross: 'own',
+  },
+  {
     name: 'POST /api/calls',
     method: 'POST',
     path: () => '/api/calls',
@@ -182,6 +191,23 @@ const CASES: Case[] = [
     path: (f) => `/api/calls/${f.callId}`,
     auth: 'write',
     json: () => ({ tagToks: ['7'] }),
+    cross: 'not_found',
+  },
+  {
+    name: 'PUT /api/calls/:id/content',
+    method: 'PUT',
+    path: (f) => `/api/calls/${f.callId}/content`,
+    auth: 'write',
+    json: (f) => ({
+      transcriptCt: toB64(rand(40)),
+      metaCt: toB64(rand(40)),
+      keywordToks: ['11', '12'],
+      chunks: [
+        { ord: 0, lang: 'he', embedding: Array(384).fill(0.05), snippetCt: toB64(rand(20)) },
+        { ord: 1, lang: 'en', embedding: Array(384).fill(0.05), snippetCt: toB64(rand(20)) },
+      ],
+      expectedUpdatedAt: f.callUpdatedAt,
+    }),
     cross: 'not_found',
   },
   {
@@ -365,10 +391,12 @@ async function setupFixture(): Promise<Fixture> {
     deviceLabel: 'agent',
     signingPublicKey: rand(91),
   });
+  const stored = await ports.calls.get(a, call.id);
   return {
     a,
     b,
     callId: call.id,
+    callUpdatedAt: stored!.updatedAt.toISOString(),
     keyringId: entry.id,
     inboxId: item.id,
     tokenId: token.record.id,

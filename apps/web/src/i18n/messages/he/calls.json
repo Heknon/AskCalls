@@ -22,7 +22,8 @@
     "decrypting": "מפענח",
     "open": "פתיחה",
     "tags": "תגיות",
-    "list": "שיחות"
+    "list": "שיחות",
+    "fromTranslation": "מתוך התרגום ל{language}"
   },
   "search": {
     "placeholder": "חיפוש שמות, מספרים, תגיות או מילים",

@@ -8,6 +8,7 @@ import * as adminInstanceTest from '../../app/api/admin/instance/test/route';
 import * as adminUsers from '../../app/api/admin/users/route';
 import * as ask from '../../app/api/ask/route';
 import * as audit from '../../app/api/audit/route';
+import * as callContent from '../../app/api/calls/[id]/content/route';
 import * as recording from '../../app/api/calls/[id]/recording/route';
 import * as recordingUpload from '../../app/api/calls/[id]/recording-upload/route';
 import * as callById from '../../app/api/calls/[id]/route';
@@ -34,6 +35,7 @@ import * as telemetryEvents from '../../app/api/telemetry/events/route';
 import * as tokens from '../../app/api/tokens/route';
 import * as transcribe from '../../app/api/transcribe/route';
 import * as transcribeToken from '../../app/api/transcribe/token/route';
+import * as translate from '../../app/api/translate/route';
 import * as userdata from '../../app/api/userdata/[kind]/route';
 import * as vocab from '../../app/api/vocab/route';
 import { SESSION_COOKIES } from '../auth/secret';
@@ -59,9 +61,11 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/telemetry/events', telemetryEvents],
   ['/api/telemetry/errors', telemetryErrors],
   ['/api/ask', ask],
+  ['/api/translate', translate],
   ['/api/calls', calls],
   ['/api/calls/[id]', callById],
   ['/api/calls/[id]/recording-upload', recordingUpload],
+  ['/api/calls/[id]/content', callContent],
   ['/api/calls/[id]/recording', recording],
   ['/api/search', search],
   ['/api/vocab', vocab],
@@ -143,6 +147,7 @@ export function startTestApp(
     env?: Record<string, string>;
     limits?: Partial<Limits>;
     llm?: boolean;
+    translation?: boolean;
     transcription?: boolean;
     /** Real adapters in place of the in-memory ones (the PGlite + fs leak test). */
     adapters?: Partial<Ports>;
@@ -162,6 +167,7 @@ export function startTestApp(
     ...makeTestPorts({
       ...(opts.limits && { limits: opts.limits }),
       ...(opts.llm !== undefined && { llm: opts.llm }),
+      ...(opts.translation !== undefined && { translation: opts.translation }),
       ...(opts.transcription !== undefined && { transcription: opts.transcription }),
     }),
     ...opts.adapters,

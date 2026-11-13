@@ -5,6 +5,7 @@ import {
   createClientContext,
   KeySession,
   managedTranscriber,
+  managedTranslator,
 } from '@askcalls/client-core';
 import {
   FakeAudioCodec,
@@ -87,6 +88,7 @@ export async function startClientHarness(
         embedder,
         audio,
         transcriber: managedTranscriber(api),
+        translator: managedTranslator(api),
         clock: app.ports.clock,
         ...transport,
       }),

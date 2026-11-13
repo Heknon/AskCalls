@@ -156,11 +156,25 @@
     "new": "New synonym group",
     "canonical": "Main term",
     "variants": "Also means",
-    "note": "Applies to searches now and to calls imported from now on.",
+    "note": "Applies to searches now. Re-index to apply it to calls you already have.",
     "empty": "No synonyms yet",
     "remove": "Remove group",
     "removeTerm": "Remove {term}",
     "oneWord": "Use single words, without spaces.",
-    "exists": "This main term is already in another group."
+    "exists": "This main term is already in another group.",
+    "reindex": {
+      "title": "Re-index existing calls",
+      "body": "{count, plural, one {Apply your synonyms to # call. This runs on this device.} other {Apply your synonyms to # calls. This runs on this device.}}",
+      "start": "Re-index existing calls",
+      "progress": "Re-indexing calls: {done} of {total}",
+      "progressLabel": "Re-indexing calls",
+      "stop": "Stop",
+      "pause": "Pause",
+      "resume": "Resume",
+      "stopped": "Stopped after {done} of {total}. Resume to re-index the rest.",
+      "done": "{count, plural, one {# call re-indexed} other {# calls re-indexed}}",
+      "failed": "{count, plural, one {# call couldn't be re-indexed. Try again.} other {# calls couldn't be re-indexed. Try again.}}",
+      "keepOpen": "Keep this tab open while it runs."
+    }
   }
 }

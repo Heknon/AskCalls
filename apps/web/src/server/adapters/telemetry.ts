@@ -13,11 +13,13 @@ import * as health from '@askcalls/api-contract/routes/health';
 import * as inbox from '@askcalls/api-contract/routes/inbox';
 import * as keyring from '@askcalls/api-contract/routes/keyring';
 import * as providers from '@askcalls/api-contract/routes/providers';
+import * as reindex from '@askcalls/api-contract/routes/reindex';
 import * as search from '@askcalls/api-contract/routes/search';
 import * as settings from '@askcalls/api-contract/routes/settings';
 import * as setup from '@askcalls/api-contract/routes/setup';
 import * as telemetry from '@askcalls/api-contract/routes/telemetry';
 import * as tokens from '@askcalls/api-contract/routes/tokens';
+import * as translate from '@askcalls/api-contract/routes/translate';
 import * as userdata from '@askcalls/api-contract/routes/userdata';
 import * as vocab from '@askcalls/api-contract/routes/vocab';
 import type { Telemetry } from '@askcalls/domain';
@@ -39,11 +41,13 @@ const ROUTE_MODULES = [
   inbox,
   keyring,
   providers,
+  reindex,
   search,
   settings,
   setup,
   telemetry,
   tokens,
+  translate,
   userdata,
   vocab,
 ];

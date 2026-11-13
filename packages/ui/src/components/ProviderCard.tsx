@@ -7,6 +7,7 @@ import {
   FileText,
   HardDrive,
   KeyRound,
+  Languages,
   Mail,
   MessageSquareText,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from '../primitives/toggle-group';
 export type ProviderCapability =
   | 'transcription'
   | 'ask'
+  | 'translation'
   | 'recordings'
   | 'database'
   | 'storage'
@@ -50,6 +52,7 @@ export type ProviderCardProps = {
 const icons = {
   transcription: FileText,
   ask: MessageSquareText,
+  translation: Languages,
   recordings: FileAudio,
   database: Database,
   storage: HardDrive,

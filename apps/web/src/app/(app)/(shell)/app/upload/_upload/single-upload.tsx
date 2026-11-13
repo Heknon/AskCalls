@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { useAppSession } from '../../../../../../client/session/session';
-import { failureKey, minutesLeft, type TranscriptionFlow } from './plan';
+import { failureKey, minutesLeft, type TranscriptionFlow, type TranslationFlow } from './plan';
 import {
   contactFor,
   defaultsFor,
@@ -29,9 +29,16 @@ import {
   pickFiles,
   type SingleForm,
 } from './single';
-import { TranscriptionNote } from './transcription-note';
+import { TranscriptionNote, TranslationNote } from './transcription-note';
 
-const STEPS: ActiveStatus[] = ['decoding', 'transcribing', 'indexing', 'encrypting', 'uploading'];
+const STEPS: ActiveStatus[] = [
+  'decoding',
+  'transcribing',
+  'translating',
+  'indexing',
+  'encrypting',
+  'uploading',
+];
 
 type Run =
   | { state: 'idle' }
@@ -40,13 +47,20 @@ type Run =
 
 export interface SingleUploadProps {
   flow: TranscriptionFlow;
+  translation: TranslationFlow;
   settings: Settings;
   contacts: readonly Contact[];
   recordingsOff: boolean;
 }
 
 /** U1: one call from audio and/or a transcript, with its number, time and direction confirmed. */
-export function SingleUpload({ flow, settings, contacts, recordingsOff }: SingleUploadProps) {
+export function SingleUpload({
+  flow,
+  translation,
+  settings,
+  contacts,
+  recordingsOff,
+}: SingleUploadProps) {
   const t = useTranslations('upload');
   const { client, me, refreshMe } = useAppSession();
   const id = useId();
@@ -289,15 +303,16 @@ export function SingleUpload({ flow, settings, contacts, recordingsOff }: Single
             </div>
           ) : null}
           {needsTranscription ? <TranscriptionNote flow={flow} /> : null}
+          <TranslationNote flow={translation} />
           {blocker ? <ErrorState scope="inline" title={blocker} /> : null}
           {callLimit ? (
             <ErrorState scope="inline" title={t('callLimit', { n: me.limits.maxCalls })} />
           ) : null}
           {running ? (
             <Steps
-              steps={STEPS.filter((s) => s !== 'transcribing' || needsTranscription).filter(
-                (s) => s !== 'decoding' || !!picked.audio,
-              )}
+              steps={STEPS.filter((s) => s !== 'transcribing' || needsTranscription)
+                .filter((s) => s !== 'translating' || translation.route !== 'off')
+                .filter((s) => s !== 'decoding' || !!picked.audio)}
               current={run.step}
             />
           ) : (

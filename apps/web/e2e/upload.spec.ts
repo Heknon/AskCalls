@@ -49,7 +49,7 @@ test('bulk upload of a mixed folder with a manifest and duplicates', async ({ pa
   await expect(count(page, 'transcript only')).toHaveText('2');
   await expect(count(page, 'likely duplicates, skipped')).toHaveText('1');
   await expect(summary(page)).toContainText('manifest.csv set names and dates for 3 files.');
-  await expect(summary(page).locator('[data-component="DataFlowNote"]')).toContainText(
+  await expect(summary(page).locator('[data-component="DataFlowNote"]').first()).toContainText(
     'Audio passes through AskCalls to Mock transcriber',
   );
   await expect(page.locator('[data-component="QueueRow"]')).toHaveCount(5);
@@ -147,7 +147,10 @@ test('single upload confirms the details, then reports the duplicate', async ({
     .setInputFiles({ name: SAMSUNG, mimeType: 'audio/wav', buffer: wav(520) });
   await expect(page.getByLabel('Phone number')).toHaveValue('+972 52-555-0177');
   await expect(page.getByLabel('Date and time')).not.toHaveValue('');
-  await expect(page.locator('[data-component="DataFlowNote"]')).toContainText('Mock transcriber');
+  const notes = page.locator('[data-component="DataFlowNote"]');
+  await expect(notes.first()).toContainText('Mock transcriber');
+  // Translation is named too: new accounts translate Hebrew calls into English.
+  await expect(notes.nth(1)).toContainText('translation rules cover are also translated');
   await page.getByLabel('Phone number').fill('12');
   await expect(page.getByText('Enter a number with country code')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeDisabled();

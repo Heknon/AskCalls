@@ -7,6 +7,7 @@ import type {
   Embedder,
   FetchLike,
   SecretStore,
+  Translator,
 } from '@askcalls/client-core/ports/index';
 import { KeySession } from '@askcalls/client-core/session';
 import { managedTranscriber } from '@askcalls/client-core/transcription';
@@ -89,6 +90,23 @@ export function directAccessFor(p: Providers): DirectAccess {
   return { providers, origins };
 }
 
+/** Translation code loads on the first upload that needs it, not with every page. */
+function lazyTranslator(load: () => Promise<Translator>): Translator {
+  let loaded: Promise<Translator> | null = null;
+  const get = () => {
+    loaded ??= load().catch((e) => {
+      loaded = null;
+      throw e;
+    });
+    return loaded;
+  };
+  return {
+    id: 'settings',
+    enabled: async () => (await get()).enabled?.() ?? true,
+    translate: async (...args) => (await get()).translate(...args),
+  };
+}
+
 /**
  * The browser composition root: client-core's context wired to the browser adapters, the
  * same-origin typed API client (session cookie) and the lock rules of spec 6.8. Heavy parts
@@ -126,6 +144,15 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
       () => context().userData,
       managedTranscriber(api),
       session,
+    ),
+    translator: lazyTranslator(() =>
+      Promise.all([
+        import('./adapters/settings-translator'),
+        import('@askcalls/client-core/translation'),
+      ]).then(
+        ([{ SettingsTranslator }, { managedTranslator }]) =>
+          new SettingsTranslator(api, () => context().userData, managedTranslator(api), session),
+      ),
     ),
     uploader: new FetchRecordingUploader(),
     fetcher: new FetchBlobFetcher(),

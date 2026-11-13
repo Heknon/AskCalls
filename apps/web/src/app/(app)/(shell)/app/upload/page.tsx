@@ -7,7 +7,7 @@ import { useUnlocked } from '../../../../../client/session/session';
 import { Screen } from '../../_shell/screen';
 import { AsyncView, useAsync } from '../../_shell/states';
 import { BulkUpload } from './_upload/bulk-upload';
-import { transcriptionFlow } from './_upload/plan';
+import { transcriptionFlow, translationFlow } from './_upload/plan';
 import { SingleUpload } from './_upload/single-upload';
 
 type Tab = 'single' | 'bulk';
@@ -31,6 +31,7 @@ export default function UploadPage() {
       <AsyncView state={data}>
         {({ providers, settings, contacts, bulk }) => {
           const flow = transcriptionFlow(providers, me);
+          const translation = translationFlow(providers, me);
           const recordingsOff = providers.recordings.mode === 'off';
           return (
             <Tabs value={tab ?? (bulk ? 'bulk' : 'single')} onValueChange={(v) => setTab(v as Tab)}>
@@ -41,13 +42,19 @@ export default function UploadPage() {
               <TabsContent value="single" className="max-w-180">
                 <SingleUpload
                   flow={flow}
+                  translation={translation}
                   settings={settings}
                   contacts={contacts}
                   recordingsOff={recordingsOff}
                 />
               </TabsContent>
               <TabsContent value="bulk">
-                <BulkUpload flow={flow} settings={settings} recordingsOff={recordingsOff} />
+                <BulkUpload
+                  flow={flow}
+                  translation={translation}
+                  settings={settings}
+                  recordingsOff={recordingsOff}
+                />
               </TabsContent>
             </Tabs>
           );

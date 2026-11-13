@@ -5,6 +5,7 @@ import { ask } from '@askcalls/api-contract/routes/providers';
 import type { ClientContext } from '@askcalls/client-core/context';
 import type { UserDataDocs } from '@askcalls/client-core/userdata';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ownKeyLlm } from '../../../../../../../client/adapters/own-key-llm';
 import type { Me } from '../../../../../../../client/session/session';
 
 type OwnKey = Extract<UserDataDocs['providers']['llm'], { mode: 'own' }>['key'];
@@ -100,22 +101,7 @@ async function* askDirect(
     signal: AbortSignal;
   },
 ): AsyncIterable<string> {
-  const { AiSdkLlmProvider, isLlmProviderId } = await import('@askcalls/adapter-llm-ai-sdk');
-  if (!isLlmProviderId(key.provider)) throw new Error('unknown provider');
-  const provider = new AiSdkLlmProvider({
-    provider: key.provider,
-    apiKey: key.apiKey,
-    ...(key.model && { model: key.model }),
-    ...(key.baseUrl && { baseUrl: key.baseUrl }),
-    // Anthropic answers browsers only when the request says it comes from one on purpose.
-    fetch: (input, init) => {
-      const headers = new Headers(init?.headers);
-      if (key.provider === 'anthropic')
-        headers.set('anthropic-dangerous-direct-browser-access', 'true');
-      return fetch(input, { ...init, headers });
-    },
-  });
-  yield* provider.ask(req);
+  yield* (await ownKeyLlm(key)).ask(req);
 }
 
 /** One call's ask conversation: streams each answer from AskCalls or the user's own provider. */

@@ -111,6 +111,8 @@ export interface DecryptedCall {
   starred: boolean;
   signature: SignatureStatus;
   recording: { bucketRef: string | null; objectKey: string; bytes: number } | null;
+  /** Bound into the signature; a re-index keeps it. */
+  contentTok: bigint;
   createdAt: Date;
   updatedAt: Date;
   /** Kept for later updates (notes, title); dropped with the call object. */
@@ -168,6 +170,7 @@ export async function getCall(ctx: ClientContext, id: string): Promise<Decrypted
     starred: directory.isStarred(call.tagToks),
     signature,
     recording: call.recording,
+    contentTok: call.contentTok,
     createdAt: call.createdAt,
     updatedAt: call.updatedAt,
     dek,
