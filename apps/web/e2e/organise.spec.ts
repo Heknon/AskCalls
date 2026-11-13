@@ -35,7 +35,7 @@ test('a keyword rule applied to existing calls tags the calls that say it', asyn
   await expect(page.getByText('Matches 1 call.')).toBeVisible({ timeout: 30_000 });
 
   await page.getByRole('button', { name: 'Apply to existing calls' }).click();
-  await expect(page.getByText('Rule applied to 1 call.')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('Rule applied to 1 call.').first()).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('[data-component="RuleListItem"]')).toContainText(
     'invoice → tag Billing',
   );
@@ -106,12 +106,12 @@ test('a VCF import adds contacts once', async ({ page, context }) => {
     mimeType: 'text/vcard',
     buffer: Buffer.from(vcf),
   });
-  await expect(page.getByText('2 contacts imported, 0 already existed.')).toBeVisible();
+  await expect(page.getByText('2 contacts imported, 0 already existed.').first()).toBeVisible();
   await input.setInputFiles({
     name: 'contacts.vcf',
     mimeType: 'text/vcard',
     buffer: Buffer.from(vcf),
   });
-  await expect(page.getByText('0 contacts imported, 2 already existed.')).toBeVisible();
+  await expect(page.getByText('0 contacts imported, 2 already existed.').first()).toBeVisible();
   await expect(page.locator('[data-component="ContactRow"]')).toHaveCount(2);
 });
