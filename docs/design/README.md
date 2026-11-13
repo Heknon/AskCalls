@@ -31,7 +31,7 @@ Mocks use the system font when IBM Plex isn't installed; the screenshots were re
 
 ## Open questions for the owner
 
-1. **Setup claim protection.** The first account on a fresh instance becomes admin. On a public URL a stranger could claim it first (Plausible has this problem). Proposed: when the wizard is opened from a non-loopback address, require a one-time setup token printed in the server log. Needs a small backend addition not in the spec.
+1. **Setup claim protection.** Decided: a fresh instance prints a one-time setup token to its log at start (also saved to `<data dir>/setup-token`, owner-only), and the wizard needs it from every address, loopback included, because behind a reverse proxy every request looks local. It is consumed when the admin account is created. See `docs/self-hosting.md`, "Why a setup token".
 2. **Accent colour sign-off.** Teal was chosen to stand apart from Signal/Proton/Tuta blues, purples and reds. If there is an existing brand colour, swap `primary*` in `tokens.css` and re-run the contrast table.
 3. **Logo.** The mark in the mocks (waveform bars with a small key block on a teal tile) is a placeholder, not a designed logo.
 4. **Demo video.** The hero needs the recorded Playwright video from the spec; who records the final cut, in which language first, and do we ship both an English and a Hebrew version?

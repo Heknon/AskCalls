@@ -214,3 +214,21 @@ export const schema = {
   auditEvents,
   rateBuckets,
 };
+
+export const passwordCredentials = pgTable('PasswordCredential', {
+  userId: text('userId').primaryKey(),
+  hash: text('hash').notNull(),
+  updatedAt: ts('updatedAt').notNull(),
+});
+
+export const signInPasskeys = pgTable('SignInPasskey', {
+  credentialId: text('credentialId').primaryKey(),
+  userId: text('userId').notNull(),
+  providerAccountId: text('providerAccountId').notNull(),
+  publicKey: text('publicKey').notNull(),
+  counter: bigint('counter', { mode: 'number' }).notNull(),
+  deviceType: text('deviceType').notNull(),
+  backedUp: boolean('backedUp').notNull(),
+  transports: text('transports'),
+  createdAt: ts('createdAt').notNull(),
+});

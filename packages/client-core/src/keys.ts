@@ -250,16 +250,15 @@ export interface UnlockOptions {
 const isWrongKey = (e: unknown) =>
   isCryptoError(e) && (e.reason === 'wrong_key' || e.reason === 'decrypt_failed');
 
-/**
- * Unlock gate (spec 11.2): fetches the wrapped RK for the chosen method and unwraps it on the
- * device. A wrong code or passphrase throws `CryptoError('wrong_key')`.
- */
-export async function unlock(input: UnlockInput, opts: UnlockOptions): Promise<void> {
+/** Fetches the wrapped RK for the chosen method and unwraps it on the device. */
+async function unwrapRootKey(
+  input: UnlockInput,
+  opts: { api: ApiClient; userId: string },
+): Promise<Uint8Array> {
   const { entries } = await opts.api.request(listKeyring, {});
   const active = entries.filter((e) => e.kind === input.method && e.revokedAt === null);
   if (active.length === 0) throw new DomainError('not_found', 'no such unlock method');
 
-  let rootKey: Uint8Array | null = null;
   if (input.method === 'passkey') {
     const ids = active.map((e) => e.credentialId).filter((c): c is string => c !== null);
     const assertion = await input.authenticator.assert({ credentialIds: ids, prfSalt: PRF_SALT });
@@ -267,7 +266,7 @@ export async function unlock(input: UnlockInput, opts: UnlockOptions): Promise<v
     if (!entry) throw new DomainError('not_found', 'passkey is not registered');
     const full = await opts.api.request(getKeyringEntry, { params: { id: entry.id } });
     try {
-      rootKey = await unlockWithPasskey({
+      return await unlockWithPasskey({
         userId: opts.userId,
         prfOutput: assertion.prfOutput,
         wrappedRootKey: full.wrappedRootKey,
@@ -276,35 +275,55 @@ export async function unlock(input: UnlockInput, opts: UnlockOptions): Promise<v
     } finally {
       wipeBytes(assertion.prfOutput);
     }
-  } else {
-    let lastError: unknown = null;
-    for (const entry of [...active].reverse()) {
-      const full = await opts.api.request(getKeyringEntry, { params: { id: entry.id } });
-      try {
-        const args = {
-          userId: opts.userId,
-          wrappedRootKey: full.wrappedRootKey,
-          kdfParams: full.kdfParams,
-        };
-        rootKey =
-          input.method === 'recovery'
-            ? await unlockWithRecoveryCode({ ...args, code: input.code })
-            : await unlockWithPassphrase({ ...args, passphrase: input.passphrase });
-        break;
-      } catch (e) {
-        if (!isWrongKey(e)) throw e;
-        lastError = e;
-      }
-    }
-    if (!rootKey) throw lastError;
   }
+  let lastError: unknown = null;
+  for (const entry of [...active].reverse()) {
+    const full = await opts.api.request(getKeyringEntry, { params: { id: entry.id } });
+    try {
+      const args = {
+        userId: opts.userId,
+        wrappedRootKey: full.wrappedRootKey,
+        kdfParams: full.kdfParams,
+      };
+      return input.method === 'recovery'
+        ? await unlockWithRecoveryCode({ ...args, code: input.code })
+        : await unlockWithPassphrase({ ...args, passphrase: input.passphrase });
+    } catch (e) {
+      if (!isWrongKey(e)) throw e;
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
 
+/**
+ * Unlock gate (spec 11.2): fetches the wrapped RK for the chosen method and unwraps it on the
+ * device. A wrong code or passphrase throws `CryptoError('wrong_key')`.
+ */
+export async function unlock(input: UnlockInput, opts: UnlockOptions): Promise<void> {
+  const rootKey = await unwrapRootKey(input, opts);
   let device = await opts.deviceKeys.load();
   await opts.session.unlock({ userId: opts.userId, rootKey, device });
   if (!device && opts.registerDeviceLabel) {
     device = await registerDevice(opts.api, opts.deviceKeys, opts.registerDeviceLabel);
     opts.session.setDevice(device);
   }
+}
+
+/**
+ * Re-checks an unlock method while already unlocked, before a sensitive change such as
+ * regenerating the recovery code. Throws like `unlock`; the session is not touched.
+ */
+export async function verifyUnlock(
+  input: UnlockInput,
+  opts: { api: ApiClient; session: KeySession },
+): Promise<void> {
+  const rootKey = await unwrapRootKey(input, { api: opts.api, userId: opts.session.userId });
+  const same =
+    rootKey.length === opts.session.keys.rootKey.length &&
+    rootKey.every((b, i) => b === opts.session.keys.rootKey[i]);
+  wipeBytes(rootKey);
+  if (!same) throw new DomainError('forbidden', 'unlock method belongs to another key');
 }
 
 /** Agent unlock: RK wrapped by the device secret, both from the OS keychain. */

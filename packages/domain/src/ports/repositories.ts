@@ -12,6 +12,7 @@ import type {
   AuditAction,
   AuditEvent,
   InboxItem,
+  ListedApiToken,
   NewApiToken,
   NewAuditEvent,
   NewInboxItem,
@@ -23,6 +24,7 @@ import type {
   LinkedAccount,
   NewUser,
   Plan,
+  SignInPasskey,
   User,
   UserRole,
   VerificationToken,
@@ -144,7 +146,7 @@ export interface InboxRepository extends HealthCheckable {
 export interface ApiTokenRepository extends HealthCheckable {
   create(token: NewApiToken): Promise<ApiToken>;
   findByHash(tokenHash: Bytes): Promise<ApiToken | null>;
-  list(userId: UserId): Promise<ApiToken[]>;
+  list(userId: UserId): Promise<ListedApiToken[]>;
   revoke(userId: UserId, id: string, at: Date): Promise<void>;
   touch(id: string, at: Date): Promise<void>;
   countActive(userId: UserId, now: Date): Promise<number>;
@@ -163,4 +165,19 @@ export interface AuditLog extends HealthCheckable {
     page: PageRequest,
     filter?: { action?: AuditAction },
   ): Promise<Page<AuditEvent>>;
+}
+
+/**
+ * Local-account credentials (spec 11.2b): an Argon2id password hash and sign-in passkeys.
+ * `getPasskey` runs before anyone is signed in; everything else is scoped by user id.
+ */
+export interface LocalCredentialRepository extends HealthCheckable {
+  /** Replaces the user's password hash (PHC string). */
+  setPasswordHash(userId: UserId, hash: string): Promise<void>;
+  getPasswordHash(userId: UserId): Promise<string | null>;
+  /** Conflict when the credential id is already registered. */
+  addPasskey(passkey: SignInPasskey): Promise<void>;
+  getPasskey(credentialId: string): Promise<SignInPasskey | null>;
+  listPasskeys(userId: UserId): Promise<SignInPasskey[]>;
+  updatePasskeyCounter(credentialId: string, counter: number): Promise<void>;
 }

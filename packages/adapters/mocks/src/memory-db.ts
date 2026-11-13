@@ -16,9 +16,11 @@ import {
   type KeyringEntry,
   type KeyringRepository,
   type LinkedAccount,
+  type LocalCredentialRepository,
   type Page,
   type SearchHit,
   type SearchIndex,
+  type SignInPasskey,
   type User,
   type UserDataBlob,
   type UserDataKind,
@@ -90,6 +92,8 @@ export class MemoryDb {
   audit: AuditEvent[] = [];
   accounts: LinkedAccount[] = [];
   verificationTokens: VerificationToken[] = [];
+  passwordHashes = new Map<string, string>();
+  passkeys = new Map<string, SignInPasskey>();
 
   readonly userRepo: UserRepository = {
     healthCheck: ok,
@@ -147,6 +151,8 @@ export class MemoryDb {
       drop(this.tokens);
       drop(this.userData);
       this.userKeys.delete(id);
+      this.passwordHashes.delete(id);
+      drop(this.passkeys);
       for (const [k, v] of this.chunks) if (v[0]?.userId === id) this.chunks.delete(k);
       this.vocab = this.vocab.filter((d) => d.userId !== id);
       this.audit = this.audit.filter((e) => e.userId !== id);
@@ -493,6 +499,30 @@ export class MemoryDb {
     },
   };
 
+  readonly localCredentialRepo: LocalCredentialRepository = {
+    healthCheck: ok,
+    setPasswordHash: async (userId, hash) => {
+      this.passwordHashes.set(userId, hash);
+    },
+    getPasswordHash: async (userId) => this.passwordHashes.get(userId) ?? null,
+    addPasskey: async (p) => {
+      if (this.passkeys.has(p.credentialId)) {
+        throw new DomainError('conflict', 'passkey already registered');
+      }
+      this.passkeys.set(p.credentialId, { ...p });
+    },
+    getPasskey: async (id) => {
+      const p = this.passkeys.get(id);
+      return p ? { ...p } : null;
+    },
+    listPasskeys: async (userId) =>
+      [...this.passkeys.values()].filter((p) => p.userId === userId).map((p) => ({ ...p })),
+    updatePasskeyCounter: async (id, counter) => {
+      const p = this.passkeys.get(id);
+      if (p) p.counter = counter;
+    },
+  };
+
   readonly tokenRepo: ApiTokenRepository = {
     healthCheck: ok,
     create: async (t) => {
@@ -520,7 +550,10 @@ export class MemoryDb {
     list: async (userId) =>
       [...this.tokens.values()]
         .filter((t) => t.userId === userId)
-        .map(({ fetches: _f, windowStart: _w, ...pub }) => pub),
+        .map(({ fetches, windowStart, ...pub }) => ({
+          ...pub,
+          fetchWindow: windowStart ? { start: windowStart, count: fetches } : null,
+        })),
     revoke: async (userId, id, at) => {
       const t = this.tokens.get(id);
       if (t && t.userId === userId) t.revokedAt = at;

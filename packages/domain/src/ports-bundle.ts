@@ -15,6 +15,7 @@ import type {
   CallRepository,
   InboxRepository,
   KeyringRepository,
+  LocalCredentialRepository,
   UserDataStore,
   UserRepository,
   VocabularyStore,
@@ -31,6 +32,7 @@ export interface Ports {
   userData: UserDataStore;
   inbox: InboxRepository;
   apiTokens: ApiTokenRepository;
+  localCredentials: LocalCredentialRepository;
   audit: AuditLog;
   blobs: BlobStore;
   /** Null when transcription is Off. */

@@ -81,14 +81,15 @@ export function appCsp(
 export const GOOGLE_ONE_TAP_ORIGIN = 'https://accounts.google.com';
 
 /**
- * CSP for the public pages that may load Google One Tap: `/` and `/login` (spec 2.4). Same
- * nonce model as the app; accounts.google.com is allowed here and nowhere else, and only when
- * One Tap is configured.
+ * CSP for the public pages that may load Google One Tap: `/` and `/login` (spec 2.4), and the
+ * setup wizard. Same nonce model as the app; accounts.google.com is allowed here and nowhere
+ * else, and only when One Tap is configured. Offline mode allows no outside origin at all.
  */
 export function publicCsp(
   nonce: string,
   environment: 'production' | 'development' | 'test',
   oneTap: boolean,
+  offline = false,
 ): string {
   const google = oneTap ? [GOOGLE_ONE_TAP_ORIGIN] : [];
   const script = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
@@ -104,7 +105,7 @@ export function publicCsp(
     join('frame-src', ...(oneTap ? google : ["'none'"])),
     "frame-ancestors 'none'",
     "base-uri 'none'",
-    join("form-action 'self'", ...google, 'https://github.com'),
+    join("form-action 'self'", ...google, ...(offline ? [] : ['https://github.com'])),
     "object-src 'none'",
   ].join('; ');
 }

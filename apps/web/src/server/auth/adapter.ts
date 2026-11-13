@@ -1,5 +1,5 @@
-import { isDomainError, type Ports, type User } from '@askcalls/domain';
-import type { Adapter, AdapterUser } from 'next-auth/adapters';
+import { isDomainError, type Ports, type SignInPasskey, type User } from '@askcalls/domain';
+import type { Adapter, AdapterAuthenticator, AdapterUser } from 'next-auth/adapters';
 
 /**
  * Auth.js adapter over the UserRepository port (users, linked accounts, verification tokens).
@@ -31,8 +31,21 @@ export async function createUserWithRole(
   return user;
 }
 
-export function createAuthAdapter(ports: Pick<Ports, 'users' | 'telemetry'>): Adapter {
-  const { users } = ports;
+const toAuthenticator = (p: SignInPasskey): AdapterAuthenticator => ({
+  credentialID: p.credentialId,
+  userId: p.userId,
+  providerAccountId: p.providerAccountId,
+  credentialPublicKey: p.publicKey,
+  counter: p.counter,
+  credentialDeviceType: p.deviceType,
+  credentialBackedUp: p.backedUp,
+  ...(p.transports ? { transports: p.transports } : {}),
+});
+
+export function createAuthAdapter(
+  ports: Pick<Ports, 'users' | 'telemetry' | 'localCredentials'>,
+): Adapter {
+  const { users, localCredentials } = ports;
   return {
     async createUser(u) {
       return toAdapterUser(
@@ -88,6 +101,38 @@ export function createAuthAdapter(ports: Pick<Ports, 'users' | 'telemetry'>): Ad
     },
     async useVerificationToken({ identifier, token }) {
       return users.useVerificationToken(identifier, token);
+    },
+    async getAccount(providerAccountId, provider) {
+      const u = await users.findByAccount(provider, providerAccountId);
+      if (!u || u.deletedAt) return null;
+      return { userId: u.id, provider, providerAccountId, type: 'webauthn' };
+    },
+    // Sign-in passkeys (Auth.js WebAuthn), for local accounts.
+    async createAuthenticator(a) {
+      await localCredentials.addPasskey({
+        credentialId: a.credentialID,
+        userId: a.userId,
+        providerAccountId: a.providerAccountId,
+        publicKey: a.credentialPublicKey,
+        counter: a.counter,
+        deviceType: a.credentialDeviceType,
+        backedUp: a.credentialBackedUp,
+        transports: a.transports ?? null,
+      });
+      return a;
+    },
+    async getAuthenticator(credentialID) {
+      const p = await localCredentials.getPasskey(credentialID);
+      return p ? toAuthenticator(p) : null;
+    },
+    async listAuthenticatorsByUserId(userId) {
+      return (await localCredentials.listPasskeys(userId)).map(toAuthenticator);
+    },
+    async updateAuthenticatorCounter(credentialID, counter) {
+      await localCredentials.updatePasskeyCounter(credentialID, counter);
+      const p = await localCredentials.getPasskey(credentialID);
+      if (!p) throw new Error('authenticator not found');
+      return toAuthenticator(p);
     },
   };
 }
