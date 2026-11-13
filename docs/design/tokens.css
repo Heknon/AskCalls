@@ -1,0 +1,519 @@
+/*
+ * AskCalls design tokens (R1)
+ * ---------------------------------------------------------------------------
+ * Target: Tailwind CSS v4 + shadcn/ui (Radix). Copy into packages/ui/src/styles/tokens.css
+ * and import it from the app stylesheet right after Tailwind:
+ *
+ *   @import "tailwindcss";
+ *   @import "tw-animate-css";          // what shadcn/ui uses for enter/exit animations
+ *   @import "@askcalls/ui/styles/tokens.css";
+ *
+ * Theme switching: next-themes with attribute="class" (class "dark" on <html>),
+ * defaultTheme="system". Direction: <html dir="rtl" lang="he"> set on the server
+ * from the resolved locale, plus shadcn's DirectionProvider.
+ *
+ * Naming rule: AskCalls has ONE accent colour. In shadcn vocabulary it is
+ * `primary`. shadcn's `accent` token is NOT a brand colour; it is the neutral
+ * hover/selected background for menu items, and stays neutral here.
+ *
+ * Contrast ratios for every text/background pair are listed in
+ * docs/design/design-system.md section 3. Do not change a value without
+ * re-running that check.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------------ */
+/* 1. Self-hosted fonts. Files live in apps/web/public/fonts (copied from    */
+/*    the @ibm/plex-* npm packages, SIL OFL 1.1). Never load from a CDN.      */
+/*    unicode-range lets the browser fetch Hebrew/Arabic files only when a   */
+/*    page actually contains those characters.                               */
+/* ------------------------------------------------------------------------ */
+
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  unicode-range: U+0000-024F, U+0259, U+02B0-02FF, U+0300-036F, U+0370-03FF, U+0400-052F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2212, U+FEFF; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/fonts/IBMPlexSans-Medium.woff2") format("woff2");
+  unicode-range: U+0000-024F, U+0259, U+02B0-02FF, U+0300-036F, U+0370-03FF, U+0400-052F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2212, U+FEFF; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  unicode-range: U+0000-024F, U+0259, U+02B0-02FF, U+0300-036F, U+0370-03FF, U+0400-052F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2212, U+FEFF; }
+
+@font-face { font-family: "IBM Plex Sans Hebrew"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/IBMPlexSansHebrew-Regular.woff2") format("woff2");
+  unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-2010, U+20AA, U+25CC; }
+@font-face { font-family: "IBM Plex Sans Hebrew"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/fonts/IBMPlexSansHebrew-Medium.woff2") format("woff2");
+  unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-2010, U+20AA, U+25CC; }
+@font-face { font-family: "IBM Plex Sans Hebrew"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/fonts/IBMPlexSansHebrew-SemiBold.woff2") format("woff2");
+  unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-2010, U+20AA, U+25CC; }
+
+/* Arabic ships with the Arabic locale (R2). Declared now so transcripts that
+   contain Arabic already render in the family. */
+@font-face { font-family: "IBM Plex Sans Arabic"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/IBMPlexSansArabic-Regular.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: "IBM Plex Sans Arabic"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/fonts/IBMPlexSansArabic-Medium.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: "IBM Plex Sans Arabic"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/fonts/IBMPlexSansArabic-SemiBold.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2"); }
+
+/* ------------------------------------------------------------------------ */
+/* 2. Static theme values (literal values -> @theme)                         */
+/* ------------------------------------------------------------------------ */
+
+@theme {
+  /* Families. Plex Sans has Latin, Cyrillic and Greek; the Hebrew and
+     Arabic members are matched to its metrics. System fonts are the
+     fallback for the first paint. */
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans Hebrew", "IBM Plex Sans Arabic",
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Type scale (rem at 16px root). App UI runs at 14px, reading text at 16px. */
+  --text-2xs: 0.6875rem;   /* 11px  kbd, counters only */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;      /* 12px  captions, timestamps */
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;    /* 13px  meta, table cells, chips */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;   /* 14px  default UI text */
+  --text-base--line-height: 1.375rem;
+  --text-md: 1rem;         /* 16px  transcript, marketing body, inputs on mobile */
+  --text-md--line-height: 1.625rem;
+  --text-lg: 1.125rem;     /* 18px  card titles, lead text */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;      /* 20px  section headings */
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;      /* 24px  page titles (app) */
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;    /* 30px  onboarding / gate headings */
+  --text-3xl--line-height: 2.375rem;
+  --text-4xl: 2.5rem;      /* 40px  marketing section headings */
+  --text-4xl--line-height: 3rem;
+  --text-5xl: 3.5rem;      /* 56px  marketing hero (use clamp below on small screens) */
+  --text-5xl--line-height: 4rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Latin-only tracking. Hebrew and Arabic reset to 0 (section 6). */
+  --tracking-tight: -0.011em;
+  --tracking-tighter: -0.022em;
+  --tracking-normal: 0;
+
+  /* Spacing: Tailwind v4 multiplier, 4px grid. p-4 = 16px. */
+  --spacing: 0.25rem;
+
+  /* Radii */
+  --radius-xs: 0.25rem;  /* 4px  kbd, small badges */
+  --radius-sm: 0.375rem; /* 6px  chips, inputs (compact) */
+  --radius-md: 0.5rem;   /* 8px  buttons, inputs */
+  --radius-lg: 0.75rem;  /* 12px cards, popovers */
+  --radius-xl: 1rem;     /* 16px dialogs, sheets */
+  --radius-2xl: 1.5rem;  /* 24px marketing panels */
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-fade-in: fade-in 180ms var(--ease-standard);
+
+  /* Layout */
+  --breakpoint-sm: 40rem;   /* 640  */
+  --breakpoint-md: 48rem;   /* 768  bottom nav -> rail */
+  --breakpoint-lg: 64rem;   /* 1024 rail -> sidebar, call view gets side panel */
+  --breakpoint-xl: 80rem;   /* 1280 */
+  --breakpoint-2xl: 96rem;  /* 1536 */
+  --container-transcript: 45rem; /* 720 transcript reading width: max-w-transcript */
+
+  @keyframes shimmer {
+    from { background-position: 150% 0; }
+    to { background-position: -50% 0; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* 3. Semantic colours exposed to Tailwind (values reference CSS variables) */
+/* ------------------------------------------------------------------------ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-mark: var(--mark);
+  --color-mark-foreground: var(--mark-foreground);
+  --color-skeleton: var(--skeleton);
+  --color-skeleton-highlight: var(--skeleton-highlight);
+  --color-overlay: var(--overlay);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* User tag colours (data, not brand). bg-tag-blue, text-tag-blue-foreground, bg-tag-blue-dot */
+  --color-tag-gray: var(--tag-gray);       --color-tag-gray-foreground: var(--tag-gray-foreground);       --color-tag-gray-dot: var(--tag-gray-dot);
+  --color-tag-blue: var(--tag-blue);       --color-tag-blue-foreground: var(--tag-blue-foreground);       --color-tag-blue-dot: var(--tag-blue-dot);
+  --color-tag-violet: var(--tag-violet);   --color-tag-violet-foreground: var(--tag-violet-foreground);   --color-tag-violet-dot: var(--tag-violet-dot);
+  --color-tag-rose: var(--tag-rose);       --color-tag-rose-foreground: var(--tag-rose-foreground);       --color-tag-rose-dot: var(--tag-rose-dot);
+  --color-tag-amber: var(--tag-amber);     --color-tag-amber-foreground: var(--tag-amber-foreground);     --color-tag-amber-dot: var(--tag-amber-dot);
+  --color-tag-green: var(--tag-green);     --color-tag-green-foreground: var(--tag-green-foreground);     --color-tag-green-dot: var(--tag-green-dot);
+  --color-tag-orange: var(--tag-orange);   --color-tag-orange-foreground: var(--tag-orange-foreground);   --color-tag-orange-dot: var(--tag-orange-dot);
+  --color-tag-cyan: var(--tag-cyan);       --color-tag-cyan-foreground: var(--tag-cyan-foreground);       --color-tag-cyan-dot: var(--tag-cyan-dot);
+
+
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+  --shadow-focus: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+}
+
+/* ------------------------------------------------------------------------ */
+/* 4. Light theme (default)                                                 */
+/* ------------------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+  --radius: 0.5rem;
+
+  --background: #F7F8F8;           /* app canvas */
+  --foreground: #131A1C;
+  --card: #FFFFFF;                 /* surfaces: list, cards, panels */
+  --card-foreground: #131A1C;
+  --popover: #FFFFFF;
+  --popover-foreground: #131A1C;
+
+  --primary: #0B7A71;              /* the one accent: "Harbor teal" */
+  --primary-hover: #086A62;
+  --primary-foreground: #FFFFFF;
+  --primary-subtle: #E5F3F1;       /* active chip, selected nav item */
+  --primary-subtle-foreground: #065A53;
+
+  --secondary: #EFF2F2;            /* secondary button, sunken wells */
+  --secondary-foreground: #131A1C;
+  --muted: #EFF2F2;
+  --muted-foreground: #566265;     /* secondary text */
+  --subtle-foreground: #677376;    /* placeholders, disabled labels */
+  --accent: #EEF1F1;               /* neutral hover bg (shadcn naming) */
+  --accent-foreground: #131A1C;
+
+  --destructive: #B83229;
+  --destructive-foreground: #FFFFFF;
+  --destructive-subtle: #FCEBE9;
+  --destructive-subtle-foreground: #9C2820;
+  --success: #21773A;
+  --success-subtle: #E7F4EA;
+  --success-subtle-foreground: #1B6431;
+  --warning: #8F5200;
+  --warning-subtle: #FFF3DD;
+  --warning-subtle-foreground: #7A4600;
+
+  --border: #E0E5E6;               /* dividers, card outlines (decorative) */
+  --input: #838F92;                /* form control borders, 3:1 on canvas and card */
+  --ring: #0B7A71;
+
+  --mark: #FDE68A;                 /* search hit highlight */
+  --mark-foreground: #131A1C;
+  --skeleton: #EAEEEE;
+  --skeleton-highlight: #F6F8F8;
+  --overlay: rgb(10 14 15 / 0.45);
+
+  --chart-1: #0B7A71;
+  --chart-2: #6B9E99;
+  --chart-3: #A9C6C2;
+  --chart-4: #838F92;
+  --chart-5: #C9D1D3;
+
+  --sidebar: #F1F3F3;
+  --sidebar-foreground: #131A1C;
+  --sidebar-primary: #0B7A71;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E5F3F1;
+  --sidebar-accent-foreground: #065A53;
+  --sidebar-border: #E0E5E6;
+  --sidebar-ring: #0B7A71;
+
+  --tag-gray: #EEF1F2;   --tag-gray-foreground: #3D4749;   --tag-gray-dot: #7A8689;
+  --tag-blue: #E7EFFC;   --tag-blue-foreground: #1D4B9A;   --tag-blue-dot: #3B72D9;
+  --tag-violet: #F0EBFB; --tag-violet-foreground: #55309B; --tag-violet-dot: #7E57D1;
+  --tag-rose: #FBE9EF;   --tag-rose-foreground: #97264D;   --tag-rose-dot: #D14874;
+  --tag-amber: #FBF0D9;  --tag-amber-foreground: #7A4A00;  --tag-amber-dot: #B57A0A;
+  --tag-green: #E6F3E8;  --tag-green-foreground: #22603A;  --tag-green-dot: #3E9A5C;
+  --tag-orange: #FCEDE3; --tag-orange-foreground: #8A3B0F; --tag-orange-dot: #D96A2B;
+  --tag-cyan: #E3F2F7;   --tag-cyan-foreground: #14576C;   --tag-cyan-dot: #2D8FB0;
+
+  --elevation-xs: 0 1px 1px rgb(16 24 28 / 0.04);
+  --elevation-sm: 0 1px 2px rgb(16 24 28 / 0.06), 0 1px 1px rgb(16 24 28 / 0.03);
+  --elevation-md: 0 4px 12px -2px rgb(16 24 28 / 0.08), 0 2px 4px -2px rgb(16 24 28 / 0.05);
+  --elevation-lg: 0 16px 40px -8px rgb(16 24 28 / 0.16), 0 4px 10px -4px rgb(16 24 28 / 0.06);
+
+  /* Motion durations (zeroed under reduced motion) */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --duration-panel: 280ms;
+
+  /* Layout constants */
+  --sidebar-width: 15rem;          /* 240 */
+  --rail-width: 4.5rem;            /* 72  */
+  --panel-width: 23.75rem;         /* 380 call view side panel */
+  --header-height: 3.5rem;         /* 56  */
+  --bottom-nav-height: 4rem;       /* 64 + safe area */
+  --row-height: 4.5rem;            /* 72 calls list row (virtualizer estimate) */
+  --row-height-compact: 3.5rem;    /* 56 */
+  --tap-min: 2.75rem;              /* 44 touch target on coarse pointers */
+}
+
+/* ------------------------------------------------------------------------ */
+/* 5. Dark theme                                                            */
+/* ------------------------------------------------------------------------ */
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0E1213;
+  --foreground: #E7ECED;
+  --card: #151A1C;
+  --card-foreground: #E7ECED;
+  --popover: #1B2124;
+  --popover-foreground: #E7ECED;
+
+  --primary: #3BBFAE;
+  --primary-hover: #5ACFC0;
+  --primary-foreground: #03201C;
+  --primary-subtle: #11302C;
+  --primary-subtle-foreground: #7DD9CC;
+
+  --secondary: #1F2629;
+  --secondary-foreground: #E7ECED;
+  --muted: #1B2124;
+  --muted-foreground: #9BA7AA;
+  --subtle-foreground: #8A969A;
+  --accent: #20282B;
+  --accent-foreground: #E7ECED;
+
+  --destructive: #F0766C;
+  --destructive-foreground: #03201C;
+  --destructive-subtle: #3A1714;
+  --destructive-subtle-foreground: #F49A92;
+  --success: #5DC57B;
+  --success-subtle: #12301C;
+  --success-subtle-foreground: #7AD394;
+  --warning: #E5AE4A;
+  --warning-subtle: #33250B;
+  --warning-subtle-foreground: #EDBF6A;
+
+  --border: #273033;
+  --input: #5F6C71;
+  --ring: #3BBFAE;
+
+  --mark: #5B4A0E;
+  --mark-foreground: #FFF4CC;
+  --skeleton: #1E2528;
+  --skeleton-highlight: #283135;
+  --overlay: rgb(0 0 0 / 0.6);
+
+  --chart-1: #3BBFAE;
+  --chart-2: #2A7D73;
+  --chart-3: #1F4F4A;
+  --chart-4: #5F6C71;
+  --chart-5: #334044;
+
+  --sidebar: #121718;
+  --sidebar-foreground: #E7ECED;
+  --sidebar-primary: #3BBFAE;
+  --sidebar-primary-foreground: #03201C;
+  --sidebar-accent: #11302C;
+  --sidebar-accent-foreground: #7DD9CC;
+  --sidebar-border: #232B2E;
+  --sidebar-ring: #3BBFAE;
+
+  --tag-gray: #232A2D;   --tag-gray-foreground: #C6CED0;   --tag-gray-dot: #8E9A9E;
+  --tag-blue: #14233D;   --tag-blue-foreground: #A8C4F5;   --tag-blue-dot: #6F9BEA;
+  --tag-violet: #251B3B; --tag-violet-foreground: #CDB8F4; --tag-violet-dot: #A386E6;
+  --tag-rose: #3A1622;   --tag-rose-foreground: #F3AFC5;   --tag-rose-dot: #E27A9B;
+  --tag-amber: #33260C;  --tag-amber-foreground: #EDCB86;  --tag-amber-dot: #D9A440;
+  --tag-green: #15291B;  --tag-green-foreground: #A5DBB4;  --tag-green-dot: #62B57D;
+  --tag-orange: #36200F; --tag-orange-foreground: #F2BB97; --tag-orange-dot: #E58B55;
+  --tag-cyan: #102A33;   --tag-cyan-foreground: #9DD3E4;   --tag-cyan-dot: #56AFCB;
+
+  /* Dark surfaces separate by lightness and a 1px border; shadows only add depth. */
+  --elevation-xs: 0 0 0 1px rgb(255 255 255 / 0.02);
+  --elevation-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elevation-md: 0 6px 16px -4px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.03);
+  --elevation-lg: 0 20px 48px -12px rgb(0 0 0 / 0.65), 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+
+/* ------------------------------------------------------------------------ */
+/* 6. Language and direction                                                */
+/* ------------------------------------------------------------------------ */
+
+/* Hebrew UI: put the Hebrew family first so shared glyphs (digits, punctuation,
+   Latin inside Hebrew sentences) come from the design matched to Hebrew. */
+:root:lang(he) {
+  --font-sans: "IBM Plex Sans Hebrew", "IBM Plex Sans", "IBM Plex Sans Arabic",
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+:root:lang(ar) {
+  --font-sans: "IBM Plex Sans Arabic", "IBM Plex Sans", "IBM Plex Sans Hebrew",
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+/* Hebrew and Arabic have no case and suffer from tracking: neutralise both. */
+:root:lang(he), :root:lang(ar) {
+  --tracking-tight: 0;
+  --tracking-tighter: 0;
+}
+:lang(he) .uppercase, :lang(ar) .uppercase { text-transform: none; letter-spacing: 0; }
+
+/* Arabic needs more vertical room for its marks. */
+:root:lang(ar) {
+  --text-base--line-height: 1.5rem;
+  --text-md--line-height: 1.75rem;
+}
+
+/* Directional icons flip in RTL. Apply `.icon-directional` (or Tailwind
+   `rtl:-scale-x-100`) to: arrow-left/right, chevron-left/right, chevrons,
+   corner-*-arrows, list-indent, log-in/log-out, undo/redo, reply, forward,
+   send, external-link, panel-left/right. Never to: play/pause/skip (media),
+   clock/history/refresh, check, search, phone numbers, charts. */
+[dir="rtl"] .icon-directional { transform: scaleX(-1); }
+
+/* Phone numbers, codes, keys and timestamps are always LTR islands. */
+.ltr-island { direction: ltr; unicode-bidi: isolate; }
+
+/* ------------------------------------------------------------------------ */
+/* 7. Base layer                                                            */
+/* ------------------------------------------------------------------------ */
+
+@layer base {
+  * { border-color: var(--border); }
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11";
+  }
+
+  /* One focus style everywhere: 2px ring + 2px gap in the surface colour. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: inherit;
+  }
+  :focus:not(:focus-visible) { outline: none; }
+
+  ::selection { background: color-mix(in srgb, var(--primary) 22%, transparent); }
+
+  mark, .hit {
+    background: var(--mark);
+    color: var(--mark-foreground);
+    border-radius: 0.1875rem;
+    padding-inline: 0.125em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* Tabular digits for times, durations, counts, phone numbers. */
+  .tabular, time, [data-numeric] { font-variant-numeric: tabular-nums; }
+
+  /* Skeleton placeholders. The lock glyph inside is added in markup. */
+  .skeleton {
+    background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-highlight) 50%, var(--skeleton) 100%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+    border-radius: var(--radius-xs);
+  }
+
+  /* Coarse pointers get 44px targets. */
+  @media (pointer: coarse) {
+    .tap-target { min-height: var(--tap-min); min-width: var(--tap-min); }
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* 8. Reduced motion: no shimmer, no movement, near-instant fades.           */
+/* ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-base: 1ms;
+    --duration-slow: 1ms;
+    --duration-panel: 1ms;
+  }
+  .skeleton { animation: none; background: var(--skeleton); }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Windows High Contrast / forced colours: keep focus and selection visible. */
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid CanvasText; }
+  mark, .hit { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+}
