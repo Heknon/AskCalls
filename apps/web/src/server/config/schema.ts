@@ -41,6 +41,24 @@ export const InstanceConfigSchema = z.object({
       testProvider: false,
     }),
 
+  /** Recording stores linked by OAuth (spec 11.2a). */
+  storage: z
+    .object({
+      /**
+       * The Google OAuth client for Drive (scope drive.file). Unset: the sign-in client
+       * (`auth.google`) is used, with the Drive callback added to its redirect URIs.
+       */
+      google: z
+        .object({
+          id: z.string().optional(),
+          secret,
+          /** E2E only: a fake Google token endpoint. Honoured only when NODE_ENV=test. */
+          testOAuthUrl: z.string().url().optional(),
+        })
+        .default({}),
+    })
+    .default({ google: {} }),
+
   db: z
     .object({
       driver: z.enum(['postgres', 'pglite', 'memory']).default('postgres'),
@@ -167,6 +185,7 @@ export const SECRET_PATHS = new Set([
   'auth.secret',
   'auth.google.secret',
   'auth.github.secret',
+  'storage.google.secret',
   'auth.email.server',
   'cronSecret',
   'local.key',
@@ -218,6 +237,9 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['AUTH_EMAIL_FROM', 'auth.email.from', str],
   ['AUTH_REDIRECT_PROXY_URL', 'auth.redirectProxyUrl', str],
   ['AUTH_TEST_PROVIDER', 'auth.testProvider', bool],
+  ['STORAGE_GOOGLE_ID', 'storage.google.id', str],
+  ['STORAGE_GOOGLE_SECRET', 'storage.google.secret', str],
+  ['STORAGE_GOOGLE_TEST_OAUTH_URL', 'storage.google.testOAuthUrl', str],
   ['DB_DRIVER', 'db.driver', str],
   ['DATABASE_URL', 'db.url', str],
   ['PGLITE_DATA_DIR', 'db.pgliteDir', str],
