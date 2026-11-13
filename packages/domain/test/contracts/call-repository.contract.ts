@@ -45,6 +45,16 @@ export function describeCallRepositoryContract(name: string, harness: Harness<Ca
       expect(await s.calls.get(s.userA, c.id)).not.toBeNull();
     });
 
+    it("refuses an id that already exists, even another user's, without touching it", async () => {
+      const c = makeCall(s.userA);
+      await s.calls.create(c);
+      await expect(s.calls.create(makeCall(s.userB, { id: c.id }))).rejects.toMatchObject({
+        code: 'conflict',
+      });
+      expect((await s.calls.get(s.userA, c.id))?.metaCt).toEqual(c.metaCt);
+      expect(await s.calls.get(s.userB, c.id)).toBeNull();
+    });
+
     it('rejects duplicate content and audio tokens per user only', async () => {
       const contentTok = randomTok();
       const audioTok = randomTok();

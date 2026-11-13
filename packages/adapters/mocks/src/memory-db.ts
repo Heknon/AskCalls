@@ -270,6 +270,7 @@ export class MemoryDb {
   readonly callRepo: CallRepository = {
     healthCheck: ok,
     create: async (input) => {
+      if (this.calls.has(input.id)) throw new DomainError('conflict', 'call id already exists');
       for (const c of this.calls.values()) {
         if (c.userId !== input.userId) continue;
         if (
@@ -336,7 +337,7 @@ export class MemoryDb {
     count: async (userId) => [...this.calls.values()].filter((c) => c.userId === userId).length,
     totalRecordingBytes: async (userId) =>
       [...this.calls.values()]
-        .filter((c) => c.userId === userId)
+        .filter((c) => c.userId === userId && c.recording?.bucketRef === null)
         .reduce((n, c) => n + (c.recording?.bytes ?? 0), 0),
     listIdsBefore: async (userId, beforeDay, limit) =>
       [...this.calls.values()]
