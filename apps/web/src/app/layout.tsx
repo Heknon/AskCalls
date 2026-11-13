@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { AppProviders } from '../client/i18n/providers';
 import { THEME_SCRIPT } from '../client/theme/script';
 import { localeDir } from '../i18n/locales';
-import { getContainer } from '../server/container';
+import { getConfigService } from '../server/container';
 import { MARKETING_HEADER } from '../server/http/csp';
 import { requestLocale } from '../server/i18n/locale';
 import { OG_IMAGE } from './(marketing)/_data/routes';
@@ -18,15 +18,17 @@ import './globals.css';
  * replace them with their own (`pageMetadata`).
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const [t, locale, { config }] = await Promise.all([
+  // The config service, not the container: before setup the container doesn't exist yet.
+  const [t, locale, configService] = await Promise.all([
     getTranslations('marketing.meta'),
     requestLocale(),
-    getContainer(),
+    getConfigService(),
   ]);
+  const { config } = configService.get();
   const title = t('home.title');
   const description = t('home.description');
   return {
-    metadataBase: new URL(config.config.appUrl),
+    metadataBase: new URL(config.appUrl),
     title,
     description,
     icons: { icon: '/icons/icon.svg', apple: '/icons/apple-touch-icon.png' },
