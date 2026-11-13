@@ -6,14 +6,24 @@ export type FetchLike = typeof fetch;
 export const defaultFetch: FetchLike = (input, init) => fetch(input, init);
 
 /**
+ * Why a provider refused a request, from a fixed set: never provider text.
+ * - `invalid_key`: the key is unknown or revoked.
+ * - `missing_permission`: the key exists but lacks the permission this request needs.
+ * - `zero_retention_unavailable`: zero-retention mode was requested on a plan without it.
+ */
+export type RefusalReason = 'invalid_key' | 'missing_permission' | 'zero_retention_unavailable';
+
+/**
  * Sends a request and returns the response when it is 2xx. Otherwise throws a content-free
- * DomainError carrying only the provider id and HTTP status; the body is discarded unread.
+ * DomainError carrying only the provider id, HTTP status and, when `refusal` maps a 401 or 403
+ * to one, a `RefusalReason`. Any other body is discarded unread.
  */
 export async function send(
   provider: string,
   fetchImpl: FetchLike,
   url: string,
   init: RequestInit,
+  refusal?: (res: Response) => Promise<RefusalReason | undefined>,
 ): Promise<Response> {
   let res: Response;
   try {
@@ -26,11 +36,15 @@ export async function send(
     });
   }
   if (res.ok) return res;
+  const reason =
+    refusal && (res.status === 401 || res.status === 403)
+      ? await refusal(res).catch(() => undefined)
+      : undefined;
   await res.body?.cancel().catch(() => {});
   throw new DomainError(
     res.status === 429 ? 'rate_limited' : 'provider_error',
     `Transcription provider returned HTTP ${res.status}`,
-    { provider, status: res.status },
+    { provider, status: res.status, ...(reason && { reason }) },
   );
 }
 

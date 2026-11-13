@@ -9,6 +9,9 @@ export type FailureReason =
   | 'transcript_empty'
   | 'transcription_unavailable'
   | 'transcription_failed'
+  | 'provider_key_rejected'
+  | 'provider_permission'
+  | 'provider_zero_retention'
   | 'nothing_to_ingest'
   | 'quota_exceeded'
   | 'rate_limited'
@@ -27,6 +30,19 @@ export class IngestError extends DomainError {
     super('invalid', message, { reason });
     this.name = 'IngestError';
   }
+}
+
+const REFUSALS: Record<string, FailureReason> = {
+  invalid_key: 'provider_key_rejected',
+  missing_permission: 'provider_permission',
+  zero_retention_unavailable: 'provider_zero_retention',
+};
+
+/** Why the transcription provider refused, when its adapter could tell (`details.reason`). */
+export function providerRefusal(e: unknown): FailureReason | null {
+  const details = e instanceof ApiError ? e.details : isDomainError(e) ? e.details : null;
+  const reason = details?.reason;
+  return typeof reason === 'string' ? (REFUSALS[reason] ?? null) : null;
 }
 
 export function failureReason(e: unknown): FailureReason {

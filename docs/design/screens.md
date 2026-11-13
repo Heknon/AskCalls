@@ -339,7 +339,7 @@ Mocks: [`calls.html`](mocks/calls.html) (text and two filters set), [`calls-sugg
 
 English, nothing set:
 
-> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[exact words]**
+> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[meaning]**
 
 English, filters set:
 
@@ -363,7 +363,7 @@ Blanks and their pickers (`FilterPicker`):
 | about | Which intent? / איזו כוונה? | built-in and custom intents | several |
 | from | When? / מתי? | Today · Last 7 days · Last 30 days · This year · Custom range (calendar) | one |
 | direction | Which direction? / איזה כיוון? | In and out · Incoming only · Outgoing only | one |
-| matching | Match by / התאמה לפי | Exact words · Meaning | one |
+| matching | Match by / התאמה לפי | Exact words · Meaning (default) | one |
 
 "Matching [meaning]" is the semantic search: the text is embedded on the device and results sort by best match. The first time it is chosen, the blank shows a spinner and the result line says "Loading the meaning model (34 MB, once)"; keyword results stay until it is ready. With no text typed, the blank has no effect and reads in muted style.
 
