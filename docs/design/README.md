@@ -1,0 +1,43 @@
+# AskCalls design (R1)
+
+The design engineers build from. Start with the design language, then the screen you're working on.
+
+| File | What it is |
+| --- | --- |
+| [`design-language.md`](design-language.md) | The consistency reference: layer model (primitives → product components → screens), meaning-based component catalog, no-duplication rules, colour/type/icon/motion roles, voice and copy rules, and the screen → component map |
+| [`design-system.md`](design-system.md) | Principles, app shell, palettes with checked WCAG contrast ratios, type scale, spacing, radii, elevation, motion, iconography, RTL rules, focus and state patterns, keyboard shortcuts, copy glossary, shadcn/ui inventory |
+| [`tokens.css`](tokens.css) | Tailwind v4 tokens (`@theme`, `@theme inline`, `:root`, `.dark`, `:lang(he)`, reduced motion). Compiled with Tailwind 4.3.5 to confirm it is valid. Copy into `packages/ui` |
+| [`screens.md`](screens.md) | Every screen: purpose, layout (desktop and mobile), states, interactions, keyboard, and message keys with English and Hebrew copy |
+| [`research.md`](research.md) | What we studied (search, encrypted apps, passkeys, transcripts, AI panels, uploads, provider settings, setup wizards, RTL, accessibility, marketing), with sources and the decisions D1 to D54 |
+| [`mocks/index.html`](mocks/index.html) | 14 self-contained HTML mocks with light/dark and English/Hebrew toggles, responsive to mobile. Each element that is a catalog component carries `data-component` |
+| [`screenshots/`](screenshots/) | 112 PNGs: every mock in light and dark, English and Hebrew, desktop 1440 × 900 and mobile 390 × 844, at 2× |
+
+Screenshot names: `<mock>--<desktop|mobile>-<light|dark>-<en|he>.png`. Home and the states sheet are full-page; the rest are the first viewport.
+
+Mocks use the system font when IBM Plex isn't installed; the screenshots were rendered with IBM Plex loaded locally, as the app will serve it.
+
+## The 10 decisions that matter most
+
+1. **One accent: Harbor teal.** Light `#0B7A71` (white text, 5.20:1), dark `#3BBFAE` (text `#03201C`, 7.54:1). Neutral canvas `#F7F8F8` / `#0E1213`, surfaces `#FFFFFF` / `#151A1C`, text `#131A1C` / `#E7ECED`, secondary text `#566265` / `#9BA7AA`. Status colours are semantic only; yellow `mark` is reserved for search hits. In shadcn terms the accent is `primary`; shadcn's `accent` stays a neutral hover colour. All 53 checked text and boundary pairs pass WCAG AA.
+2. **IBM Plex superfamily, self-hosted.** Plex Sans (Latin, Cyrillic, Greek), Plex Sans Hebrew, Plex Sans Arabic and Plex Mono, OFL, from IBM's npm packages, split by `unicode-range`. One design voice for English, Hebrew, Russian and Arabic, and a mono for recovery codes and fingerprints. Hebrew pages put the Hebrew family first; no tracking or uppercase in Hebrew.
+3. **App shell:** a 240 px sidebar at the start edge (navigation, then a compact Lock button with Shift+L, then the account row) at ≥ 1024 px; a 72 px icon rail at 768 to 1023 px; on mobile a top bar (title, one action, Lock) plus a five-item bottom navigation (Calls, Upload, Tags, Contacts, Settings). Admin appears for admins in a separate "Instance" group.
+4. **Search bar = free text + filter tokens, with one row of chips under it** (Contact, Tag, Intent, Starred, Date, Direction, Meaning). Chips are for discovery, tokens are the state; typed qualifiers (`contact:`) are optional accelerators. Results update 250 ms after typing without spinners. "Also matched" shows every fuzzy and synonym variant and lets the user exclude one. On mobile the bar holds text only and set chips move to the front of a scrolling row.
+5. **Call view = transcript first.** A 720 px reading column with speaker turns (each turn takes its direction from its own text, so Hebrew and English turns both read correctly in either UI), click-to-seek timestamps, hits marked in text and as ticks on the player. The player docks under the transcript and is always LTR. A 380 px end-side panel holds Ask and Notes; on mobile it is a bottom sheet opened from an Ask button.
+6. **Consent names the receiver, at the moment of sending.** The first question per unlocked session opens a sheet titled "Send this call to Anthropic?" with the route diagram and three facts. A one-line data-flow note stays under the ask input afterwards. The same `DataFlowNote` sentences appear on provider cards and the upload pre-flight.
+7. **No encryption advertising inside the app.** Encryption is mentioned only where it changes a decision (unlock, recovery code, consent, inbox in-transit notice, provider data flow). Decrypting rows are a skeleton plus a lock icon with an accessible label, nothing more. The marketing site explains the privacy model once, with a real trust diagram and the plaintext exceptions named.
+8. **Meaning-based component catalog with a validated layer model.** Screens compose product components (`CallRow`, `TagChip source="rule"`, `DataFlowNote route="direct"`, `UnlockMethodRow kind="device"`), never restyle primitives, and new components go through a checklist. The mock build fails if a mock uses a component name not in the catalog.
+9. **RTL by logical properties, with explicit LTR islands.** Everything is start/end; directional icons mirror; the media player, phone numbers, codes, keys, file names and timestamps never do and render inside `<bdi>`. User content is `dir="auto"`; list snippets align to the UI direction. Every mock was screenshot in Hebrew and checked for bidi bugs (several were found and fixed: usage meters, pill remove buttons, paths, ellipses).
+10. **Every async state is designed and keyboard paths are complete.** Loading, empty, error and locked for each screen; one-line errors with the fix and no content; `/`, `j`/`k`, `s`, `t`, `Esc`, `?`, Shift+L and player keys, with single-key shortcuts switchable off (WCAG 2.1.4); focus ring 2 px `ring` + 2 px offset, never obscured by sticky bars (2.4.11).
+
+## Open questions for the owner
+
+1. **Setup claim protection.** The first account on a fresh instance becomes admin. On a public URL a stranger could claim it first (Plausible has this problem). Proposed: when the wizard is opened from a non-loopback address, require a one-time setup token printed in the server log. Needs a small backend addition not in the spec.
+2. **Accent colour sign-off.** Teal was chosen to stand apart from Signal/Proton/Tuta blues, purples and reds. If there is an existing brand colour, swap `primary*` in `tokens.css` and re-run the contrast table.
+3. **Logo.** The mark in the mocks (waveform bars with a small key block on a teal tile) is a placeholder, not a designed logo.
+4. **Demo video.** The hero needs the recorded Playwright video from the spec; who records the final cut, in which language first, and do we ship both an English and a Hebrew version?
+5. **Google sign-in button.** Google's branding rules require its own button artwork; the mocks use plain text buttons. Confirm we use Google's official button on `/login`.
+6. **Hebrew copy review.** Hebrew strings use gender-neutral infinitive forms. A native copy editor should review `screens.md` before the message files are frozen, especially legal and consent wording.
+7. **Word-level highlighting.** R1 highlights the playing segment, not the playing word, because provider word timings are inconsistent. Revisit if Scribe v2 word timings prove reliable.
+8. **Ask consent scope.** Consent is remembered until lock, per provider and route. Confirm that is acceptable legally, or whether consent should be per call.
+9. **Marketing FAQ legal answer.** "Is recording legal?" needs counsel review for Israel, the EU and US states.
+10. **Mobile bulk import.** Browsers on phones can't pick folders; the mobile bulk flow accepts files and ZIPs only. Confirm this is acceptable for R1.
