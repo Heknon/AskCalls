@@ -706,7 +706,8 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### ConfirmDialog
 - **Purpose:** confirms an irreversible action, naming exactly what will be lost.
-- **Composes:** `AlertDialog`. **Screens:** C3, S1, S4, S8, T1.
+- **Props:** `typeToConfirm` (the gravest actions, such as deleting the account: the confirm button stays disabled until the user types the given value).
+- **Composes:** `AlertDialog`, `Input`. **Screens:** C3, S1, S4, S8, T1.
 
 #### Kbd
 - **Purpose:** a keyboard key in hints and the shortcuts dialog. **Screens:** global.

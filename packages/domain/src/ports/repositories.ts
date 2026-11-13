@@ -12,6 +12,7 @@ import type {
   AuditAction,
   AuditEvent,
   InboxItem,
+  ListedApiToken,
   NewApiToken,
   NewAuditEvent,
   NewInboxItem,
@@ -144,7 +145,7 @@ export interface InboxRepository extends HealthCheckable {
 export interface ApiTokenRepository extends HealthCheckable {
   create(token: NewApiToken): Promise<ApiToken>;
   findByHash(tokenHash: Bytes): Promise<ApiToken | null>;
-  list(userId: UserId): Promise<ApiToken[]>;
+  list(userId: UserId): Promise<ListedApiToken[]>;
   revoke(userId: UserId, id: string, at: Date): Promise<void>;
   touch(id: string, at: Date): Promise<void>;
   countActive(userId: UserId, now: Date): Promise<number>;

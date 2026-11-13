@@ -76,9 +76,19 @@ export async function createApiToken(
   return { token, record: strip(record) };
 }
 
-export async function listApiTokens(ports: Ports, actor: Actor): Promise<ApiTokenOut[]> {
+const HOUR_MS = 3_600_000;
+
+/** Tokens with `fetchesThisHour`: ciphertext fetches in the current hourly window (spec 12). */
+export async function listApiTokens(
+  ports: Ports,
+  actor: Actor,
+): Promise<Array<ApiTokenOut & { fetchesThisHour: number }>> {
   requireSession(actor);
-  return (await ports.apiTokens.list(actor.userId)).map(strip);
+  const now = ports.clock.now().getTime();
+  return (await ports.apiTokens.list(actor.userId)).map(({ fetchWindow, ...t }) => ({
+    ...strip(t),
+    fetchesThisHour: fetchWindow && now - fetchWindow.start.getTime() < HOUR_MS ? fetchWindow.count : 0,
+  }));
 }
 
 export async function revokeApiToken(ports: Ports, actor: Actor, id: string): Promise<void> {

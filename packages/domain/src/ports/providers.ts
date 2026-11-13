@@ -71,3 +71,23 @@ export function wrapTranscript(text: string): string {
   const safe = text.replaceAll('</transcript>', '</ transcript>');
   return `<transcript>\n${safe}\n</transcript>`;
 }
+
+/**
+ * What an own-key option offers in Settings → Providers (spec 11.2a). Each provider adapter
+ * exports one from its `info` module, which imports no SDK, so the settings screen can list
+ * providers without loading them.
+ */
+export interface ProviderInfo {
+  /** The id stored in the providers document and passed to the adapter. */
+  id: string;
+  /** Product name shown to the user ("ElevenLabs"). */
+  name: string;
+  /** Models for the picker, default first. Empty: the user types the model name. */
+  models: Array<{ id: string; name: string }>;
+  /** Accepts direct requests from a browser with the user's key (CORS). */
+  browserDirect: boolean;
+  /** `required`: the user enters the server's base URL (OpenAI-compatible). */
+  baseUrl: 'required' | 'fixed';
+  /** False when a key is optional (a local server without auth). */
+  keyRequired: boolean;
+}
