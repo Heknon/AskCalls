@@ -1,11 +1,13 @@
 'use client';
 
+import { AccountRow } from '@askcalls/ui/components/AccountRow';
 import { AuditEventRow } from '@askcalls/ui/components/AuditEventRow';
 import { ChoiceCard } from '@askcalls/ui/components/ChoiceCard';
 import { CopyableCode } from '@askcalls/ui/components/CopyableCode';
 import { DataFlowNote } from '@askcalls/ui/components/DataFlowNote';
 import { EnvLockedField } from '@askcalls/ui/components/EnvLockedField';
 import { HealthBadge } from '@askcalls/ui/components/HealthBadge';
+import { LimitOverrideField } from '@askcalls/ui/components/LimitOverrideField';
 import { MaskedSecret } from '@askcalls/ui/components/MaskedSecret';
 import { OfflineBlockerList } from '@askcalls/ui/components/OfflineBlockerList';
 import { ProviderCard, type ProviderChoice } from '@askcalls/ui/components/ProviderCard';
@@ -102,6 +104,20 @@ const copy = {
     ],
     code: { copy: 'Copy', copied: 'Copied' },
     mcp: '{\n  "mcpServers": {\n    "askcalls": { "command": "askcalls", "args": ["mcp"] }\n  }\n}',
+    accountHead: ['Account', 'Plan', 'Created', 'Calls', 'Recordings', 'Asks today'],
+    accounts: {
+      free: 'Free',
+      pro: 'Pro',
+      admin: 'Admin',
+      custom: 'Custom limits',
+      created: '12 Mar 2026',
+    },
+    limit: {
+      label: 'Calls stored',
+      unit: 'calls',
+      instance: 'Instance limit: 500 calls',
+      clear: 'Clear',
+    },
   },
   he: {
     transcription: 'תמלול',
@@ -172,6 +188,20 @@ const copy = {
     ],
     code: { copy: 'העתקה', copied: 'הועתק' },
     mcp: '{\n  "mcpServers": {\n    "askcalls": { "command": "askcalls", "args": ["mcp"] }\n  }\n}',
+    accountHead: ['חשבון', 'תוכנית', 'נוצר', 'שיחות', 'הקלטות', 'שאלות היום'],
+    accounts: {
+      free: 'חינם',
+      pro: 'Pro',
+      admin: 'מנהל',
+      custom: 'מגבלות מותאמות',
+      created: '12 במרץ 2026',
+    },
+    limit: {
+      label: 'שיחות שמורות',
+      unit: 'שיחות',
+      instance: 'מגבלת המופע: 500 שיחות',
+      clear: 'ניקוי',
+    },
   },
 };
 
@@ -379,6 +409,50 @@ export function SettingsGroup() {
         <CopyableCode language="shell" code="npx askcalls link" labels={c.code} />
         <CopyableCode language="json" code={c.mcp} labels={c.code} />
       </Specimen>
+      <Specimen name="AccountRow" note="member · admin with custom limits · no name" wide>
+        <Card className="overflow-x-auto">
+          <Table>
+            <thead>
+              <tr>
+                {c.accountHead.map((h) => (
+                  <TableHead key={h}>{h}</TableHead>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <AccountRow
+                href="#"
+                email="dana@example.com"
+                name="דנה לוי"
+                plan={c.accounts.free}
+                created={{ label: c.accounts.created, iso: '2026-03-12T09:00:00Z' }}
+                usage={['212', '1.4 GB', '3']}
+              />
+              <AccountRow
+                href="#"
+                email="ops@example.com"
+                name="Ops"
+                plan={c.accounts.pro}
+                admin={c.accounts.admin}
+                custom={c.accounts.custom}
+                created={{ label: c.accounts.created, iso: '2026-03-12T09:00:00Z' }}
+                usage={['1,940', '18 GB', '41']}
+              />
+              <AccountRow
+                href="#"
+                email="no-name@example.com"
+                name={null}
+                plan={c.accounts.free}
+                created={{ label: c.accounts.created, iso: '2026-03-12T09:00:00Z' }}
+                usage={['0', '0 GB', '0']}
+              />
+            </tbody>
+          </Table>
+        </Card>
+      </Specimen>
+      <Specimen name="LimitOverrideField" note="instance limit · overridden · invalid · disabled">
+        <LimitFieldStates c={c} />
+      </Specimen>
       <Specimen name="TokenRow" note="see SettingsSection above">
         <TokenRow
           name="ci-export"
@@ -389,5 +463,25 @@ export function SettingsGroup() {
         />
       </Specimen>
     </>
+  );
+}
+
+function LimitFieldStates({ c }: { c: (typeof copy)['en'] }) {
+  const [value, setValue] = useState('2000');
+  const field = {
+    label: c.limit.label,
+    unit: c.limit.unit,
+    instance: '500',
+    instanceLabel: c.limit.instance,
+    labels: { clear: c.limit.clear },
+    onChange: () => {},
+  };
+  return (
+    <div className="flex flex-col">
+      <LimitOverrideField {...field} value="" />
+      <LimitOverrideField {...field} value={value} onChange={setValue} />
+      <LimitOverrideField {...field} value="-3" invalid />
+      <LimitOverrideField {...field} value="2000" disabled />
+    </div>
   );
 }

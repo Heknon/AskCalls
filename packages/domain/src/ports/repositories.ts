@@ -36,6 +36,7 @@ import type {
   UserRole,
   VerificationToken,
 } from '../entities/user';
+import type { LimitOverrides } from '../limits';
 import type { HealthCheckable } from './health';
 
 /**
@@ -53,7 +54,14 @@ export interface UserRepository extends HealthCheckable {
   ): Promise<User>;
   setPlan(id: UserId, plan: Plan): Promise<void>;
   setRole(id: UserId, role: UserRole): Promise<void>;
+  /** Replaces the account's limit overrides; `{}` clears them. */
+  setLimitOverrides(id: UserId, overrides: LimitOverrides): Promise<void>;
   count(): Promise<number>;
+  /**
+   * Every account, newest first, for instance administration. `email` matches a
+   * case-insensitive substring of the sign-in email. The cursor is the last id returned.
+   */
+  list(opts: { email?: string; cursor?: string | null; limit: number }): Promise<Page<User>>;
   /** Users with a retention policy, for the daily purge job. */
   listWithRetention(): Promise<Array<{ id: UserId; retentionDays: number }>>;
   /** Crypto-shred: remove the user and every row they own. */

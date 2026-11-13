@@ -73,6 +73,8 @@ export interface SearchResponse {
   ignored: string[];
   /** Every word form searched, for highlighting the same words in a decrypted transcript. */
   forms: string[];
+  /** The query's embedding on a meaning search, for `meaningHighlights`. */
+  vector: Float32Array | null;
 }
 
 export interface TranscriptPassage {
@@ -204,6 +206,7 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
       alsoMatched: prepared.alsoMatched,
       ignored: prepared.ignored,
       forms,
+      vector: vector ?? null,
     };
   }
 
@@ -259,5 +262,6 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
     alsoMatched: prepared.alsoMatched,
     ignored: prepared.ignored,
     forms,
+    vector: vector ?? null,
   };
 }

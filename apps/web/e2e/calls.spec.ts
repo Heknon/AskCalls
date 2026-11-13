@@ -82,6 +82,11 @@ const blur = (page: Page) =>
 const rows = (page: Page) => page.locator('[data-component="CallRow"]:not([data-state="locked"])');
 const search = (page: Page) => page.getByRole('combobox', { name: 'Search calls' });
 
+async function matchBy(page: Page, by: 'Exact words' | 'Meaning') {
+  await page.locator('[data-component="FilterBlank"][data-facet="match"]').click();
+  await page.getByRole('button', { name: by }).click();
+}
+
 /** Past the 250 ms debounce and the request it starts. */
 async function settled(page: Page) {
   await page.waitForTimeout(400);
@@ -114,6 +119,8 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   // Keyword with a typo, and the variants it also matched.
   // The Hebrew call says it too: new accounts translate Hebrew calls into English.
   await search(page).fill('pirce');
+  await matchBy(page, 'Exact words');
+  await expect(page).toHaveURL(/match=words/);
   await expect(rows(page)).toHaveCount(2);
   await expect(rows(page).filter({ hasText: 'Daniel Brooks' })).toHaveCount(1);
   await expect(page.locator('[data-component="ResultLine"]')).toContainText('price');
@@ -134,13 +141,12 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   await settled(page);
   await expect(rows(page)).toHaveCount(3);
 
-  // Meaning: the semantic search ranks by the query embedding.
+  // Meaning, the default: the semantic search ranks by the query embedding.
   await search(page).fill('oak finish quote');
-  await page.locator('[data-component="FilterBlank"][data-facet="match"]').click();
-  await page.getByRole('button', { name: 'Meaning' }).click();
-  await expect(page).toHaveURL(/match=meaning/);
+  await expect(page).not.toHaveURL(/match=/);
   await expect(rows(page).first()).toContainText('Yossi Mizrahi', { timeout: 60_000 });
-  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  // The phrase closest to the query is marked, found on the device.
+  await expect(rows(page).first().locator('mark', { hasText: 'oak finish' })).toBeVisible();
   await clearSearch(page);
 
   // Keyboard: j / k move the cursor, s stars, Enter opens.

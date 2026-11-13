@@ -95,6 +95,7 @@ export type AuditAction =
   | 'account.delete'
   | 'role.grant'
   | 'instance.update'
+  | 'limits.update'
   | 'ingest';
 
 export interface AuditEvent {

@@ -6,3 +6,4 @@ export {
   ElevenLabsTranscriptionProvider,
   parseElevenLabs,
 } from './elevenlabs';
+export type { RefusalReason } from './http';

@@ -5,6 +5,8 @@ import * as account from '../../app/api/account/route';
 import * as adminInstanceOffline from '../../app/api/admin/instance/offline/route';
 import * as adminInstance from '../../app/api/admin/instance/route';
 import * as adminInstanceTest from '../../app/api/admin/instance/test/route';
+import * as adminUserLimits from '../../app/api/admin/users/[id]/limits/route';
+import * as adminUser from '../../app/api/admin/users/[id]/route';
 import * as adminUsers from '../../app/api/admin/users/route';
 import * as ask from '../../app/api/ask/route';
 import * as audit from '../../app/api/audit/route';
@@ -38,6 +40,7 @@ import * as transcribeToken from '../../app/api/transcribe/token/route';
 import * as translate from '../../app/api/translate/route';
 import * as userdata from '../../app/api/userdata/[kind]/route';
 import * as vocab from '../../app/api/vocab/route';
+import { usersFor } from '../auth/admin-emails';
 import { SESSION_COOKIES } from '../auth/secret';
 import { ConfigService } from '../config/config-service';
 import { setContainerForTests } from '../container';
@@ -81,6 +84,8 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/admin/instance/test', adminInstanceTest],
   ['/api/admin/instance/offline', adminInstanceOffline],
   ['/api/admin/users', adminUsers],
+  ['/api/admin/users/[id]', adminUser],
+  ['/api/admin/users/[id]/limits', adminUserLimits],
   ['/api/setup', setup],
   ['/api/setup/test', setupTest],
   ['/api/setup/passkey', setupPasskey],
@@ -172,6 +177,7 @@ export function startTestApp(
     }),
     ...opts.adapters,
   };
+  ports.users = usersFor(ports.users, config.config.auth.adminEmails);
   setContainerForTests({ config, ports, restartRequired: [], close: async () => {} });
 
   const headersFor = (as: Credential | undefined): Record<string, string> => {

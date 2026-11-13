@@ -8,6 +8,7 @@ import { EnvLockedField } from '@askcalls/ui/components/EnvLockedField';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { HealthBadge } from '@askcalls/ui/components/HealthBadge';
 import { ProviderCard } from '@askcalls/ui/components/ProviderCard';
+import { SettingSwitch } from '@askcalls/ui/components/SettingSwitch';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Input } from '@askcalls/ui/primitives/input';
 import { useTranslations } from 'next-intl';
@@ -17,7 +18,6 @@ import {
   Field,
   SecretSetting,
   SelectSetting,
-  SwitchRow,
   TextSetting,
   useCard,
   useInstance,
@@ -172,7 +172,7 @@ export function SignInCard() {
       {OAUTH.map((id) => (
         <div key={id} className="flex flex-col gap-3">
           {lockedProviders ? null : (
-            <SwitchRow
+            <SettingSwitch
               label={t(`signIn.${id}`)}
               checked={providers.includes(id)}
               onChange={(on) => toggle(id, on)}
@@ -192,7 +192,7 @@ export function SignInCard() {
       ))}
       <div className="flex flex-col gap-3">
         {lockedProviders ? null : (
-          <SwitchRow
+          <SettingSwitch
             label={t('signIn.email')}
             checked={providers.includes('email')}
             onChange={(on) => toggle('email', on)}
@@ -218,7 +218,7 @@ export function SignInCard() {
           technical={false}
         />
       ) : (
-        <SwitchRow
+        <SettingSwitch
           label={t('signIn.local')}
           hint={t('signIn.localHint')}
           checked={card.get('auth.localAccounts') === true}
@@ -414,7 +414,7 @@ export function UsersCard() {
   return (
     <ProviderCard capability="sign-in" context="instance" title={t('cards.users')}>
       <p className="text-muted-foreground">{t('users.count', { n: view.usage.users })}</p>
-      {view.hosted ? null : (
+      {view.hosted || view.locked.includes('auth.adminEmails') ? null : (
         <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
           <Field label={t('users.email')} htmlFor={id}>
             <div className="flex gap-2">

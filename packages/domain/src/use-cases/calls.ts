@@ -4,6 +4,7 @@ import { DomainError, isDomainError } from '../entities/errors';
 import { EMBEDDING_DIMENSIONS } from '../entities/search';
 import type { Ports } from '../ports-bundle';
 import { type Actor, audit, blobKeys, HOUR_MS } from './context';
+import { limitsFor } from './limits';
 
 /**
  * Caps that keep one request bounded. Spec 7.5 caps keyword tokens at 5,000 per text; a call is
@@ -105,10 +106,13 @@ export async function createCall(
   validateChunks(input.chunks);
 
   await assertNotDuplicate(ports, userId, input.audioTok, input.contentTok);
-  const count = await ports.calls.count(userId);
-  if (count >= ports.limits.maxCalls) {
+  const [count, { maxCalls }] = await Promise.all([
+    ports.calls.count(userId),
+    limitsFor(ports, userId),
+  ]);
+  if (count >= maxCalls) {
     throw new DomainError('quota_exceeded', 'call limit reached', {
-      limit: ports.limits.maxCalls,
+      limit: maxCalls,
       quota: 'calls',
     });
   }
@@ -287,9 +291,10 @@ export async function getCall(ports: Ports, actor: Actor, id: CallId): Promise<C
   const userId = actor.userId;
   if (actor.kind === 'token') {
     const n = await ports.apiTokens.incrementFetches(userId, actor.tokenId, ports.clock.now());
-    if (n > ports.limits.mcpFetchesPerTokenPerHour) {
+    const { mcpFetchesPerTokenPerHour: limit } = await limitsFor(ports, userId);
+    if (n > limit) {
       throw new DomainError('rate_limited', 'hourly fetch budget for this token is used up', {
-        limit: ports.limits.mcpFetchesPerTokenPerHour,
+        limit,
         retryAfterSec: HOUR_MS / 1000,
         quota: 'fetches',
       });
@@ -326,10 +331,13 @@ async function assertRecordingQuota(
   current: Call,
   addBytes: number,
 ): Promise<void> {
-  const total = await ports.calls.totalRecordingBytes(userId);
-  if (total - instanceBytes(current) + addBytes > ports.limits.recordingBytes) {
+  const [total, { recordingBytes: limit }] = await Promise.all([
+    ports.calls.totalRecordingBytes(userId),
+    limitsFor(ports, userId),
+  ]);
+  if (total - instanceBytes(current) + addBytes > limit) {
     throw new DomainError('quota_exceeded', 'recording storage limit reached', {
-      limit: ports.limits.recordingBytes,
+      limit,
       quota: 'recording_bytes',
     });
   }
