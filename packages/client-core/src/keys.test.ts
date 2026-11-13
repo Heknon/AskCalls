@@ -62,7 +62,7 @@ describe('verifyUnlock', () => {
       kind: e.kind,
       label: 'Recovery code',
       credentialId: null,
-      kdfParams: e.kdfParams,
+      kdfParams: { ...e.kdfParams } as Record<string, unknown>,
       createdAt: new Date(0),
       lastUsedAt: null,
       revokedAt: null,

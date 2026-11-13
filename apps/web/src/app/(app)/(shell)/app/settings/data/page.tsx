@@ -104,9 +104,8 @@ function DeleteSection() {
     }
     let left: Array<{ bucketRef: string; objectKey: string }>;
     try {
-      left = (
-        await ctx.api.request(deleteAccount, { body: { confirm: ACCOUNT_CONFIRM } })
-      ).ownBucketRecordings;
+      left = (await ctx.api.request(deleteAccount, { body: { confirm: ACCOUNT_CONFIRM } }))
+        .ownBucketRecordings;
     } catch {
       setDeleting(null);
       setFailed(true);
@@ -147,9 +146,7 @@ function DeleteSection() {
         open={open}
         onOpenChange={setOpen}
         title={t('deleteTitle')}
-        description={
-          ownBucket.data ? `${t('deleteConfirm')} ${t('bucket')}` : t('deleteConfirm')
-        }
+        description={ownBucket.data ? `${t('deleteConfirm')} ${t('bucket')}` : t('deleteConfirm')}
         confirmLabel={t('deleteAction')}
         cancelLabel={tc('cancel')}
         typeToConfirm={{ label: t('deleteType', { email }), value: email }}
