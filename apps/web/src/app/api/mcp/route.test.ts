@@ -34,8 +34,10 @@ async function tokenWith(scopes: ApiScope[]): Promise<string> {
 }
 
 const handler = (req: Request) => {
-  const fn = mcp[req.method as 'GET' | 'POST' | 'DELETE'];
-  return fn ? fn(req) : Promise.resolve(new Response(null, { status: 405 }));
+  if (req.method === 'POST') return mcp.POST(req);
+  if (req.method === 'GET') return mcp.GET(req);
+  if (req.method === 'DELETE') return mcp.DELETE(req);
+  return Promise.resolve(new Response(null, { status: 405 }));
 };
 
 const rpc = (

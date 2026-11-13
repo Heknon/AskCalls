@@ -35,7 +35,7 @@ describe('/cli/login (askcalls login)', () => {
   });
 
   it('rejects malformed ports and states', async () => {
-    for (const q of ['port=80&state=' + STATE, 'port=4555&state=short', 'state=' + STATE]) {
+    for (const q of [`port=80&state=${STATE}`, 'port=4555&state=short', `state=${STATE}`]) {
       const res = await GET(new Request(`${APP}/cli/login?${q}`, { headers: { cookie } }));
       expect(res.status).toBe(400);
     }
