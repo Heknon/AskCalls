@@ -11,8 +11,16 @@ export type DomainErrorCode =
   | 'unsupported'
   | 'provider_error';
 
+/**
+ * Marks every DomainError, so one created by another copy of this module (a bundler can load an
+ * adapter's import of the domain separately from the route's) is still recognised.
+ */
+const BRAND = Symbol.for('askcalls.DomainError');
+
 /** Domain errors carry a code and a content-free message. Never put plaintext in `message`. */
 export class DomainError extends Error {
+  readonly [BRAND] = true;
+
   constructor(
     readonly code: DomainErrorCode,
     message: string,
@@ -23,4 +31,6 @@ export class DomainError extends Error {
   }
 }
 
-export const isDomainError = (e: unknown): e is DomainError => e instanceof DomainError;
+export const isDomainError = (e: unknown): e is DomainError =>
+  e instanceof DomainError ||
+  (typeof e === 'object' && e !== null && (e as { [BRAND]?: unknown })[BRAND] === true);
