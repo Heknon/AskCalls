@@ -1,24 +1,42 @@
-import type { ReactNode } from 'react';
-
 export type UseCaseCardProps = {
-  title: string;
-  body: string;
-  /** A sample search as read-only filter sentence fragments (`FilterBlank readOnly`). */
-  sample: ReactNode;
+  /** What someone in this role types into search. User-language text: rendered `dir="auto"`. */
+  query: string;
+  /** "Sales follow-up". */
+  role: string;
+  /** What the search finds: "14 calls, by meaning". */
+  result: string;
 };
 
-/** One use case with a sample search that reads like the app's filter sentence. */
-export function UseCaseCard({ title, body, sample }: UseCaseCardProps) {
+/**
+ * One use case as the search someone in that role would type, set like a search field row.
+ * Render inside a `<ul className="qs">`.
+ */
+export function UseCaseCard({ query, role, result }: UseCaseCardProps) {
   return (
-    <article
-      data-component="UseCaseCard"
-      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-6"
-    >
-      <h3 className="font-semibold text-lg">{title}</h3>
-      <p className="text-muted-foreground leading-6">{body}</p>
-      <p className="mt-auto rounded-md border border-input px-3 py-2.5 text-muted-foreground text-sm leading-7">
-        {sample}
-      </p>
-    </article>
+    <li data-component="UseCaseCard">
+      <div className="row">
+        <svg
+          className="ic"
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          aria-hidden
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <span className="qt" dir="auto">
+          {query}
+        </span>
+        <span className="role">
+          <b>{role}</b>
+          {result}
+        </span>
+      </div>
+    </li>
   );
 }

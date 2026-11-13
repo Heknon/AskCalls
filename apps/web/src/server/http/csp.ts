@@ -108,3 +108,6 @@ export function publicCsp(
     "object-src 'none'",
   ].join('; ');
 }
+
+/** Request header middleware sets on marketing pages; the root layout then skips app providers. */
+export const MARKETING_HEADER = 'x-askcalls-marketing';

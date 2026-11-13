@@ -9,6 +9,10 @@
       "style": "./src/styles/globals.css",
       "default": "./src/styles/globals.css"
     },
+    "./marketing.css": {
+      "style": "./src/styles/marketing.css",
+      "default": "./src/styles/marketing.css"
+    },
     "./lib/*": "./src/lib/*.ts",
     "./*": "./src/*.tsx"
   },
