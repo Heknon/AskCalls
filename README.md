@@ -23,6 +23,7 @@ AskCalls stores your phone-call transcripts and recordings so you can search the
 2. **Index on your device.** Keywords, contacts, intent tags and embeddings are computed locally. Words become keyed HMAC tokens, and text is encrypted before it leaves the device.
 3. **Search.** Find calls by who, what or intent: exact or fuzzy keywords (Hebrew prefixes and typos included), contact, date range, tags, stars, or semantic meaning.
 4. **Read and ask.** Results decrypt on your device. Ask the AI a question about a call, and only that one call is sent, with your consent, to the LLM provider.
+5. **Translate, by your rules.** Choose which languages to translate into which (Hebrew → English, Hebrew → Russian, anything). Calls those rules cover are translated by the LLM as they upload and stored in every language, encrypted, so keyword search finds them in each.
 
 ## What the server can and cannot see
 
@@ -30,11 +31,11 @@ AskCalls stores your phone-call transcripts and recordings so you can search the
 | --- | --- |
 | Encrypted transcripts, metadata, notes and recordings | Transcript text or individual words |
 | HMAC tokens for keywords, contacts and tags | Phone numbers or contact names |
-| Embeddings of redacted text | Tag names, notes or rule definitions |
+| Embeddings of redacted text, per language a call is stored in | Tag names, notes or rule definitions |
 | The day of each call and a duration bucket | Your keys, unwrapped |
 | Wrapped keys and public keys | Decrypted recordings |
 
-Plaintext reaches a third party only when you ask for it, one request at a time: audio to the transcription provider, and one decrypted call to the LLM provider when you ask about it. Those routes stream straight through and never write to disk, blob storage or logs. If you bring your own provider key, your device calls the provider directly and AskCalls is not in the path at all.
+Plaintext reaches a third party only for what you choose: audio to the transcription provider, one decrypted call to the LLM provider when you ask about it, and the transcript of each call your translation rules cover (for example Hebrew → English), sent to the LLM provider as you upload it. You set those rules in Settings → Providers; with none, nothing is sent for translation, and new accounts start with one, Hebrew → English, shown during setup. Translations come back to your device and are encrypted with the call, so a call is searchable by keyword in exactly the languages it is stored in; your searches never leave your device. Those routes stream straight through and never write to disk, blob storage or logs. If you bring your own provider key, your device calls the provider directly and AskCalls is not in the path at all.
 
 Every pull request runs a leak test: it seeds calls with known words and phone numbers, dumps the entire database and blob bucket, and fails if any of those strings appear in any encoding.
 
@@ -68,6 +69,7 @@ Read the full [threat model](docs/threat-model.md).
 
 **Languages**
 - English and Hebrew, with full right-to-left support
+- Translation rules per user (source language → target languages): the call view switches between the original and each translation, side by side on wide screens, and search shows which language matched
 
 ## Get started
 
@@ -81,6 +83,7 @@ Sign up at [askcalls.com](https://askcalls.com). It's free during beta.
 | Transcription | 300 minutes a month |
 | Recording backups | 2 GB |
 | Ask about a call | 50 a day |
+| Translation | 2,000,000 characters a month |
 | Personal access tokens | 5 |
 
 ### On your own computer

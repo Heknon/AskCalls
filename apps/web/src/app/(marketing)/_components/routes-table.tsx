@@ -13,7 +13,7 @@ export async function PlaintextRoutes() {
         </tr>
       </thead>
       <tbody>
-        {(['transcription', 'ask', 'inbox'] as const).map((k) => (
+        {(['transcription', 'ask', 'translation', 'inbox'] as const).map((k) => (
           <tr key={k}>
             <td>{t(`${k}.name`)}</td>
             <td>{t(`${k}.what`)}</td>
