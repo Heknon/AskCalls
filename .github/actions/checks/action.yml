@@ -1,9 +1,10 @@
 name: Fast checks
 description: >-
-  Lint, typecheck, boundaries, and the unit and contract tests (PGlite and in-memory adapters,
-  including the leak test), so no service container is needed. Run after ./.github/actions/setup.
-  Every workflow runs these through this action, inside the job that deploys, so they cost no
-  extra runner.
+  Lint, typecheck, boundaries, the dependency audit, the unit and contract tests (PGlite, fs and
+  in-memory adapters, so no service container: they include the leak test on both, the telemetry
+  scrubber test, and the CSP check of every app page), then the bundle-size budget against a
+  production build. Run after ./.github/actions/setup. Every workflow runs these through this
+  action, inside the job that deploys, so they cost no extra runner.
 runs:
   using: composite
   steps:
@@ -16,6 +17,25 @@ runs:
     - name: Boundaries
       shell: bash
       run: bun run boundaries
+    # Critical advisories in runtime dependencies fail the run; Dependabot raises the rest.
+    - name: Dependency audit
+      shell: bash
+      run: bun audit --prod --audit-level=critical
     - name: Unit and contract tests
       shell: bash
       run: bun run test
+    # A preview has just built the app (vercel build runs next build in apps/web), so its
+    # output is measured as is; elsewhere the action builds it. Fresh checkouts have no .next.
+    - name: Build the web app
+      shell: bash
+      env:
+        ASKCALLS_SKIP_MODEL_DOWNLOAD: "1"
+      run: |
+        if [ -f apps/web/.next/BUILD_ID ]; then
+          echo "Using the build already in apps/web/.next"
+        else
+          bun run --cwd apps/web build
+        fi
+    - name: Bundle-size budget
+      shell: bash
+      run: bun run budget
