@@ -15,6 +15,7 @@ import {
   type InboxRepository,
   type KeyringEntry,
   type KeyringRepository,
+  type LinkedAccount,
   type Page,
   type SearchHit,
   type SearchIndex,
@@ -24,6 +25,7 @@ import {
   type UserDataStore,
   type UserKeys,
   type UserRepository,
+  type VerificationToken,
   type VocabDelta,
   type VocabularyStore,
 } from '@askcalls/domain';
@@ -86,6 +88,8 @@ export class MemoryDb {
   inbox = new Map<string, InboxItem>();
   tokens = new Map<string, ApiToken & { fetches: number; windowStart: Date | null }>();
   audit: AuditEvent[] = [];
+  accounts: LinkedAccount[] = [];
+  verificationTokens: VerificationToken[] = [];
 
   readonly userRepo: UserRepository = {
     healthCheck: ok,
@@ -146,6 +150,42 @@ export class MemoryDb {
       for (const [k, v] of this.chunks) if (v[0]?.userId === id) this.chunks.delete(k);
       this.vocab = this.vocab.filter((d) => d.userId !== id);
       this.audit = this.audit.filter((e) => e.userId !== id);
+      this.accounts = this.accounts.filter((a) => a.userId !== id);
+    },
+    findByAccount: async (provider, providerAccountId) => {
+      const a = this.accounts.find(
+        (x) => x.provider === provider && x.providerAccountId === providerAccountId,
+      );
+      return a && this.users.has(a.userId) ? { ...this.users.get(a.userId)! } : null;
+    },
+    linkAccount: async (account) => {
+      if (
+        this.accounts.some(
+          (x) =>
+            x.provider === account.provider && x.providerAccountId === account.providerAccountId,
+        )
+      ) {
+        throw new DomainError('conflict', 'account already linked');
+      }
+      this.accounts.push({ ...account });
+    },
+    unlinkAccount: async (provider, providerAccountId) => {
+      this.accounts = this.accounts.filter(
+        (x) => !(x.provider === provider && x.providerAccountId === providerAccountId),
+      );
+    },
+    listAccounts: async (userId) =>
+      this.accounts.filter((a) => a.userId === userId).map((a) => ({ ...a })),
+    createVerificationToken: async (t) => {
+      this.verificationTokens.push({ ...t });
+    },
+    useVerificationToken: async (identifier, token) => {
+      const i = this.verificationTokens.findIndex(
+        (t) => t.identifier === identifier && t.token === token,
+      );
+      if (i < 0) return null;
+      const [t] = this.verificationTokens.splice(i, 1);
+      return t!;
     },
   };
 

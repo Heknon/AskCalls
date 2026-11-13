@@ -25,3 +25,19 @@ export interface NewUser {
   name?: string | null;
   image?: string | null;
 }
+
+/** An OAuth or email sign-in method linked to a user (Auth.js accounts). Tokens are not stored. */
+export interface LinkedAccount {
+  userId: string;
+  /** Auth.js provider id: google, github, email, credentials, … */
+  provider: string;
+  providerAccountId: string;
+  type: string;
+}
+
+/** Email magic-link token. Auth.js hashes the token before it reaches the repository. */
+export interface VerificationToken {
+  identifier: string;
+  token: string;
+  expires: Date;
+}

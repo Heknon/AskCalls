@@ -19,7 +19,14 @@ import type {
   UserDataKind,
   VocabDelta,
 } from '../entities/other';
-import type { NewUser, Plan, User, UserRole } from '../entities/user';
+import type {
+  LinkedAccount,
+  NewUser,
+  Plan,
+  User,
+  UserRole,
+  VerificationToken,
+} from '../entities/user';
 import type { HealthCheckable } from './health';
 
 /**
@@ -42,6 +49,15 @@ export interface UserRepository extends HealthCheckable {
   listWithRetention(): Promise<Array<{ id: UserId; retentionDays: number }>>;
   /** Crypto-shred: remove the user and every row they own. */
   deleteHard(id: UserId): Promise<void>;
+
+  /** Auth.js account linking. */
+  findByAccount(provider: string, providerAccountId: string): Promise<User | null>;
+  linkAccount(account: LinkedAccount): Promise<void>;
+  unlinkAccount(provider: string, providerAccountId: string): Promise<void>;
+  listAccounts(userId: UserId): Promise<LinkedAccount[]>;
+  createVerificationToken(token: VerificationToken): Promise<void>;
+  /** Returns and deletes the token (single use), or null when missing. */
+  useVerificationToken(identifier: string, token: string): Promise<VerificationToken | null>;
 }
 
 export interface KeyringRepository extends HealthCheckable {

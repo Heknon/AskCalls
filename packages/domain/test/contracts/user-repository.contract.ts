@@ -37,10 +37,56 @@ export function describeUserRepositoryContract(name: string, harness: Harness<Us
       expect(await users.listWithRetention()).toEqual([{ id: u.id, retentionDays: 30 }]);
     });
 
+    it('links accounts and finds users by them', async () => {
+      const u = await users.create({ email: 'd@example.test' });
+      await users.linkAccount({
+        userId: u.id,
+        provider: 'google',
+        providerAccountId: 'g-1',
+        type: 'oidc',
+      });
+      expect((await users.findByAccount('google', 'g-1'))?.id).toBe(u.id);
+      expect(await users.findByAccount('github', 'g-1')).toBeNull();
+      await expect(
+        users.linkAccount({
+          userId: u.id,
+          provider: 'google',
+          providerAccountId: 'g-1',
+          type: 'oidc',
+        }),
+      ).rejects.toMatchObject({ code: 'conflict' });
+      expect(await users.listAccounts(u.id)).toHaveLength(1);
+      await users.unlinkAccount('google', 'g-1');
+      expect(await users.findByAccount('google', 'g-1')).toBeNull();
+    });
+
+    it('uses verification tokens once', async () => {
+      const expires = new Date(Date.now() + 600_000);
+      await users.createVerificationToken({
+        identifier: 'e@example.test',
+        token: 'hashed',
+        expires,
+      });
+      expect(await users.useVerificationToken('e@example.test', 'wrong')).toBeNull();
+      expect(await users.useVerificationToken('e@example.test', 'hashed')).toEqual({
+        identifier: 'e@example.test',
+        token: 'hashed',
+        expires,
+      });
+      expect(await users.useVerificationToken('e@example.test', 'hashed')).toBeNull();
+    });
+
     it('deletes hard', async () => {
       const u = await users.create({ email: 'c@example.test' });
+      await users.linkAccount({
+        userId: u.id,
+        provider: 'github',
+        providerAccountId: 'h-1',
+        type: 'oauth',
+      });
       await users.deleteHard(u.id);
       expect(await users.findById(u.id)).toBeNull();
+      expect(await users.findByAccount('github', 'h-1')).toBeNull();
     });
   });
 }
