@@ -62,3 +62,35 @@ export function appCsp(
     "object-src 'none'",
   ].join('; ');
 }
+
+/** Google Identity Services: the One Tap script, its iframe, styles and FedCM endpoints. */
+export const GOOGLE_ONE_TAP_ORIGIN = 'https://accounts.google.com';
+
+/**
+ * CSP for the public pages that may load Google One Tap: `/` and `/login` (spec 2.4). Same
+ * nonce model as the app; accounts.google.com is allowed here and nowhere else, and only when
+ * One Tap is configured.
+ */
+export function publicCsp(
+  nonce: string,
+  environment: 'production' | 'development' | 'test',
+  oneTap: boolean,
+): string {
+  const google = oneTap ? [GOOGLE_ONE_TAP_ORIGIN] : [];
+  const script = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
+  if (environment === 'development') script.push("'unsafe-eval'");
+  const join = (...parts: string[]) => parts.join(' ');
+  return [
+    "default-src 'self'",
+    `script-src ${script.join(' ')}`,
+    join("style-src 'self'", ...google.map((g) => `${g}/gsi/style`)),
+    "img-src 'self' data:",
+    "font-src 'self'",
+    join("connect-src 'self'", ...google),
+    join('frame-src', ...(oneTap ? google : ["'none'"])),
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    join("form-action 'self'", ...google, 'https://github.com'),
+    "object-src 'none'",
+  ].join('; ');
+}
