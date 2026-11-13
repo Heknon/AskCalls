@@ -6,6 +6,7 @@ import { authSecret, readSessionUserId } from './server/auth/secret';
 import { getConfigService, getContainer, getSetupToken } from './server/container';
 import { appCsp, MARKETING_HEADER, newNonce, publicCsp } from './server/http/csp';
 import { verifyDirectCookie } from './server/http/direct-access';
+import { localRequestAllowed } from './server/http/local-guard';
 
 /**
  * - /app/** and /admin/**: require a session (redirect to /login), /admin/** also the admin role;
@@ -20,10 +21,27 @@ import { verifyDirectCookie } from './server/http/direct-access';
  * - /setup: the first-run wizard, only while the instance needs setup; every other page
  *   redirects there meanwhile.
  * - /api/**: `Cache-Control: no-store` (route handlers set it too).
+ * - Local mode: every matched path, /cli/** included, only through the loopback guard of
+ *   `askcalls local` (server/http/local-guard.ts).
  * Runs on the Node.js runtime so it can use the container like route handlers do.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const resolved = await getContainer().then(
+    (c) => c.config,
+    () =>
+      getConfigService().then(
+        (s) => s.get(),
+        () => null,
+      ),
+  );
+  if (resolved && !localRequestAllowed(resolved.config)) {
+    return new NextResponse('Start this AskCalls with askcalls local.', {
+      status: 403,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  if (pathname.startsWith('/cli/')) return NextResponse.next();
   if (pathname.startsWith('/api/')) {
     const res = NextResponse.next();
     res.headers.set('Cache-Control', 'no-store');
@@ -132,5 +150,6 @@ export const config = {
     '/admin',
     '/admin/:path*',
     '/api/:path*',
+    '/cli/:path*',
   ],
 };

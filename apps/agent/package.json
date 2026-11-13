@@ -7,9 +7,15 @@
   "bin": {
     "askcalls": "./src/cli.ts"
   },
+  "files": [
+    "src",
+    "web"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
-    "build:binary": "bun build ./src/cli.ts --compile --external @huggingface/transformers --external ffmpeg-static --outfile dist/askcalls"
+    "package:web": "bun ../../scripts/package-local-web.ts",
+    "prepack": "bun run --cwd ../web build && bun ../../scripts/package-local-web.ts",
+    "build:binary": "bun ../../scripts/build-agent-binary.ts"
   },
   "dependencies": {
     "@askcalls/adapter-transcription-deepgram": "workspace:*",

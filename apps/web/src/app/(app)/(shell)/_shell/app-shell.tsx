@@ -102,7 +102,14 @@ function Shortcuts({ open, onOpenChange }: { open: boolean; onOpenChange: (o: bo
  * MobileTabBar below 768 px, the shortcuts dialog and global shortcuts, and the offline
  * banner. Pages render a `Screen` for their title, top bars and content.
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  localServer = false,
+}: {
+  children: ReactNode;
+  /** Local mode: the server is on this computer, so no network is no reason to pause. */
+  localServer?: boolean;
+}) {
   const t = useTranslations('shell');
   const tc = useTranslations('common');
   const { me, lock, autoLockMinutes } = useAppSession();
@@ -176,7 +183,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div
             className={`flex min-w-0 flex-1 flex-col md:pb-0 ${tabBar ? 'pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))]' : ''}`}
           >
-            {online ? null : <StatusBanner condition="offline">{t('banner.offline')}</StatusBanner>}
+            {online || localServer ? null : (
+              <StatusBanner condition="offline">{t('banner.offline')}</StatusBanner>
+            )}
             {children}
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { loginHeading } from './helpers';
 
 test('home page renders the headline', async ({ page }) => {
   await page.goto('/');
@@ -18,7 +19,7 @@ test('health check reports the database and storage up', async ({ request }) => 
 test('the app requires a session and the test provider signs in', async ({ page }) => {
   await page.goto('/app');
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fapp$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in to AskCalls');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(loginHeading('en'));
 
   await page.getByLabel('Test account email').fill('e2e-smoke@example.test');
   await page.getByRole('button', { name: 'Sign in (test)' }).click();
