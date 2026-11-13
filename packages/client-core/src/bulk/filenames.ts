@@ -2,7 +2,6 @@ import { type CountryCode, DEFAULT_PHONE_REGION, parsePhone } from '@askcalls/in
 import { baseName } from './pairing';
 
 export interface FileNameMeta {
-  format: 'samsung' | 'iphone';
   /** E.164 when the name holds a parsable number. */
   phone: string | null;
   /** The name part when it is not a number (the phone's contact name). */
@@ -11,15 +10,25 @@ export interface FileNameMeta {
 }
 
 /** Recorder prefixes in English and Hebrew, stripped before reading the contact part. */
-const SAMSUNG_PREFIX = /^(?:call[ _-]?recording|הקלטת[ _]שיחה)[ _-]*/i;
-const IPHONE_PREFIX = /^(?:call[ _]with|call[ _]recording|recording|שיחה[ _]עם|הקלטה)[ _-]*/i;
+const PREFIX =
+  /^(?:call[ _-]?recording|call[ _]with|call@|recording|הקלטת[ _]שיחה|שיחה[ _]עם|הקלטה)[ _\-–]*/i;
 
-/** `Call recording <name or number>_YYMMDD_HHMMSS` (also `YYYYMMDD`, also without the prefix). */
-const SAMSUNG = /^(.*?)[_ ](\d{6}|\d{8})_(\d{6})(?:_\d+)?$/;
+/**
+ * Date and time stamps, tried in order. Digits on either side end a match, so a stamp is never
+ * cut out of a phone number.
+ * - `YYYY-MM-DD[ at ]HH.MM[.SS]`, `YYYY-MM-DD_HHMM[SS]`, `YYYY_MM_DD_HH_MM_SS`, or the date alone.
+ * - `YYYYMMDDHHMMSS`, `YYYYMMDD_HHMMSS`, `YYMMDD_HHMMSS`, optionally `.mmm` and a `+HHMM` offset.
+ */
+const SEPARATED =
+  /(?<!\d)(\d{4})[-_.](\d{2})[-_.](\d{2})(?:[ _T]+(?:at[ _]+)?(?:(\d{1,2})[.:\-_](\d{2})(?:[.:\-_](\d{2}))?|(\d{2})(\d{2})(\d{2})?))?(?!\d)/i;
+const COMPACT =
+  /(?<![\d+])(?:(\d{8})[_-]?|(\d{6})[_-])(\d{6})(?:\.\d{1,3})?(?:([+-])(\d{2})(\d{2}))?(?!\d)/;
 
-/** `[Call with ]<name or number>[ - ]YYYY-MM-DD[ at ]HH.MM[.SS]`, or the date first. */
-const IPHONE_DATE =
-  /(\d{4})-(\d{2})-(\d{2})(?:[ _T]+(?:at[ _]+)?(\d{1,2})[.:-](\d{2})(?:[.:-](\d{2}))?)?/i;
+interface Stamp {
+  index: number;
+  length: number;
+  startedAt: string;
+}
 
 function utcIso(
   y: number,
@@ -36,36 +45,28 @@ function utcIso(
   return new Date(local - offsetMinutes * 60_000).toISOString();
 }
 
-function who(
-  part: string,
-  region: CountryCode,
-): { phone: string | null; contactName: string | null } {
-  const text = part
-    .replace(/[_]+/g, ' ')
-    .replace(/^[\s\-–]+|[\s\-–]+$/g, '')
-    .trim();
-  if (!text) return { phone: null, contactName: null };
-  const phone = /\d{5,}/.test(text.replace(/[\s()\-.]/g, '')) ? parsePhone(text, region) : null;
-  return phone ? { phone, contactName: null } : { phone: null, contactName: text };
-}
-
-/**
- * Reads the date and number (or contact name) from Samsung and iPhone call-recording file names.
- * Times in names are local to the phone: `utcOffsetMinutes` converts them (default UTC).
- */
-export function parseRecordingFileName(
-  path: string,
-  opts: { region?: CountryCode; utcOffsetMinutes?: number } = {},
-): FileNameMeta | null {
-  const region = opts.region ?? DEFAULT_PHONE_REGION;
-  const offset = opts.utcOffsetMinutes ?? 0;
-  const stem = baseName(path);
-
-  const samsung = SAMSUNG.exec(stem.replace(SAMSUNG_PREFIX, ''));
-  if (samsung) {
-    const [, part, date, time] = samsung as unknown as [string, string, string, string];
+function findStamp(text: string, offset: number): Stamp | null {
+  const sep = SEPARATED.exec(text);
+  if (sep) {
+    const n = (i: number) => +(sep[i] ?? 0);
+    const startedAt = utcIso(
+      n(1),
+      n(2),
+      n(3),
+      sep[4] ? n(4) : n(7),
+      sep[5] ? n(5) : n(8),
+      sep[6] ? n(6) : n(9),
+      offset,
+    );
+    if (startedAt) return { index: sep.index, length: sep[0].length, startedAt };
+  }
+  const c = COMPACT.exec(text);
+  if (c) {
+    const date = c[1] ?? c[2]!;
+    const time = c[3]!;
     const y = date.length === 8 ? +date.slice(0, 4) : 2000 + +date.slice(0, 2);
     const md = date.slice(-4);
+    const own = c[4] ? (c[4] === '-' ? -1 : 1) * (+c[5]! * 60 + +c[6]!) : offset;
     const startedAt = utcIso(
       y,
       +md.slice(0, 2),
@@ -73,30 +74,61 @@ export function parseRecordingFileName(
       +time.slice(0, 2),
       +time.slice(2, 4),
       +time.slice(4, 6),
-      offset,
+      own,
     );
-    if (startedAt) return { format: 'samsung', ...who(part, region), startedAt };
+    if (startedAt) return { index: c.index, length: c[0].length, startedAt };
   }
+  return null;
+}
 
-  const prefixed = IPHONE_PREFIX.test(stem);
-  const rest = stem.replace(IPHONE_PREFIX, '');
-  const m = IPHONE_DATE.exec(rest);
-  if (m) {
-    const startedAt = utcIso(
-      +m[1]!,
-      +m[2]!,
-      +m[3]!,
-      +(m[4] ?? 0),
-      +(m[5] ?? 0),
-      +(m[6] ?? 0),
-      offset,
-    );
-    const part = (rest.slice(0, m.index) + rest.slice(m.index + m[0].length)).trim();
-    if (startedAt) return { format: 'iphone', ...who(part, region), startedAt };
+/** A run that could be a phone number: digits with `+`, spaces, brackets, dots or hyphens. */
+const NUMBER_RUN = /\+?\(?\d[\d\s().-]{5,}\d\)?/;
+/** Call direction words some recorders put in the name. */
+const DIRECTION = /(?:^|\s)(?:in|out|incoming|outgoing)(?=\s|$)/gi;
+
+function tidy(text: string): string {
+  return text
+    .replace(/\(\s*\)|\[\s*\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s\-–()@,]+|[\s\-–()@,]+$/g, '');
+}
+
+function who(
+  part: string,
+  region: CountryCode,
+): { phone: string | null; contactName: string | null } {
+  const text = tidy(part.replace(/_+/g, ' ').replace(DIRECTION, ' '));
+  const run = NUMBER_RUN.exec(text);
+  const phone = run ? parsePhone(run[0], region) : null;
+  const rest =
+    phone && run ? tidy(text.slice(0, run.index) + text.slice(run.index + run[0].length)) : text;
+  return { phone, contactName: rest || null };
+}
+
+/**
+ * Reads the date and number or contact name from call-recording file names: Samsung
+ * (`Call recording <who>_YYMMDD_HHMMSS`), iPhone exports (`Call with <who> YYYY-MM-DD at HH.MM`),
+ * and Android recorders that put the stamp first, last or around `<name>(<number>)`.
+ * Times in names are local to the phone: `utcOffsetMinutes` converts them (default UTC), unless
+ * the name carries its own `+HHMM` offset.
+ */
+export function parseRecordingFileName(
+  path: string,
+  opts: { region?: CountryCode; utcOffsetMinutes?: number } = {},
+): FileNameMeta | null {
+  const region = opts.region ?? DEFAULT_PHONE_REGION;
+  // Samsung appends `_1`, `_2` to repeated names.
+  const stem = baseName(path).replace(/(?<=\d{6})_\d{1,2}$/, '');
+  const prefixed = PREFIX.test(stem);
+  const rest = stem.replace(PREFIX, '');
+  const stamp = findStamp(rest, opts.utcOffsetMinutes ?? 0);
+  if (stamp) {
+    const part = `${rest.slice(0, stamp.index)} ${rest.slice(stamp.index + stamp.length)}`;
+    return { ...who(part, region), startedAt: stamp.startedAt };
   }
   if (prefixed && rest.trim()) {
     const w = who(rest, region);
-    if (w.phone || w.contactName) return { format: 'iphone', ...w, startedAt: null };
+    if (w.phone || w.contactName) return { ...w, startedAt: null };
   }
   return null;
 }

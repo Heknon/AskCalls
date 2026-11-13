@@ -1,5 +1,5 @@
 import { zipSync } from 'fflate';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { parseRecordingFileName } from './filenames';
 import { parseCsv, parseManifest } from './manifest';
 import { baseName, classifyFile, type FileRef, pairFiles } from './pairing';
@@ -128,43 +128,56 @@ describe('manifest.csv', () => {
 });
 
 describe('recording file names', () => {
-  it('reads Samsung names with a number or a contact', () => {
-    expect(parseRecordingFileName('Call recording +972541234567_240501_101532.m4a')).toEqual({
-      format: 'samsung',
-      phone: '+972541234567',
-      contactName: null,
-      startedAt: '2024-05-01T10:15:32.000Z',
-    });
-    expect(parseRecordingFileName('Call recording Dana Levi_240501_101532.m4a')).toMatchObject({
-      phone: null,
-      contactName: 'Dana Levi',
-    });
-    expect(parseRecordingFileName('0541234567_20240501_101532.m4a')).toMatchObject({
-      format: 'samsung',
-      phone: '+972541234567',
-      startedAt: '2024-05-01T10:15:32.000Z',
-    });
-    expect(parseRecordingFileName('הקלטת שיחה דנה_240501_101532.m4a')?.contactName).toBe('דנה');
-  });
-
-  it('reads iPhone-style names', () => {
-    expect(
-      parseRecordingFileName('Call with +1 (415) 555-0132 2025-11-03 at 14.05.09.m4a'),
-    ).toEqual({
-      format: 'iphone',
-      phone: '+14155550132',
-      contactName: null,
-      startedAt: '2025-11-03T14:05:09.000Z',
-    });
-    expect(parseRecordingFileName('Call with Dana Levi.m4a')).toEqual({
-      format: 'iphone',
-      phone: null,
-      contactName: 'Dana Levi',
-      startedAt: null,
-    });
-    expect(parseRecordingFileName('2025-11-03 14-05.m4a')?.startedAt).toBe(
-      '2025-11-03T14:05:00.000Z',
-    );
+  const at = (iso: string) => new Date(iso).toISOString();
+  test.each([
+    // Samsung
+    [
+      'Call recording +972541234567_240501_101532.m4a',
+      '+972541234567',
+      null,
+      at('2024-05-01T10:15:32Z'),
+    ],
+    ['Call recording Dana Levi_240501_101532.m4a', null, 'Dana Levi', at('2024-05-01T10:15:32Z')],
+    ['Call recording Dana Levi_240501_101532_1.m4a', null, 'Dana Levi', at('2024-05-01T10:15:32Z')],
+    ['0541234567_20240501_101532.m4a', '+972541234567', null, at('2024-05-01T10:15:32Z')],
+    ['הקלטת שיחה דנה_240501_101532.m4a', null, 'דנה', at('2024-05-01T10:15:32Z')],
+    // iPhone exports
+    [
+      'Call with +1 (415) 555-0132 2025-11-03 at 14.05.09.m4a',
+      '+14155550132',
+      null,
+      at('2025-11-03T14:05:09Z'),
+    ],
+    ['Call with Dana Levi.m4a', null, 'Dana Levi', null],
+    ['Call with Dana Levi 2025-11-03 at 14.05.m4a', null, 'Dana Levi', at('2025-11-03T14:05:00Z')],
+    ['2025-11-03 14-05.m4a', null, null, at('2025-11-03T14:05:00Z')],
+    // Android recorders: stamp first, name(number), compact stamps, direction words, own offset
+    ['2026-11-01_1620_+972525550134.m4a', '+972525550134', null, at('2026-11-01T16:20:00Z')],
+    ['2026-11-01_162045_0525550134.m4a', '+972525550134', null, at('2026-11-01T16:20:45Z')],
+    ['2026-11-01 16-20-45 Dana Levi.mp3', null, 'Dana Levi', at('2026-11-01T16:20:45Z')],
+    [
+      'Dana Levi(0525550134)_20240501101532.mp3',
+      '+972525550134',
+      'Dana Levi',
+      at('2024-05-01T10:15:32Z'),
+    ],
+    ['+972525550134_20240501101532.mp3', '+972525550134', null, at('2024-05-01T10:15:32Z')],
+    [
+      'Call@Dana Levi(+972525550134)_20240501101532.m4a',
+      '+972525550134',
+      'Dana Levi',
+      at('2024-05-01T10:15:32Z'),
+    ],
+    [
+      '20240501_101532.123+0300_out_+972525550134_Dana_Levi.oga',
+      '+972525550134',
+      'Dana Levi',
+      at('2024-05-01T07:15:32Z'),
+    ],
+    ['20240501_101532_in_0525550134.oga', '+972525550134', null, at('2024-05-01T10:15:32Z')],
+    ['2024_05_01_10_15_32_Dana.wav', null, 'Dana', at('2024-05-01T10:15:32Z')],
+  ])('%s', (name, phone, contactName, startedAt) => {
+    expect(parseRecordingFileName(name)).toEqual({ phone, contactName, startedAt });
   });
 
   it('applies the phone clock offset and rejects impossible dates', () => {
@@ -173,6 +186,7 @@ describe('recording file names', () => {
     ).toBe('2024-05-01T07:15:32.000Z');
     expect(parseRecordingFileName('x_241341_101532.m4a')).toBeNull();
     expect(parseRecordingFileName('voice memo.m4a')).toBeNull();
+    expect(parseRecordingFileName('0525550134.m4a')).toBeNull();
   });
 
   it('lets the manifest override file-name data field by field', () => {
