@@ -1,20 +1,46 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AppProviders } from '../client/i18n/providers';
 import { THEME_SCRIPT } from '../client/theme/script';
 import { localeDir } from '../i18n/locales';
+import { getContainer } from '../server/container';
 import { MARKETING_HEADER } from '../server/http/csp';
 import { requestLocale } from '../server/i18n/locale';
+import { OG_IMAGE } from './(marketing)/_data/routes';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'AskCalls',
-  description: "Ask your calls anything. End-to-end encrypted. We can't read your calls.",
-  icons: { icon: '/icons/icon.svg', apple: '/icons/apple-touch-icon.png' },
-};
+/**
+ * Defaults for every page, so a shared link to /login, /setup or an /app/** page (which
+ * redirects to /login for a crawler) still previews with the share card. Marketing pages
+ * replace them with their own (`pageMetadata`).
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, locale, { config }] = await Promise.all([
+    getTranslations('marketing.meta'),
+    requestLocale(),
+    getContainer(),
+  ]);
+  const title = t('home.title');
+  const description = t('home.description');
+  return {
+    metadataBase: new URL(config.config.appUrl),
+    title,
+    description,
+    icons: { icon: '/icons/icon.svg', apple: '/icons/apple-touch-icon.png' },
+    openGraph: {
+      title,
+      description,
+      siteName: t('siteName'),
+      type: 'website',
+      images: [OG_IMAGE],
+      locale: locale === 'he' ? 'he_IL' : 'en_GB',
+    },
+    twitter: { card: 'summary_large_image', title, description, images: [OG_IMAGE.url] },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
