@@ -32,8 +32,8 @@ export interface OpenAiCompatibleOptions {
   /** Model name the server expects, e.g. `Systran/faster-whisper-large-v3`. Default `whisper-1`. */
   model?: string;
   /**
-   * Whether the server answers CORS preflights from the app origin (speaches/faster-whisper-server
-   * allows all origins by default; whisper.cpp's server does not). Default false.
+   * Whether the server answers CORS preflights from the app origin. It depends on the server and
+   * its flags, so it is off unless the operator says so. Default false.
    */
   browserDirect?: boolean;
   /** Largest upload the server accepts. Default 25 MB, as OpenAI's API. */

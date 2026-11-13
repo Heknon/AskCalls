@@ -29,8 +29,10 @@ Server notes:
 - **faster-whisper-server / speaches**: serves `/v1/audio/transcriptions` and `/v1/models`
   ([speaches](https://speaches.ai/)).
 - **whisper.cpp `whisper-server`**: serves `/inference` by default; start it with
-  `--inference-path /v1/audio/transcriptions` (or pass that full URL as `baseUrl`). It has no
-  `/v1/models`, so `healthCheck()` treats 404 as "reachable"
+  `--inference-path /v1/audio/transcriptions` (or pass that full URL as `baseUrl`). Its README
+  documents `json` only, so confirm your build returns `verbose_json` segments; with plain `json`
+  the adapter falls back to one untimed segment. It has no `/v1/models`, so `healthCheck()` treats
+  404 as "reachable"
   ([server README](https://github.com/ggml-org/whisper.cpp/tree/master/examples/server)).
 
 ## Response mapping

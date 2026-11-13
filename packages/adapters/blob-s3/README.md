@@ -20,6 +20,8 @@ SDK 3.729+ otherwise adds CRC32 checksums to every upload, which R2/B2/older Min
 would make presigned PUT URLs require a checksum header a browser can't compute.
 ([AWS SDK data-integrity change](https://github.com/aws/aws-sdk-js-v3/issues/6810),
 [R2 compatibility](https://developers.cloudflare.com/r2/examples/aws/aws-sdk-js-v3/))
+`DeleteObjects` still carries a checksum because S3 requires one for that call; MinIO accepts it
+(integration test), and the issue above has reports to watch for other services.
 
 ## Behaviour
 
