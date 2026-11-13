@@ -1,28 +1,24 @@
 import { createTranslator } from 'next-intl';
-import en from './messages/en.json';
-import he from './messages/he.json';
+import { LOCALE_COOKIE, type Locale, localeDir } from '../../i18n/locales';
+import { loadMessages, type Messages, type Namespace } from '../../i18n/messages';
+import { resolveLocale } from '../../i18n/resolve';
 
 /**
- * Minimal locale resolution for pages outside the app shell: `locale` cookie, then
- * Accept-Language, then English (spec 4). Message files are per locale.
+ * Translations for responses rendered outside React (the CLI hand-off page), with the locale from
+ * the request's cookie and Accept-Language.
  */
-export const MESSAGES = { en, he } as const;
-export type Locale = keyof typeof MESSAGES;
-const RTL: ReadonlySet<Locale> = new Set(['he']);
-
-export function resolveLocale(cookieLocale: string | undefined, acceptLanguage: string | null) {
-  const known = (l: string | undefined): l is Locale => !!l && l in MESSAGES;
-  if (known(cookieLocale)) return cookieLocale;
-  for (const part of (acceptLanguage ?? '').split(',')) {
-    const tag = part.split(';')[0]?.trim().toLowerCase().split('-')[0];
-    if (known(tag)) return tag;
-  }
-  return 'en' as Locale;
-}
-
-export function translator<N extends keyof typeof en>(locale: Locale, namespace: N) {
+export async function requestTranslator<N extends Namespace>(req: Request, namespace: N) {
+  const cookie = req.headers
+    .get('cookie')
+    ?.match(new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]+)`))?.[1];
+  const locale: Locale = resolveLocale({
+    cookie,
+    acceptLanguage: req.headers.get('accept-language'),
+  });
+  const messages: Messages = await loadMessages(locale);
   return {
-    t: createTranslator({ locale, messages: MESSAGES[locale] as typeof en, namespace }),
-    dir: RTL.has(locale) ? ('rtl' as const) : ('ltr' as const),
+    locale,
+    dir: localeDir(locale),
+    t: createTranslator({ locale, messages, namespace }),
   };
 }

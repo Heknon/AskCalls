@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "main": "Main",
+    "calls": "Calls",
+    "upload": "Upload",
+    "tags": "Tags and rules",
+    "tagsShort": "Tags",
+    "contacts": "Contacts",
+    "settings": "Settings",
+    "admin": "Admin",
+    "instance": "Instance"
+  },
+  "skipToContent": "Skip to content",
+  "account": {
+    "free": "Free beta · {calls}/{max}",
+    "pro": "Pro · {calls}/{max}"
+  },
+  "lock": {
+    "button": "Lock",
+    "now": "Lock now",
+    "tooltip": "Locks after {n} min idle",
+    "tooltipOff": "Auto-lock is off"
+  },
+  "toast": {
+    "locked": {
+      "title": "AskCalls locked",
+      "body": "After {n} minutes idle."
+    },
+    "inbox": {
+      "title": "{n, plural, one {1 inbox item added to your calls} other {# inbox items added to your calls}}",
+      "view": "View",
+      "failed": "{n, plural, one {Couldn't add 1 inbox item. It'll be retried next time you unlock.} other {Couldn't add # inbox items. They'll be retried next time you unlock.}}",
+      "unreachable": "Couldn't check the inbox. It'll be retried next time you unlock."
+    }
+  },
+  "banner": {
+    "offline": "Offline. Changes are paused until you reconnect."
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "open": "Keyboard shortcuts",
+    "off": "Single-key shortcuts can be turned off in Settings → Privacy.",
+    "offNow": "Single-key shortcuts are off. Turn them on in Settings → Privacy.",
+    "groups": {
+      "calls": "Calls",
+      "callView": "Call view",
+      "everywhere": "Everywhere"
+    },
+    "hints": {
+      "search": "Search",
+      "move": "Move",
+      "star": "Star",
+      "all": "All shortcuts"
+    },
+    "keys": {
+      "search": "Search",
+      "nextPrevious": "Next / previous call",
+      "open": "Open call",
+      "star": "Star",
+      "tags": "Tags",
+      "close": "Close or clear",
+      "lock": "Lock",
+      "list": "This list",
+      "goCalls": "Go to calls",
+      "goUpload": "Go to upload",
+      "goTags": "Go to tags",
+      "goSettings": "Go to settings",
+      "playPause": "Play or pause",
+      "seek": "Back / forward 5 s",
+      "nextHit": "Next / previous hit",
+      "ask": "Ask about this call",
+      "send": "Send question"
+    }
+  }
+}

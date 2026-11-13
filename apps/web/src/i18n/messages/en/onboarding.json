@@ -1,0 +1,122 @@
+{
+  "stepCount": "Step {n} of {total}",
+  "stepsLabel": "Setup steps",
+  "steps": {
+    "welcome": "Welcome",
+    "passkey": "Passkey",
+    "recovery": "Recovery code",
+    "try": "Try it",
+    "ai": "Connect your AI"
+  },
+  "skip": "Skip",
+  "welcome": {
+    "title": "Welcome to AskCalls",
+    "body": "Your calls are encrypted on your devices before they're uploaded. We store them, but we can't read them.",
+    "body2": "Next: a passkey to unlock them, and a recovery code in case you lose it.",
+    "cta": "Set up encryption"
+  },
+  "passkey": {
+    "title": "Create a passkey",
+    "body": "You'll unlock AskCalls with your fingerprint, face or screen lock.",
+    "cta": "Create passkey",
+    "alt": "Use a passphrase instead",
+    "waiting": "Waiting for your device…",
+    "done": "Passkey created",
+    "cancelled": "Passkey wasn't created. Try again or use a passphrase.",
+    "noPrf": "This browser can't unlock AskCalls with a passkey yet. Use a passphrase on this device.",
+    "browsers": "Browsers that can: Chrome, Edge and Safari 18 or later, Firefox 135 or later.",
+    "usePassphrase": "Use a passphrase",
+    "label": "Passkey"
+  },
+  "pass": {
+    "title": "Create a passphrase",
+    "label": "Passphrase",
+    "hint": "At least 12 characters. A short sentence works well.",
+    "confirm": "Type it again",
+    "strength": {
+      "weak": "Weak",
+      "fair": "Fair",
+      "strong": "Strong"
+    },
+    "mismatch": "The two passphrases don't match.",
+    "short": "Use at least 12 characters.",
+    "creating": "Creating keys…",
+    "failed": "Couldn't create keys on this device. Try again.",
+    "cta": "Continue",
+    "back": "Use a passkey instead"
+  },
+  "rc": {
+    "title": "Save your recovery code",
+    "body": "It's the only way back in if you lose your passkey. We can't reset it.",
+    "list": "Recovery code, 8 groups",
+    "group": "Group {n}",
+    "download": "Download",
+    "print": "Print",
+    "copy": "Copy",
+    "copied": "Copied. Clear your clipboard after saving.",
+    "hint": "Print it or keep it in a password manager, not only on this device.",
+    "check": "I saved my recovery code somewhere safe",
+    "continue": "Continue",
+    "file": {
+      "name": "AskCalls recovery code.txt",
+      "heading": "AskCalls recovery code",
+      "account": "Account: {email}",
+      "created": "Created: {date}",
+      "use": "Use it at {url} if you lose your passkey.",
+      "where": "Where I keep this:"
+    }
+  },
+  "confirm": {
+    "title": "Check your saved code",
+    "body": "Type group {a} and group {b} from your saved copy.",
+    "group": "Group {n}",
+    "cta": "Confirm and finish setup",
+    "back": "Back to the code",
+    "short": "Group {n} needs 4 characters.",
+    "wrong": "Group {n} doesn't match. Check your saved copy.",
+    "finishing": "Finishing setup…",
+    "failed": "Couldn't save your keys. Check your connection and try again."
+  },
+  "try": {
+    "title": "Try it with a sample call",
+    "body": "A short made-up call about a kitchen quote. You can delete it later.",
+    "import": "Import sample call",
+    "importing": "Importing…",
+    "useEnglish": "Use the English sample",
+    "useHebrew": "Use the Hebrew sample",
+    "imported": "Sample call imported",
+    "failed": "Couldn't import the sample call. Try again.",
+    "searchHintEn": "Search for \"pirce\". The typo is on purpose.",
+    "searchHintHe": "Search for \"מחיק\". The typo is on purpose.",
+    "searchPlaceholder": "Search names, numbers, tags or words",
+    "search": "Search",
+    "clear": "Clear search",
+    "total": "{n, plural, one {# call} other {# calls}}",
+    "alsoMatched": "also matched",
+    "exclude": "Exclude {term}",
+    "sort": "Sort",
+    "sortBest": "Best match",
+    "noMatch": "No calls match",
+    "searchFailed": "Couldn't search. Try again.",
+    "open": "Open the call",
+    "next": "Continue"
+  },
+  "ai": {
+    "title": "Connect your AI",
+    "body": "The askcalls agent lets Claude or any MCP client search and read your calls on this computer.",
+    "step1": "Sign in from your computer",
+    "step2": "Link it to this account",
+    "step3": "Add it to your client",
+    "client": "Client",
+    "where": {
+      "claudeCode": "Run in a terminal:",
+      "claudeDesktop": "Settings → Developer → Edit Config, then restart Claude Desktop:",
+      "cursor": "In <path>~/.cursor/mcp.json</path>:",
+      "vscode": "In <path>.vscode/mcp.json</path> in your workspace:",
+      "windsurf": "In <path>~/.codeium/windsurf/mcp_config.json</path>:",
+      "codex": "Run in a terminal:"
+    },
+    "tokens": "Tokens for other tools are in <link>Settings → API and MCP</link>.",
+    "done": "Go to my calls"
+  }
+}
