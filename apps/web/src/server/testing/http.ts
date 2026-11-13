@@ -2,6 +2,10 @@ import { createApiClient } from '@askcalls/api-contract';
 import type { Limits } from '@askcalls/domain';
 import { encode } from 'next-auth/jwt';
 import * as account from '../../app/api/account/route';
+import * as adminInstanceOffline from '../../app/api/admin/instance/offline/route';
+import * as adminInstance from '../../app/api/admin/instance/route';
+import * as adminInstanceTest from '../../app/api/admin/instance/test/route';
+import * as adminUsers from '../../app/api/admin/users/route';
 import * as ask from '../../app/api/ask/route';
 import * as audit from '../../app/api/audit/route';
 import * as recording from '../../app/api/calls/[id]/recording/route';
@@ -18,6 +22,10 @@ import * as keyring from '../../app/api/keyring/route';
 import * as me from '../../app/api/me/route';
 import * as search from '../../app/api/search/route';
 import * as retention from '../../app/api/settings/retention/route';
+import * as setupComplete from '../../app/api/setup/complete/route';
+import * as setupPasskey from '../../app/api/setup/passkey/route';
+import * as setup from '../../app/api/setup/route';
+import * as setupTest from '../../app/api/setup/test/route';
 import * as consent from '../../app/api/telemetry/consent/route';
 import * as tokens from '../../app/api/tokens/route';
 import * as transcribe from '../../app/api/transcribe/route';
@@ -57,6 +65,14 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/audit', audit],
   ['/api/settings/retention', retention],
   ['/api/cron/retention', cron],
+  ['/api/admin/instance', adminInstance],
+  ['/api/admin/instance/test', adminInstanceTest],
+  ['/api/admin/instance/offline', adminInstanceOffline],
+  ['/api/admin/users', adminUsers],
+  ['/api/setup', setup],
+  ['/api/setup/test', setupTest],
+  ['/api/setup/passkey', setupPasskey],
+  ['/api/setup/complete', setupComplete],
 ];
 
 function match(pattern: string, path: string): Record<string, string> | null {
@@ -137,7 +153,7 @@ export function startTestApp(
     ...(opts.llm !== undefined && { llm: opts.llm }),
     ...(opts.transcription !== undefined && { transcription: opts.transcription }),
   });
-  setContainerForTests({ config, ports, close: async () => {} });
+  setContainerForTests({ config, ports, restartRequired: [], close: async () => {} });
 
   const headersFor = (as: Credential | undefined): Record<string, string> => {
     if (!as) return {};

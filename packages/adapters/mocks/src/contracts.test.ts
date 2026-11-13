@@ -1,6 +1,7 @@
 import { describeBlobStoreContract } from '@askcalls/domain/contracts/blob-store';
 import { describeCallRepositoryContract } from '@askcalls/domain/contracts/call-repository';
 import { describeKeyringRepositoryContract } from '@askcalls/domain/contracts/keyring-repository';
+import { describeLocalCredentialRepositoryContract } from '@askcalls/domain/contracts/local-credentials';
 import {
   describeLlmProviderContract,
   describeTranscriptionProviderContract,
@@ -61,6 +62,7 @@ describeUserDataStoreContract('memory', scoped('userDataStore'));
 describeInboxRepositoryContract('memory', scoped('inboxRepo'));
 describeApiTokenRepositoryContract('memory', scoped('tokenRepo'));
 describeAuditLogContract('memory', scoped('auditLog'));
+describeLocalCredentialRepositoryContract('memory', scoped('localCredentialRepo'));
 describeRateLimiterContract('memory', { setup: async () => new MemoryRateLimiter() });
 describeTranscriptionProviderContract('mock', {
   setup: async () => ({

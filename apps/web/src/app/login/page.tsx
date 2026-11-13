@@ -9,6 +9,7 @@ import { signIn } from '../../server/auth/nextauth';
 import { getContainer } from '../../server/container';
 import { GateFrame } from '../_gate/gate-frame';
 import { EmailSignIn, SentNotice } from './email-form';
+import { LocalAccountForm, PasskeySignIn } from './local-form';
 import { OneTap } from './one-tap';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,10 @@ export default async function LoginPage({
   const redirectTo = safeCallback(sp.callbackUrl);
   const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;
   const oauth = (['google', 'github'] as const).filter(has);
-  const forms = has('nodemailer') || has('test');
+  const passkey = has('passkey');
+  const forms = has('nodemailer') || has('test') || has('password');
+  const buttons = oauth.length > 0 || passkey;
+  const signInMethods = providers.filter((p) => p.kind !== 'setup').length;
 
   async function oauthAction(formData: FormData) {
     'use server';
@@ -68,12 +72,14 @@ export default async function LoginPage({
               title={
                 error === 'OAuthAccountNotLinked'
                   ? t('error.accountNotLinked')
-                  : t('error.provider')
+                  : error === 'CredentialsSignin'
+                    ? t('error.credentials')
+                    : t('error.provider')
               }
             />
           ) : null}
-          {providers.length === 0 ? <ErrorState scope="panel" title={t('noProviders')} /> : null}
-          {oauth.length ? (
+          {signInMethods === 0 ? <ErrorState scope="panel" title={t('noProviders')} /> : null}
+          {buttons ? (
             <div className="flex flex-col gap-3">
               {oauth.map((id) => (
                 <form key={id} action={oauthAction}>
@@ -84,9 +90,11 @@ export default async function LoginPage({
                   </Button>
                 </form>
               ))}
+              {passkey ? <PasskeySignIn redirectTo={redirectTo} /> : null}
             </div>
           ) : null}
-          {oauth.length && forms ? <GateDivider label={t('or')} /> : null}
+          {buttons && forms ? <GateDivider label={t('or')} /> : null}
+          {has('password') ? <LocalAccountForm redirectTo={redirectTo} /> : null}
           {has('nodemailer') ? (
             <EmailSignIn action={emailAction} redirectTo={redirectTo} kind="email" />
           ) : null}

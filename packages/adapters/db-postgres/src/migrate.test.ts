@@ -8,7 +8,8 @@ import { createPostgresDatabase } from './index';
 import { runMigrations } from './migrate';
 import { MIGRATIONS } from './migrations/index';
 
-describe('migrations on pglite', () => {
+// Each test migrates a fresh embedded database: seconds, more on a loaded machine.
+describe('migrations on pglite', { timeout: 30_000 }, () => {
   it('applies once and is idempotent', async () => {
     const driver = await openDriver({ driver: 'pglite' });
     try {

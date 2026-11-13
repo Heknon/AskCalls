@@ -156,7 +156,20 @@ describe('sign-in configuration', () => {
       'google',
       'google-one-tap',
       'nodemailer',
+      'passkey',
+      'setup-claim',
     ]);
+  });
+
+  it('offers password sign-in with local accounts, and nothing local on the hosted instance', () => {
+    const local = enabledProviders(
+      resolve({ NODE_ENV: 'production', AUTH_LOCAL_ACCOUNTS: 'true' }),
+    );
+    expect(local.map((p) => p.id)).toEqual(['password', 'passkey', 'setup-claim']);
+    const hosted = enabledProviders(
+      resolve({ NODE_ENV: 'production', ASKCALLS_HOSTED: 'true', AUTH_LOCAL_ACCOUNTS: 'true' }),
+    );
+    expect(hosted.map((p) => p.id)).toEqual(['password']);
   });
 
   it('never enables the test provider in production or on the hosted instance', () => {
@@ -177,14 +190,20 @@ describe('sign-in configuration', () => {
       AUTH_SECRET: 's'.repeat(32),
       AUTH_REDIRECT_PROXY_URL: 'https://dev.example.test/api/auth',
     });
-    const auth = buildAuthConfig({ config, ports: makeTestPorts(), close: async () => {} });
+    const auth = buildAuthConfig({
+      config,
+      ports: makeTestPorts(),
+      restartRequired: [],
+      close: async () => {},
+    });
     expect(auth.session?.strategy).toBe('jwt');
     expect(auth.redirectProxyUrl).toBe('https://dev.example.test/api/auth');
     const ids = auth.providers.map((p) => {
       const provider = typeof p === 'function' ? p() : p;
       return (provider as { options?: { id?: string } }).options?.id ?? provider.id;
     });
-    expect(ids).toEqual(['test']);
+    expect(ids).toEqual(['passkey', 'setup-claim', 'test']);
+    expect(auth.experimental?.enableWebAuthn).toBe(true);
   });
 
   it('has no session secret in production without AUTH_SECRET', async () => {
