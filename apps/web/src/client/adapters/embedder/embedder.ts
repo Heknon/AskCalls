@@ -52,6 +52,7 @@ const TOTAL_BYTES = EMBEDDING_MODEL.files.reduce((n, f) => n + f.bytes, 0);
 export class WorkerEmbedder implements Embedder {
   readonly modelId = EMBEDDING_MODEL_ID;
   readonly dimensions = 384 as const;
+  readonly minSimilarity = EMBEDDING_MODEL.minSimilarity;
   #worker: Worker | null = null;
   #next = 1;
   #pending = new Map<number, Pending>();

@@ -30,6 +30,12 @@ export const EMBEDDING_MODEL = {
   },
   dtype: 'q8',
   dimensions: 384,
+  /**
+   * Cosine similarity under which a call chunk is unrelated to a query. The model scores every
+   * pair between about 0.7 and 0.9, so unrelated calls never score near 0
+   * (`bun run models:calibrate`).
+   */
+  minSimilarity: 0.78,
   files: [
     {
       path: 'config.json',

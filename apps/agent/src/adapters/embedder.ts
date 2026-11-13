@@ -17,6 +17,7 @@ import { type FeatureExtractor, isCompiledBinary, workerExtractor } from './runt
 export class TransformersEmbedder implements Embedder {
   readonly modelId = EMBEDDING_MODEL_ID;
   readonly dimensions = 384 as const;
+  readonly minSimilarity = EMBEDDING_MODEL.minSimilarity;
   #extractor: Promise<FeatureExtractor> | null = null;
 
   constructor(
