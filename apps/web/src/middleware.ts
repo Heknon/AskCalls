@@ -19,8 +19,7 @@ import {
  *   cookie, see client/direct-origins.ts), and none in offline mode.
  * - / and /login: a per-request nonce CSP that allows accounts.google.com, the only pages
  *   where the Google One Tap script may load. The other marketing pages get the same CSP
- *   without Google, a cookieless page view (Telemetry port; a no-op without a backend) and
- *   `Vary` on the inputs that pick their language.
+ *   without Google and a cookieless page view (Telemetry port; a no-op without a backend).
  * - /api/**: `Cache-Control: no-store` (route handlers set it too).
  * Runs on the Node.js runtime so it can use the container like route handlers do.
  */
@@ -60,7 +59,6 @@ export async function middleware(req: NextRequest) {
       marketing,
     );
     if (marketing) {
-      res.headers.set('Vary', 'Accept-Language, Cookie');
       const prefetch = req.headers.has('next-router-prefetch') || req.headers.has('rsc');
       if (!prefetch) container.ports.telemetry.event(null, { name: 'page_view', route: pathname });
     }

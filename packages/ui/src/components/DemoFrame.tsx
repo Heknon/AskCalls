@@ -200,7 +200,10 @@ export function DemoFrame({ queries, description, labels }: DemoFrameProps) {
         return;
       }
       pause.hidden = false;
-      if (!paused) play();
+      if (paused) return;
+      // After the page's load, so the loop never competes with the first paint.
+      if (document.readyState === 'complete') later(play, 600);
+      else window.addEventListener('load', () => later(play, 600), { once: true });
     };
     const toggle = () => {
       paused = !paused;

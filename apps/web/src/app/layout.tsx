@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -13,6 +13,14 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'AskCalls',
   description: "Ask your calls anything. End-to-end encrypted. We can't read your calls.",
+  icons: { icon: '/icons/icon.svg', apple: '/icons/apple-touch-icon.png' },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F7F8F8' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E1213' },
+  ],
 };
 
 /**

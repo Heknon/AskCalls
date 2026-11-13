@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getContainer } from '../../../server/container';
 import { requestLocale } from '../../../server/i18n/locale';
-import type { MarketingPath } from '../_data/routes';
+import { type MarketingPath, OG_IMAGE } from '../_data/routes';
 
 type PageKey =
   | 'home'
@@ -40,9 +40,10 @@ export async function pageMetadata(key: PageKey, path: MarketingPath): Promise<M
       url: path,
       siteName: t('siteName'),
       type: 'website',
+      images: [OG_IMAGE],
       locale: locale === 'he' ? 'he_IL' : 'en_GB',
     },
-    twitter: { card: 'summary_large_image', title, description },
+    twitter: { card: 'summary_large_image', title, description, images: [OG_IMAGE.url] },
   };
 }
 
