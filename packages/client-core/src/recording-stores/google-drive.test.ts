@@ -125,6 +125,7 @@ describe('Google Drive store', () => {
     expect([...google.files.values()].map((f) => f.name)).toEqual([DRIVE_FOLDER_NAME]);
     expect(await store.describe(REF)).toEqual({
       account: 'dana@example.test',
+      location: DRIVE_FOLDER_NAME,
       usedBytes: 2_400_000_000,
       limitBytes: 15e9,
     });

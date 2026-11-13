@@ -93,18 +93,12 @@ export function directAccessFor(p: Providers): DirectAccess {
       if (o) origins.push(o);
     }
   }
-  if (p.recordings.mode === 'drive' || p.previousStores.drives.length > 0) {
-    providers.push(GOOGLE_DRIVE_PROVIDER);
+  for (const s of knownStores(p)) {
+    if (s.kind === 's3-compatible') origins.push(bucketOrigin(s.config));
+    else if (!providers.includes(GOOGLE_DRIVE_PROVIDER)) providers.push(GOOGLE_DRIVE_PROVIDER);
   }
-  const buckets = [
-    ...(p.recordings.mode === 'own' ? [p.recordings.bucket] : []),
-    ...p.previousStores.buckets,
-  ];
-  for (const b of buckets) origins.push(bucketOrigin(b));
   return { providers, origins };
 }
-
-const SWEEP_MARK = 'recording-sweep-after';
 
 /**
  * After unlock: deletes recordings the server queued for the user's own stores (retention,
@@ -112,11 +106,8 @@ const SWEEP_MARK = 'recording-sweep-after';
  */
 async function sweepOwnStores(ctx: ClientContext, secrets: SecretStore): Promise<void> {
   if (knownStores(await ctx.userData.get('providers')).length === 0) return;
-  const { sweepOrphanedRecordings } = await import('@askcalls/client-core/recording-stores/move');
-  const mark = await secrets.get(SWEEP_MARK);
-  const after = mark ? new TextDecoder().decode(mark) : null;
-  const next = await sweepOrphanedRecordings(ctx, after);
-  if (next && next !== after) await secrets.set(SWEEP_MARK, new TextEncoder().encode(next));
+  const { sweepAtUnlock } = await import('@askcalls/client-core/recording-stores/lazy');
+  await sweepAtUnlock(ctx, secrets);
 }
 
 /** Translation code loads on the first upload that needs it, not with every page. */

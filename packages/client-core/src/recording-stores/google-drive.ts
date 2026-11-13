@@ -2,13 +2,16 @@ import { type ApiClient, ApiError } from '@askcalls/api-contract';
 import { storageToken } from '@askcalls/api-contract/routes/storage';
 import { DomainError } from '@askcalls/domain';
 import type { RecordingStore, RecordingStoreInfo, RecordingStoreProbe } from '../ports/index';
+import type { Providers } from '../userdata';
 import { assertOk, defaultFetch, discard, type Fetch, send } from './http';
-import type { DriveConfig } from './refs';
+import { type DriveConfig, driveRef, isDriveConfig } from './refs';
+
+/** The visible Drive folder recordings go to. */
+export const DRIVE_FOLDER_NAME = 'AskCalls recordings';
 
 /** The only origin the device talks to for Drive: metadata, uploads and downloads. */
 export const DRIVE_ORIGIN = 'https://www.googleapis.com';
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-export const DRIVE_FOLDER_NAME = 'AskCalls recordings';
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
 /** Resumable upload chunks must be multiples of 256 KiB. */
@@ -185,6 +188,7 @@ export class GoogleDriveStore implements RecordingStore {
     const num = (v: string | undefined) => (v && /^\d+$/.test(v) ? Number(v) : null);
     return {
       account: about.user?.emailAddress ?? null,
+      location: DRIVE_FOLDER_NAME,
       usedBytes: num(about.storageQuota?.usage),
       limitBytes: num(about.storageQuota?.limit),
     };
@@ -325,4 +329,19 @@ function probeFailure(e: unknown): RecordingStoreProbe {
     return { ok: false, reason: 'unauthorized', status: e.status };
   }
   return { ok: false, reason: 'http' };
+}
+
+/** Records the Drive folder a device created, on whichever entry holds that Drive. */
+export function withDriveFolder(p: Providers, ref: string, folderId: string): Providers {
+  const r = p.recordings;
+  return {
+    ...p,
+    recordings:
+      r.mode === 'drive' && driveRef(r.drive) === ref
+        ? { mode: 'drive', drive: { ...r.drive, folderId } }
+        : r,
+    previousStores: p.previousStores.map((s) =>
+      isDriveConfig(s) && driveRef(s) === ref ? { ...s, folderId } : s,
+    ),
+  };
 }

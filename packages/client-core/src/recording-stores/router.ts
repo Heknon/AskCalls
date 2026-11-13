@@ -3,7 +3,7 @@ import type { RecordingStore, RecordingStoreInfo, RecordingStoreProbe } from '..
 import type { Providers } from '../userdata';
 import type { GoogleDriveStore } from './google-drive';
 import type { Fetch } from './http';
-import { findStore, isDriveRef, withDriveFolder } from './refs';
+import { findStore, isDriveRef } from './refs';
 import { SigV4BucketStore } from './s3-compatible';
 
 export interface RecordingStoresOptions {
@@ -35,8 +35,8 @@ export class RecordingStores implements RecordingStore {
   }
 
   drive(): Promise<GoogleDriveStore> {
-    this.#drive ??= import('./google-drive').then(
-      ({ GoogleDriveStore, serverDriveTokens }) =>
+    this.#drive ??= import('./lazy').then(
+      ({ GoogleDriveStore, serverDriveTokens, withDriveFolder }) =>
         new GoogleDriveStore({
           resolve: async (ref) => {
             const s = findStore(await this.opts.providers(), ref);
@@ -57,6 +57,12 @@ export class RecordingStores implements RecordingStore {
       },
     );
     return this.#drive;
+  }
+
+  /** Revokes a Drive grant (disconnect). */
+  async revokeDrive(refreshToken: string): Promise<void> {
+    const { revokeDrive } = await import('./lazy');
+    await revokeDrive(this.opts.api, refreshToken);
   }
 
   /** Drops in-memory access tokens (lock). */

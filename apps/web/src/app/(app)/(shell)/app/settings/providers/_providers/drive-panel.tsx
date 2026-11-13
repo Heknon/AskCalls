@@ -2,20 +2,13 @@
 
 import { StorageConnectMessage } from '@askcalls/api-contract/routes/storage';
 import type { RecordingStoreInfo } from '@askcalls/client-core/ports/index';
-import {
-  DRIVE_FOLDER_NAME,
-  revokeDrive,
-} from '@askcalls/client-core/recording-stores/google-drive';
+import { forgetStore, switchRecordings } from '@askcalls/client-core/recording-stores/choice';
 import {
   moveRecordings,
   type StoredRecording,
   storedRecordings,
 } from '@askcalls/client-core/recording-stores/move';
-import {
-  driveRef,
-  forgetStore,
-  switchRecordings,
-} from '@askcalls/client-core/recording-stores/refs';
+import { driveRef } from '@askcalls/client-core/recording-stores/refs';
 import { type Providers, randomId } from '@askcalls/client-core/userdata';
 import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
@@ -204,7 +197,7 @@ function Connected({
       if (r.failed > 0) return setFailed(r.failed);
     }
     try {
-      await revokeDrive(client.api, drive.refreshToken).catch(() => {});
+      await client.ownStores.revokeDrive(drive.refreshToken).catch(() => {});
       const r = await save((p) => forgetStore(p, ref));
       if (!r.reloading) onSaved(r.doc);
     } catch {
@@ -225,10 +218,10 @@ function Connected({
     <div className="flex flex-col gap-4">
       {info && info !== 'failed' ? (
         <div className="flex flex-col gap-3">
-          {info.account ? (
+          {info.account && info.location ? (
             <p className="text-sm">
               {t.rich('where', {
-                folder: DRIVE_FOLDER_NAME,
+                folder: info.location ?? '',
                 email: info.account,
                 b: (chunks) => (
                   <bdi dir="ltr" className="font-medium">

@@ -1,14 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { type Providers, ProvidersDocSchema } from '../userdata';
+import { forgetStore, switchRecordings } from './choice';
+import { withDriveFolder } from './google-drive';
 import { movable } from './move';
-import {
-  activeStoreRef,
-  driveRef,
-  forgetStore,
-  knownStores,
-  switchRecordings,
-  withDriveFolder,
-} from './refs';
+import { activeStoreRef, driveRef, knownStores } from './refs';
 
 const bucket = {
   id: 'b1',
@@ -24,7 +19,7 @@ const base = (): Providers => ProvidersDocSchema.parse({ v: 1 });
 describe('recording store refs', () => {
   it('reads documents saved before Drive existed', () => {
     const old = ProvidersDocSchema.parse({ v: 1, recordings: { mode: 'own', bucket } });
-    expect(old.previousStores).toEqual({ buckets: [], drives: [] });
+    expect(old.previousStores).toEqual([]);
     expect(activeStoreRef(old)).toBe('b1');
     expect(knownStores(old).map((s) => s.ref)).toEqual(['b1']);
   });
@@ -33,9 +28,9 @@ describe('recording store refs', () => {
     const own = switchRecordings(base(), { mode: 'own', bucket });
     const onDrive = switchRecordings(own, { mode: 'drive', drive });
     expect(activeStoreRef(onDrive)).toBe('gdrive:d1');
-    expect(onDrive.previousStores.buckets.map((b) => b.id)).toEqual(['b1']);
+    expect(onDrive.previousStores).toEqual([bucket]);
     const back = switchRecordings(onDrive, { mode: 'own', bucket });
-    expect(back.previousStores).toEqual({ buckets: [], drives: [drive] });
+    expect(back.previousStores).toEqual([drive]);
     expect(knownStores(back).map((s) => s.ref)).toEqual(['b1', 'gdrive:d1']);
     expect(activeStoreRef(switchRecordings(back, { mode: 'off' }))).toBeUndefined();
   });

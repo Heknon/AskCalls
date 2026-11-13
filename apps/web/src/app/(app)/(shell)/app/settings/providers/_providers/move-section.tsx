@@ -6,7 +6,7 @@ import {
   type StoredRecording,
   storedRecordings,
 } from '@askcalls/client-core/recording-stores/move';
-import { driveRef, forgetStore, isDriveRef } from '@askcalls/client-core/recording-stores/refs';
+import { isDriveRef } from '@askcalls/client-core/recording-stores/refs';
 import type { Providers } from '@askcalls/client-core/userdata';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { JobProgress } from '@askcalls/ui/components/JobProgress';
@@ -21,45 +21,17 @@ type Place = 'managed' | 'bucket' | 'drive';
 const placeOf = (ref: string | null): Place =>
   ref === null ? 'managed' : isDriveRef(ref) ? 'drive' : 'bucket';
 
-/**
- * Stores switched away from that no recording uses any more: forgotten, and a Drive grant
- * revoked, so the device keeps no credentials it doesn't need.
- */
-export async function pruneStores(
-  client: ReturnType<typeof useUnlocked>['client'],
-  doc: Providers,
-  recordings: readonly StoredRecording[],
-): Promise<Providers> {
-  const used = new Set(recordings.map((r) => r.bucketRef));
-  const unused = [
-    ...doc.previousStores.buckets.map((b) => b.id),
-    ...doc.previousStores.drives.map(driveRef),
-  ].filter((ref) => !used.has(ref));
-  if (unused.length === 0) return doc;
-  for (const d of doc.previousStores.drives) {
-    if (unused.includes(driveRef(d))) {
-      const { revokeDrive } = await import('@askcalls/client-core/recording-stores/google-drive');
-      await revokeDrive(client.api, d.refreshToken).catch(() => {});
-    }
-  }
-  const next = await client.ctx.userData.update('providers', (p) => unused.reduce(forgetStore, p));
-  await client.syncDirectAccess().catch(() => {});
-  return next;
-}
-
 /** Offers to move recordings from any other store into `target`, on this device. */
 export function MoveRecordings({
   doc,
   target,
-  onSaved,
 }: {
   doc: Providers;
   /** Null: the instance bucket. */
   target: string | null;
-  onSaved: (doc: Providers) => void;
 }) {
   const t = useTranslations('settings.prov.move');
-  const { ctx, client } = useUnlocked();
+  const { ctx } = useUnlocked();
   const { refreshMe } = useAppSession();
   const notify = useNotify();
   const [items, setItems] = useState<StoredRecording[] | null>(null);
@@ -69,12 +41,7 @@ export function MoveRecordings({
   const docRef = useRef(doc);
   docRef.current = doc;
 
-  const scan = async () => {
-    const all = await storedRecordings(ctx);
-    const pruned = await pruneStores(client, docRef.current, all).catch(() => docRef.current);
-    if (pruned !== docRef.current) onSaved(pruned);
-    return movable(pruned, all, target);
-  };
+  const scan = async () => movable(docRef.current, await storedRecordings(ctx), target);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: rescans only when the target changes
   useEffect(() => {

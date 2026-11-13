@@ -86,9 +86,9 @@ export const BucketSchema = z.object({
 /** A linked Google Drive (scope `drive.file`): the refresh token never leaves this document. */
 export const DriveSchema = z.object({
   id: Id,
-  refreshToken: z.string().min(1).max(4_096),
-  /** The "AskCalls recordings" folder, once this device has created or found it. */
-  folderId: z.string().max(256).nullable().default(null),
+  refreshToken: z.string().min(1),
+  /** The "AskCalls recordings" folder, once a device has created or found it. */
+  folderId: z.string().nullable(),
 });
 const Iso6391 = z.string().regex(/^[a-z]{2}$/);
 /** `from: 'any'`: every language no other rule names. */
@@ -129,11 +129,9 @@ export const ProvidersDocSchema = z.object({
    * keeps their credentials to move or delete those.
    */
   previousStores: z
-    .object({
-      buckets: z.array(BucketSchema).max(8).default([]),
-      drives: z.array(DriveSchema).max(8).default([]),
-    })
-    .default({ buckets: [], drives: [] }),
+    .array(z.union([BucketSchema, DriveSchema]))
+    .max(16)
+    .default([]),
 });
 
 export const USER_DATA_SCHEMAS = {

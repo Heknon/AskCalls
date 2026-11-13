@@ -1,6 +1,11 @@
 'use client';
 
-import { activeStoreRef, switchRecordings } from '@askcalls/client-core/recording-stores/refs';
+import {
+  previousBucket,
+  previousDrive,
+  switchRecordings,
+} from '@askcalls/client-core/recording-stores/choice';
+import { activeStoreRef } from '@askcalls/client-core/recording-stores/refs';
 import {
   type BucketConfig,
   corsRulesFor,
@@ -23,11 +28,18 @@ import { normalizeOrigin } from '../../../../../../../client/direct-origins';
 import { useUnlocked } from '../../../../../../../client/session/session';
 import { type TestOutcome, testBucket } from './connection-test';
 import { Field, testDetail } from './key-card';
-import { MoveRecordings } from './move-section';
 import { maskParts, useSaveProviders } from './save';
 
-/** The Drive panel and its OAuth popup load only when someone picks or uses Drive. */
-const DrivePanel = lazy(() => import('./drive-panel').then((m) => ({ default: m.DrivePanel })));
+/**
+ * The Drive panel (its OAuth popup) and the move section (it scans every call's recording) load
+ * after the card, in one chunk.
+ */
+const DrivePanel = lazy(() =>
+  import('./own-store-panels').then((m) => ({ default: m.DrivePanel })),
+);
+const MoveRecordings = lazy(() =>
+  import('./own-store-panels').then((m) => ({ default: m.MoveRecordings })),
+);
 
 type Draft = Omit<BucketConfig, 'id'>;
 const EMPTY: Draft = { endpoint: '', bucket: '', region: '', accessKeyId: '', secretAccessKey: '' };
@@ -75,6 +87,7 @@ export function BucketCard({
       const r = await save((p) => switchRecordings(p, next));
       if (r.reloading) return;
       onSaved(r.doc);
+      if (next.mode === 'own') setDraft({ ...next.bucket, secretAccessKey: '' });
       setReplacing(false);
       setTest({ state: 'idle' });
     } catch {
@@ -88,9 +101,13 @@ export function BucketCard({
   const pick = (c: ProviderChoice) => {
     setChoice(c);
     setError(null);
-    if (c === 'managed' || c === 'off') {
-      if (value.mode !== c) void commit({ mode: c });
-    }
+    if (value.mode === c) return;
+    // A store switched away from earlier is picked up again as it was.
+    const bucket = previousBucket(doc);
+    const drive = previousDrive(doc);
+    if (c === 'managed' || c === 'off') void commit({ mode: c });
+    else if (c === 'own' && bucket) void commit({ mode: 'own', bucket });
+    else if (c === 'drive' && drive) void commit({ mode: 'drive', drive });
   };
 
   const submit = (e: FormEvent) => {
@@ -307,7 +324,9 @@ export function BucketCard({
       ) : null}
 
       {target !== undefined && choice === value.mode && !dirty ? (
-        <MoveRecordings doc={doc} target={target} onSaved={onSaved} />
+        <Suspense fallback={null}>
+          <MoveRecordings doc={doc} target={target} />
+        </Suspense>
       ) : null}
     </ProviderCard>
   );

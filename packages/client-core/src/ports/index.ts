@@ -129,6 +129,8 @@ export interface BlobFetcher {
 /** What Settings shows for a connected store: the account and how much of its space is used. */
 export interface RecordingStoreInfo {
   account: string | null;
+  /** The folder or bucket recordings go to. */
+  location: string | null;
   usedBytes: number | null;
   /** Null when the store reports no limit. */
   limitBytes: number | null;

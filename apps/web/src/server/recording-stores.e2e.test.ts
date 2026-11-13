@@ -8,14 +8,15 @@ import {
   Onboarding,
   readRecording,
 } from '@askcalls/client-core';
+import { switchRecordings } from '@askcalls/client-core/recording-stores/choice';
 import {
   movable,
   moveRecordings,
   storedRecordings,
-  sweepOrphanedRecordings,
 } from '@askcalls/client-core/recording-stores/move';
-import { driveRef, switchRecordings } from '@askcalls/client-core/recording-stores/refs';
+import { driveRef } from '@askcalls/client-core/recording-stores/refs';
 import { RecordingStores } from '@askcalls/client-core/recording-stores/router';
+import { sweepOrphanedRecordings } from '@askcalls/client-core/recording-stores/sweep';
 import { FakeGoogle } from '@askcalls/client-core/testing/fake-google';
 import {
   FakeAudioCodec,

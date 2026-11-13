@@ -17,6 +17,11 @@ export type KnownStore =
 export const driveRef = (d: Pick<DriveConfig, 'id'>) => `${DRIVE_REF_PREFIX}${d.id}`;
 export const isDriveRef = (ref: string) => ref.startsWith(DRIVE_REF_PREFIX);
 
+type Previous = Providers['previousStores'][number];
+export const isDriveConfig = (s: Previous): s is DriveConfig => 'refreshToken' in s;
+/** The `bucketRef` a store's recordings carry. */
+export const refOf = (s: Previous) => (isDriveConfig(s) ? driveRef(s) : s.id);
+
 /** Where new recordings go: null for the instance bucket, undefined when backups are off. */
 export function activeStoreRef(p: Providers): string | null | undefined {
   const r = p.recordings;
@@ -30,14 +35,17 @@ export function knownStores(p: Providers): KnownStore[] {
   const out: KnownStore[] = [];
   const r = p.recordings;
   if (r.mode === 'own') out.push({ kind: 's3-compatible', ref: r.bucket.id, config: r.bucket });
-  if (r.mode === 'drive')
+  if (r.mode === 'drive') {
     out.push({ kind: 'google-drive', ref: driveRef(r.drive), config: r.drive });
-  for (const b of p.previousStores.buckets) {
-    if (!out.some((s) => s.ref === b.id)) out.push({ kind: 's3-compatible', ref: b.id, config: b });
   }
-  for (const d of p.previousStores.drives) {
-    const ref = driveRef(d);
-    if (!out.some((s) => s.ref === ref)) out.push({ kind: 'google-drive', ref, config: d });
+  for (const s of p.previousStores) {
+    const ref = refOf(s);
+    if (out.some((k) => k.ref === ref)) continue;
+    out.push(
+      isDriveConfig(s)
+        ? { kind: 'google-drive', ref, config: s }
+        : { kind: 's3-compatible', ref, config: s },
+    );
   }
   return out;
 }
@@ -46,50 +54,4 @@ export function findStore(p: Providers, ref: string): KnownStore {
   const s = knownStores(p).find((k) => k.ref === ref);
   if (!s) throw new DomainError('not_found', 'this recording store is not configured');
   return s;
-}
-
-/**
- * Switches where new recordings go. The own store switched away from is kept in
- * `previousStores` so its recordings stay readable; the one switched to leaves that list.
- */
-export function switchRecordings(p: Providers, next: Providers['recordings']): Providers {
-  const buckets = [...p.previousStores.buckets];
-  const drives = [...p.previousStores.drives];
-  const r = p.recordings;
-  if (r.mode === 'own' && !buckets.some((b) => b.id === r.bucket.id)) buckets.push(r.bucket);
-  if (r.mode === 'drive' && !drives.some((d) => d.id === r.drive.id)) drives.push(r.drive);
-  return {
-    ...p,
-    recordings: next,
-    previousStores: {
-      buckets: buckets.filter((b) => !(next.mode === 'own' && next.bucket.id === b.id)).slice(-8),
-      drives: drives.filter((d) => !(next.mode === 'drive' && next.drive.id === d.id)).slice(-8),
-    },
-  };
-}
-
-/** Forgets a store (after its recordings moved away, or on disconnect). */
-export function forgetStore(p: Providers, ref: string): Providers {
-  const active = activeStoreRef(p);
-  return {
-    ...p,
-    recordings: active === ref ? { mode: 'managed' } : p.recordings,
-    previousStores: {
-      buckets: p.previousStores.buckets.filter((b) => b.id !== ref),
-      drives: p.previousStores.drives.filter((d) => driveRef(d) !== ref),
-    },
-  };
-}
-
-/** Records the Drive folder a device created, on whichever entry holds that Drive. */
-export function withDriveFolder(p: Providers, ref: string, folderId: string): Providers {
-  const set = (d: DriveConfig) => (driveRef(d) === ref ? { ...d, folderId } : d);
-  return {
-    ...p,
-    recordings:
-      p.recordings.mode === 'drive'
-        ? { mode: 'drive', drive: set(p.recordings.drive) }
-        : p.recordings,
-    previousStores: { ...p.previousStores, drives: p.previousStores.drives.map(set) },
-  };
 }

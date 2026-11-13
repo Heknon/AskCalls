@@ -3,8 +3,6 @@
 import { deleteAccount } from '@askcalls/api-contract/routes/account';
 import { exportAll } from '@askcalls/client-core/export';
 import { isDriveRef, knownStores } from '@askcalls/client-core/recording-stores/refs';
-import { RecordingStores } from '@askcalls/client-core/recording-stores/router';
-import type { Providers } from '@askcalls/client-core/userdata';
 import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { JobProgress } from '@askcalls/ui/components/JobProgress';
@@ -97,17 +95,16 @@ function DeleteSection() {
   const run = async () => {
     setFailed(false);
     setDeleting({ done: 0, total: 0 });
-    let providers: Providers | null;
+    // Read the stores and fetch Drive access tokens now: once the account is gone, neither the
+    // providers document nor the token pass-through answers. Both stay cached in memory.
+    const stores = client.ownStores;
+    let known = new Set<string>();
     try {
-      providers = await ctx.userData.get('providers', { fresh: true });
+      const providers = await ctx.userData.get('providers', { fresh: true });
+      known = new Set(knownStores(providers).map((s) => s.ref));
     } catch {
-      providers = null;
+      // No readable stores: nothing to delete on this device.
     }
-    // A snapshot of the stores, with Drive access tokens fetched now: once the account is gone,
-    // neither the providers document nor the token pass-through answers.
-    const snapshot = providers;
-    const stores = new RecordingStores({ api: client.api, providers: async () => snapshot! });
-    const known = new Set(snapshot ? knownStores(snapshot).map((s) => s.ref) : []);
     for (const ref of known) {
       if (isDriveRef(ref)) await stores.describe(ref).catch(() => {});
     }

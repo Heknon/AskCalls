@@ -1,7 +1,6 @@
 import { DomainError } from '@askcalls/domain';
-import { uuidv7 } from 'uuidv7';
 import type { RecordingStore, RecordingStoreInfo, RecordingStoreProbe } from '../ports/index';
-import { assertOk, discard, type Fetch, type Progress } from './http';
+import { assertOk, discard, type Fetch, type Progress, readBody } from './http';
 import type { BucketConfig } from './refs';
 import { queryString, sha256Hex, signRequest, uriEncode } from './sigv4';
 
@@ -75,37 +74,17 @@ export class SigV4BucketStore implements RecordingStore {
   }
 
   async put(bucketRef: string, callId: string, body: Uint8Array): Promise<{ objectKey: string }> {
-    const objectKey = `askcalls/${callId}/${uuidv7()}`;
+    const objectKey = `askcalls/${callId}/${crypto.randomUUID()}`;
     const res = await this.#send(await this.resolve(bucketRef), 'PUT', objectKey, body);
     await assertOk(res, 'bucket upload');
     await discard(res);
     return { objectKey };
   }
 
+  /** One buffered read, as before Drive existed: S3 serves the whole object in one response. */
   async *get(bucketRef: string, objectKey: string): AsyncGenerator<Uint8Array> {
     const res = await this.#send(await this.resolve(bucketRef), 'GET', objectKey);
-    await assertOk(res, 'bucket download');
-    const header = res.headers.get('content-length');
-    const total = header && /^\d+$/.test(header) ? Number(header) : null;
-    if (!res.body) {
-      const b = new Uint8Array(await res.arrayBuffer());
-      this.onProgress?.(b.length, b.length);
-      yield b;
-      return;
-    }
-    const reader = res.body.getReader();
-    let n = 0;
-    try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) return;
-        n += value.length;
-        this.onProgress?.(n, total);
-        yield value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    yield await readBody(await assertOk(res, 'bucket download'), this.onProgress);
   }
 
   async delete(bucketRef: string, objectKey: string): Promise<void> {
@@ -120,7 +99,7 @@ export class SigV4BucketStore implements RecordingStore {
 
   async describe(bucketRef: string): Promise<RecordingStoreInfo> {
     const b = await this.resolve(bucketRef);
-    return { account: b.bucket, usedBytes: null, limitBytes: null };
+    return { account: null, location: b.bucket, usedBytes: null, limitBytes: null };
   }
 
   /** Settings → Providers "Test connection": a signed list of at most one key. */

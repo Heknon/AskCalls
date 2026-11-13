@@ -81,7 +81,7 @@ describe('direct origins', () => {
             secretAccessKey: 'SK',
           },
         },
-        previousStores: { buckets: [], drives: [] },
+        previousStores: [],
       }),
     ).toEqual({
       providers: ['elevenlabs'],
@@ -94,7 +94,7 @@ describe('direct origins', () => {
         llm: { mode: 'off' },
         translation: { rules: [] },
         recordings: { mode: 'managed' },
-        previousStores: { buckets: [], drives: [] },
+        previousStores: [],
       }),
     ).toEqual({ providers: [], origins: [] });
   });
@@ -110,7 +110,7 @@ describe('direct origins', () => {
     const active = directAccessFor({
       ...doc,
       recordings: { mode: 'drive', drive },
-      previousStores: { buckets: [], drives: [] },
+      previousStores: [],
     });
     expect(active).toEqual({ providers: ['google-drive'], origins: [] });
     expect(directOrigins(encodeDirectCookie(active))).toEqual(['https://www.googleapis.com']);
@@ -118,7 +118,7 @@ describe('direct origins', () => {
       directAccessFor({
         ...doc,
         recordings: { mode: 'managed' },
-        previousStores: { buckets: [], drives: [drive] },
+        previousStores: [drive],
       }).providers,
     ).toEqual(['google-drive']);
   });
