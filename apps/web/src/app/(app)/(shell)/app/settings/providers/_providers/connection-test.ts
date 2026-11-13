@@ -18,9 +18,34 @@ export type TestOutcome =
   | { ok: true; ms: number }
   | {
       ok: false;
-      reason: 'key' | 'cors' | 'unreachable' | 'notFound' | 'quota' | 'http';
+      reason:
+        | 'key'
+        | 'permission'
+        | 'zeroRetention'
+        | 'cors'
+        | 'unreachable'
+        | 'notFound'
+        | 'quota'
+        | 'http';
       status?: number;
     };
+
+/** The adapter's content-free refusal reason (`details.reason`), as a test outcome. */
+function refusalOutcome(
+  details: Record<string, unknown>,
+  status: number,
+): Extract<TestOutcome, { ok: false }> | null {
+  switch (details.reason) {
+    case 'zero_retention_unavailable':
+      return { ok: false, reason: 'zeroRetention', status };
+    case 'missing_permission':
+      return { ok: false, reason: 'permission', status };
+    case 'invalid_key':
+      return { ok: false, reason: 'key', status };
+    default:
+      return null;
+  }
+}
 
 const SAMPLE_RATE = 16_000;
 const SAMPLE_SECONDS = 3;
@@ -63,10 +88,13 @@ export const SAMPLE_TRANSCRIPT = 'Speaker 1: This is a connection test.';
 function outcomeOf(e: unknown): TestOutcome {
   if (e instanceof ApiError) {
     if (e.code === 'quota_exceeded') return { ok: false, reason: 'quota' };
-    return { ok: false, reason: 'http', status: e.status };
+    const upstream = typeof e.details.status === 'number' ? e.details.status : e.status;
+    return refusalOutcome(e.details, upstream) ?? { ok: false, reason: 'http', status: e.status };
   }
   if (isDomainError(e)) {
     const status = typeof e.details.status === 'number' ? e.details.status : null;
+    const refused = status !== null ? refusalOutcome(e.details, status) : null;
+    if (refused) return refused;
     if (status === 401 || status === 403) return { ok: false, reason: 'key', status };
     if (status === null && e.code === 'provider_error') return { ok: false, reason: 'unreachable' };
     if (status !== null) return { ok: false, reason: 'http', status };

@@ -6,6 +6,7 @@ import { buildLlm } from './adapters/llm';
 import { buildScheduler } from './adapters/scheduler';
 import { buildTelemetry } from './adapters/telemetry';
 import { buildTranscription } from './adapters/transcription';
+import { usersFor } from './auth/admin-emails';
 import { ConfigService, type ResolvedConfig } from './config/config-service';
 import type { InstanceConfig } from './config/schema';
 import { SetupToken } from './config/setup-token';
@@ -63,6 +64,7 @@ export async function buildContainer(
   const { close: closeDb, ...repos } = db;
   const ports: Ports = {
     ...repos,
+    users: usersFor(repos.users, config.auth.adminEmails),
     blobs,
     transcription,
     llm,

@@ -26,7 +26,7 @@ describe('filters in the URL', () => {
       intents: ['purchase_interest'],
       date: '30d',
       direction: 'in',
-      match: 'meaning',
+      match: 'words',
       sort: 'oldest',
     };
     expect(roundTrip(f)).toEqual(f);

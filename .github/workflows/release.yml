@@ -6,8 +6,9 @@ name: Release
 # `bun run release:dry-run` does the same locally without publishing anything.
 #
 # Tag a commit that is already on master and deployed: the full suite ran before production
-# (deploy.yml), so only the fast checks run here. NPM_TOKEN (repository secret) publishes the
-# agent; without it the npm step is skipped and the run says so.
+# (deploy.yml), so only the fast checks run here. The agent goes to npm by trusted publishing
+# (OIDC, no token): npm trusts this workflow for the `askcalls` package. Until that package
+# exists the npm step is skipped and the run says so (docs/deployment.md, npm).
 on:
   push:
     tags: ["v*.*.*"]
@@ -64,21 +65,31 @@ jobs:
           (cd apps/agent/dist/npm && npm pack --pack-destination "$GITHUB_WORKSPACE/$DIST")
           bun scripts/release/agent-binaries.ts --all --out "$DIST/agent"
 
+      # No registry-url: setup-node would write an .npmrc with a token placeholder, and trusted
+      # publishing needs no token at all.
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing exchanges this job's OIDC token (id-token: write) for a short-lived
+      # publish credential; it needs npm 11.5.1 or later (Node 22 ships 10), and attaches
+      # provenance itself.
+      - name: Install npm for trusted publishing
+        run: npm install -g npm@11.6.0
 
       - name: Publish the agent to npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ steps.v.outputs.version }}
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::notice::NPM_TOKEN is not set (docs/deployment.md, GitHub); the agent was not published to npm."
+          if ! npm view askcalls name >/dev/null 2>&1; then
+            echo "::notice::askcalls is not on npm yet. Publish the first version by hand, then add this workflow as its trusted publisher (docs/deployment.md, npm)."
             exit 0
           fi
-          npm publish "$DIST/askcalls-$VERSION.tgz" --provenance --access public
+          if npm view "askcalls@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice::askcalls@$VERSION is already on npm; not published again."
+            exit 0
+          fi
+          npm publish "$DIST/askcalls-$VERSION.tgz" --access public
 
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4

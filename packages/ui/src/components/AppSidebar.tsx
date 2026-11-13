@@ -1,6 +1,6 @@
 'use client';
 
-import { BookUser, Keyboard, Phone, Server, Settings, Tags, Upload } from 'lucide-react';
+import { BookUser, Keyboard, Phone, Server, Settings, Tags, Upload, Users } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
 import { cn } from '../lib/cn';
 import { Avatar } from '../primitives/avatar';
@@ -8,7 +8,7 @@ import { Button } from '../primitives/button';
 import { Tooltip } from '../primitives/tooltip';
 import { Logo } from './Logo';
 
-export type AppRoute = 'calls' | 'upload' | 'tags' | 'contacts' | 'settings' | 'admin';
+export type AppRoute = 'calls' | 'upload' | 'tags' | 'contacts' | 'settings' | 'admin' | 'accounts';
 
 export const appRouteIcons = {
   calls: Phone,
@@ -17,12 +17,13 @@ export const appRouteIcons = {
   contacts: BookUser,
   settings: Settings,
   admin: Server,
+  accounts: Users,
 } satisfies Record<AppRoute, unknown>;
 
 export type AppSidebarProps = {
   active: AppRoute;
   hrefs: Record<AppRoute, string>;
-  /** Shows the Instance group with Admin. */
+  /** Shows the Instance group with Admin and Accounts. */
   isAdmin?: boolean;
   callCount?: number;
   labels: Record<AppRoute, string> & {
@@ -110,6 +111,7 @@ export function AppSidebar({
               {labels.instance}
             </div>
             {item('admin')}
+            {item('accounts')}
           </>
         ) : null}
       </nav>

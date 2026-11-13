@@ -4,6 +4,7 @@ import { API_SCOPES, type ApiScope, type ApiToken } from '../entities/other';
 import type { User } from '../entities/user';
 import type { Ports } from '../ports-bundle';
 import { type Actor, audit, base64url, randomBytes, requireSession, sha256 } from './context';
+import { limitsFor } from './limits';
 
 /** `ac_` + base64url(32 random bytes). Only its sha256 is stored. */
 export const TOKEN_PREFIX = 'ac_';
@@ -53,9 +54,13 @@ export async function createApiToken(
     throw new DomainError('invalid', 'expiry must be 1..365 days or never');
   }
   const now = ports.clock.now();
-  if ((await ports.apiTokens.countActive(userId, now)) >= ports.limits.maxApiTokens) {
+  const [active, { maxApiTokens }] = await Promise.all([
+    ports.apiTokens.countActive(userId, now),
+    limitsFor(ports, userId),
+  ]);
+  if (active >= maxApiTokens) {
     throw new DomainError('quota_exceeded', 'token limit reached', {
-      limit: ports.limits.maxApiTokens,
+      limit: maxApiTokens,
       quota: 'api_tokens',
     });
   }
