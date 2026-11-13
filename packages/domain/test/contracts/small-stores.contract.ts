@@ -200,5 +200,22 @@ export function describeRateLimiterContract(name: string, harness: Harness<RateL
       expect((await limiter.hit(key, 2, 60_000)).allowed).toBe(false);
       expect((await limiter.hit(`${key}-other`, 2, 60_000)).allowed).toBe(true);
     });
+
+    it('counts fixed-window usage per key and window, refusing amounts over the limit', async () => {
+      const key = `u-${testId()}`;
+      const w1 = new Date('2026-03-01T00:00:00Z');
+      const w2 = new Date('2026-04-01T00:00:00Z');
+      expect(await limiter.usage(key, w1)).toBe(0);
+      expect(await limiter.consume(key, w1, 120, 300)).toEqual({ allowed: true, used: 120 });
+      expect(await limiter.consume(key, w1, 180, 300)).toEqual({ allowed: true, used: 300 });
+      expect(await limiter.consume(key, w1, 1, 300)).toEqual({ allowed: false, used: 300 });
+      expect(await limiter.consume(key, w1, 50, null)).toEqual({ allowed: true, used: 350 });
+      expect(await limiter.usage(key, w1)).toBe(350);
+      expect(await limiter.consume(key, w1, -50, null)).toEqual({ allowed: true, used: 300 });
+      expect(await limiter.usage(key, w1)).toBe(300);
+      expect(await limiter.usage(key, w2)).toBe(0);
+      expect(await limiter.usage(`${key}-other`, w1)).toBe(0);
+      expect(await limiter.consume(key, w2, 10, 300)).toEqual({ allowed: true, used: 10 });
+    });
   });
 }
