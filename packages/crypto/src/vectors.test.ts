@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import vectors from '../test/vectors.json';
 import { AadFields, aad } from './aad';
 import { decrypt, encryptWithNonce, importAesKey } from './aead';
-import { fromHex, toHex, utf8 } from './bytes';
+import { fromBase64Url, fromHex, toHex, utf8 } from './bytes';
 import { decryptRootKeyFromLink } from './ecies';
 import { publicKeyFingerprint } from './fingerprint';
 import { sha256 } from './hash';
@@ -124,11 +124,11 @@ describe('test vectors', () => {
 
   it('computes Argon2id', async () => {
     const { salt, memoryKiB, iterations, parallelism } = vectors.passphrase.kdfParams;
-    const out = await argon2idBytes(
-      vectors.passphrase.passphrase,
-      Uint8Array.from(Buffer.from(salt, 'base64url')),
-      { memoryKiB, iterations, parallelism },
-    );
+    const out = await argon2idBytes(vectors.passphrase.passphrase, fromBase64Url(salt), {
+      memoryKiB,
+      iterations,
+      parallelism,
+    });
     expect(toHex(out)).toBe(vectors.passphrase.argon2id);
   });
 
