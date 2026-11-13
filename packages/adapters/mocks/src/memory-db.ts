@@ -550,7 +550,10 @@ export class MemoryDb {
     list: async (userId) =>
       [...this.tokens.values()]
         .filter((t) => t.userId === userId)
-        .map(({ fetches: _f, windowStart: _w, ...pub }) => pub),
+        .map(({ fetches, windowStart, ...pub }) => ({
+          ...pub,
+          fetchWindow: windowStart ? { start: windowStart, count: fetches } : null,
+        })),
     revoke: async (userId, id, at) => {
       const t = this.tokens.get(id);
       if (t && t.userId === userId) t.revokedAt = at;
