@@ -5,6 +5,9 @@ const config: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
+  // Put generateMetadata output in <head> for every client, not only known bots: marketing
+  // pages' descriptions and canonical links must be in the head (Lighthouse SEO, link previews).
+  htmlLimitedBots: /.*/,
   transpilePackages: [
     '@askcalls/domain',
     '@askcalls/api-contract',
@@ -49,8 +52,14 @@ const config: NextConfig = {
         ],
       },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
-      // Self-hosted model, ONNX Runtime and ffmpeg.wasm files: versioned paths, public bytes.
-      ...['/models/:path*', '/ort/:path*', '/ffmpeg/:path*'].map((source) => ({
+      // The service worker must be re-checked on every load so a new shell rule ships at once.
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
+      {
+        source: '/icons/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
+      },
+      // Self-hosted model, ONNX Runtime, ffmpeg.wasm and font files: versioned paths, public bytes.
+      ...['/models/:path*', '/ort/:path*', '/ffmpeg/:path*', '/fonts/:path*'].map((source) => ({
         source,
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       })),
