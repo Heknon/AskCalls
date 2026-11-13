@@ -24,6 +24,14 @@ export function testProviderEnabled(resolved: ResolvedConfig): boolean {
   return resolved.environment === 'test' || resolved.config.auth.testProvider;
 }
 
+/**
+ * The e2e stand-in embedder: only with NODE_ENV=test and ASKCALLS_TEST_EMBEDDER=true. Never on
+ * a production or development server, never on the hosted instance.
+ */
+export function testEmbedderEnabled(resolved: ResolvedConfig): boolean {
+  return !resolved.config.hosted && resolved.environment === 'test' && resolved.config.testEmbedder;
+}
+
 /** Sign-in methods this instance offers, from config (spec 4, 11.2b). */
 export function enabledProviders(resolved: ResolvedConfig): ProviderInfo[] {
   const { auth } = resolved.config;

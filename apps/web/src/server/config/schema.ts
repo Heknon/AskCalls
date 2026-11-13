@@ -12,6 +12,11 @@ export const InstanceConfigSchema = z.object({
   hosted: z.boolean().default(false),
   dataDir: z.string().default('./data'),
   offlineMode: z.boolean().default(false),
+  /**
+   * E2E only: the browser embeds with a deterministic stand-in instead of the model, for machines
+   * without the model files. Honoured only when NODE_ENV=test (see testEmbedderEnabled).
+   */
+  testEmbedder: z.boolean().default(false),
 
   auth: z
     .object({
@@ -161,6 +166,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['ASKCALLS_HOSTED', 'hosted', bool],
   ['ASKCALLS_DATA_DIR', 'dataDir', str],
   ['OFFLINE_MODE', 'offlineMode', bool],
+  ['ASKCALLS_TEST_EMBEDDER', 'testEmbedder', bool],
   ['AUTH_SECRET', 'auth.secret', str],
   ['AUTH_PROVIDERS', 'auth.providers', list],
   ['AUTH_LOCAL_ACCOUNTS', 'auth.localAccounts', bool],
