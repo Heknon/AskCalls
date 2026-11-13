@@ -6,13 +6,13 @@ class runs on the server (`/api/transcribe`), in the agent and in the browser (o
 
 ## Request
 
-`POST https://api.elevenlabs.io/v1/speech-to-text?enable_logging=false`
+`POST https://api.elevenlabs.io/v1/speech-to-text` (`?enable_logging=false` with `zeroRetention`)
 ([API reference](https://elevenlabs.io/docs/api-reference/speech-to-text/convert))
 
 | Part | Value |
 | --- | --- |
 | Header | `xi-api-key: <key>` |
-| Query | `enable_logging=false`, **always** (zero retention; honored only for workspaces with Zero Retention Mode, an Enterprise feature, spec 8) |
+| Query | `enable_logging=false` only with option `zeroRetention` (Zero Retention Mode). ElevenLabs refuses it with 403 `not_allowed` on plans other than Enterprise and trial, so it is off by default |
 | `model_id` | `scribe_v2` (option `model`) |
 | `file` | the audio chunk, filename `audio.<ext>` from the MIME type |
 | `diarize` | `true` |
@@ -40,14 +40,17 @@ pipeline reconciles chunks). `language_code` (ISO 639-3, e.g. `heb`) is normaliz
 | `browserDirect` | `true` | Preflight `OPTIONS /v1/speech-to-text` with a foreign `Origin` on 2026-11-13 returned `access-control-allow-origin: *`, `access-control-allow-headers: *`, `access-control-allow-methods: POST, PATCH, OPTIONS, DELETE, GET, PUT`. |
 | `maxChunkBytes` | 5 GB | "File size must be less than 5.0GB" (API reference). The `/api/transcribe` route caps chunks at 4 MB independently. |
 
-`mintClientToken()` returns `{ token, expiresAt: now + 15 min, endpoint }` where `endpoint` already
-carries `enable_logging=false`; direct-mode clients append `&token=<token>` and send the same
-multipart fields (`buildForm()`).
+`mintClientToken()` returns `{ token, expiresAt: now + 15 min, endpoint }` where `endpoint` carries
+`enable_logging=false` when `zeroRetention` is on; direct-mode clients add `token=<token>` as a
+query parameter and send the same multipart fields (`buildForm()`).
 
 ## Errors and logging
 
 Non-2xx answers throw `DomainError('provider_error' | 'rate_limited', 'Transcription provider
-returned HTTP <status>', { provider, status })`; the body is discarded unread. Nothing is logged.
+returned HTTP <status>', { provider, status, reason? })`. On 401 and 403 only ElevenLabs'
+`detail.status` code is read and mapped to `reason`: `zero_retention_unavailable` (`not_allowed`),
+`missing_permission` (`missing_permissions`) or `invalid_key`; no provider text is kept. Every other
+body is discarded unread. Nothing is logged.
 
 `healthCheck()` sends `GET /v1/models` with the key.
 

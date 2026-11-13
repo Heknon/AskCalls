@@ -15,6 +15,7 @@ import {
   fileNameFor,
   normalizeLanguage,
   probe,
+  type RefusalReason,
   readJson,
   send,
 } from './http';
@@ -32,6 +33,11 @@ export interface ElevenLabsOptions {
    * `https://api.eu.residency.elevenlabs.io`.
    */
   baseUrl?: string;
+  /**
+   * Sends `enable_logging=false` (Zero Retention Mode). ElevenLabs accepts it only on
+   * Enterprise and trial plans and refuses every request on other plans; off by default.
+   */
+  zeroRetention?: boolean;
   fetch?: FetchLike;
 }
 
@@ -55,12 +61,25 @@ export interface ElevenLabsTranscript {
 /** Single-use tokens expire 15 minutes after minting (ElevenLabs docs). */
 const TOKEN_TTL_MS = 15 * 60_000;
 
+/** ElevenLabs' refusal codes (`detail.status`) → content-free reasons. */
+const REFUSALS: Record<string, RefusalReason> = {
+  not_allowed: 'zero_retention_unavailable',
+  missing_permissions: 'missing_permission',
+  invalid_api_key: 'invalid_key',
+};
+
+async function refusalOf(res: Response, zeroRetention: boolean): Promise<RefusalReason> {
+  const body = (await res.json()) as { detail?: { status?: unknown } };
+  const code = typeof body?.detail?.status === 'string' ? body.detail.status : '';
+  const reason = REFUSALS[code];
+  if (reason === 'zero_retention_unavailable' && !zeroRetention) return 'missing_permission';
+  return reason ?? (res.status === 401 ? 'invalid_key' : 'missing_permission');
+}
+
 /**
- * ElevenLabs Scribe batch speech-to-text.
- *
- * Every request carries `enable_logging=false` (zero retention; honored only for workspaces with
- * Zero Retention Mode, an Enterprise feature), diarization and word timestamps. Audio is sent as
- * multipart and never stored or logged here.
+ * ElevenLabs Scribe batch speech-to-text, with diarization and word timestamps. With
+ * `zeroRetention` every request carries `enable_logging=false`. Audio is sent as multipart and
+ * never stored or logged here.
  */
 export class ElevenLabsTranscriptionProvider implements TranscriptionProvider {
   readonly id = 'elevenlabs';
@@ -84,9 +103,10 @@ export class ElevenLabsTranscriptionProvider implements TranscriptionProvider {
     this.fetchImpl = opts.fetch ?? defaultFetch;
   }
 
-  /** The batch endpoint, always with logging off. Direct-mode clients append `&token=…`. */
+  /** The batch endpoint. Direct-mode clients add `token` as a query parameter. */
   get endpoint(): string {
-    return `${this.baseUrl}/v1/speech-to-text?enable_logging=false`;
+    const url = `${this.baseUrl}/v1/speech-to-text`;
+    return this.opts.zeroRetention ? `${url}?enable_logging=false` : url;
   }
 
   /** Multipart body for one chunk. Exported shape so direct-mode clients send the same fields. */
@@ -104,12 +124,18 @@ export class ElevenLabsTranscriptionProvider implements TranscriptionProvider {
   }
 
   async transcribe(req: TranscribeRequest): Promise<TranscribeResult> {
-    const res = await send(this.id, this.fetchImpl, this.endpoint, {
-      method: 'POST',
-      headers: { 'xi-api-key': this.opts.apiKey, accept: 'application/json' },
-      body: this.buildForm(req),
-      ...(req.signal ? { signal: req.signal } : {}),
-    });
+    const res = await send(
+      this.id,
+      this.fetchImpl,
+      this.endpoint,
+      {
+        method: 'POST',
+        headers: { 'xi-api-key': this.opts.apiKey, accept: 'application/json' },
+        body: this.buildForm(req),
+        ...(req.signal ? { signal: req.signal } : {}),
+      },
+      (r) => refusalOf(r, Boolean(this.opts.zeroRetention)),
+    );
     return parseElevenLabs(await readJson<ElevenLabsTranscript>(this.id, res));
   }
 
@@ -119,6 +145,7 @@ export class ElevenLabsTranscriptionProvider implements TranscriptionProvider {
       this.fetchImpl,
       `${this.baseUrl}/v1/single-use-token/batch_scribe`,
       { method: 'POST', headers: { 'xi-api-key': this.opts.apiKey } },
+      (r) => refusalOf(r, false),
     );
     const body = await readJson<{ token?: string }>(this.id, res);
     if (!body.token) {

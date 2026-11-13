@@ -6,7 +6,8 @@ import token from './fixtures/single-use-token.json';
 import { formField, replay } from './replay';
 
 const KEY = 'sk_test_0000000000000000';
-const STT = 'https://api.elevenlabs.io/v1/speech-to-text?enable_logging=false';
+const STT = 'https://api.elevenlabs.io/v1/speech-to-text';
+const STT_ZRM = `${STT}?enable_logging=false`;
 const audio = new Uint8Array(160_000).fill(3);
 
 function provider(recordings: Parameters<typeof replay>[0], extra = {}) {
@@ -23,12 +24,12 @@ describeTranscriptionProviderContract('elevenlabs (recorded)', {
 });
 
 describe('ElevenLabsTranscriptionProvider', () => {
-  it('sends logging off, scribe_v2, diarization and the audio as multipart', async () => {
+  it('sends scribe_v2, diarization and the audio as multipart', async () => {
     const { r, p } = provider([{ method: 'POST', url: STT, json: transcript }]);
     await p.transcribe({ audio, mimeType: 'audio/ogg; codecs=opus', language: 'he-IL' });
     const req = r.calls[0]!;
     expect(req.method).toBe('POST');
-    expect(req.url.searchParams.get('enable_logging')).toBe('false');
+    expect(req.url.searchParams.has('enable_logging')).toBe(false);
     expect(req.headers.get('xi-api-key')).toBe(KEY);
     expect(formField(req, 'model_id')).toBe('scribe_v2');
     expect(formField(req, 'diarize')).toBe('true');
@@ -39,6 +40,40 @@ describe('ElevenLabsTranscriptionProvider', () => {
     expect(file.name).toBe('audio.ogg');
     expect(file.type).toBe('audio/ogg; codecs=opus');
     expect(new Uint8Array(await file.arrayBuffer())).toEqual(audio);
+  });
+
+  it('turns logging off only with zero retention', async () => {
+    const { r, p } = provider([{ method: 'POST', url: STT_ZRM, json: transcript }], {
+      zeroRetention: true,
+    });
+    await p.transcribe({ audio, mimeType: 'audio/ogg', language: 'auto' });
+    expect(r.calls[0]!.url.searchParams.get('enable_logging')).toBe('false');
+    expect(p.endpoint).toBe(STT_ZRM);
+  });
+
+  it.each([
+    [403, 'not_allowed', true, 'zero_retention_unavailable'],
+    [401, 'missing_permissions', false, 'missing_permission'],
+    [401, 'invalid_api_key', false, 'invalid_key'],
+    [401, 'something_new', false, 'invalid_key'],
+    [403, 'something_new', false, 'missing_permission'],
+  ] as const)('maps HTTP %i %s (zero retention %s) to %s', async (status, code, zrm, reason) => {
+    const { p } = provider(
+      [
+        {
+          method: 'POST',
+          url: zrm ? STT_ZRM : STT,
+          status,
+          json: { detail: { status: code, message: 'secret detail' } },
+        },
+      ],
+      { zeroRetention: zrm },
+    );
+    const err = await p
+      .transcribe({ audio, mimeType: 'audio/ogg', language: 'auto' })
+      .catch((e) => e);
+    expect(err.details).toEqual({ provider: 'elevenlabs', status, reason });
+    expect(JSON.stringify(err)).not.toContain('secret');
   });
 
   it('omits the language for auto-detection', async () => {
@@ -64,7 +99,7 @@ describe('ElevenLabsTranscriptionProvider', () => {
   });
 
   it('uses a regional base URL', async () => {
-    const eu = 'https://api.eu.residency.elevenlabs.io/v1/speech-to-text?enable_logging=false';
+    const eu = 'https://api.eu.residency.elevenlabs.io/v1/speech-to-text';
     const { r, p } = provider([{ method: 'POST', url: eu, json: transcript }], {
       baseUrl: 'https://api.eu.residency.elevenlabs.io/',
     });
@@ -90,7 +125,7 @@ describe('ElevenLabsTranscriptionProvider', () => {
 
   it('throws content-free errors with the HTTP status only', async () => {
     const { p } = provider([
-      { method: 'POST', url: STT, status: 401, json: { detail: { message: 'secret detail' } } },
+      { method: 'POST', url: STT, status: 500, json: { detail: { message: 'secret detail' } } },
     ]);
     const err = await p
       .transcribe({ audio, mimeType: 'audio/ogg', language: 'auto' })
@@ -98,7 +133,7 @@ describe('ElevenLabsTranscriptionProvider', () => {
     expect(err).toMatchObject({
       name: 'DomainError',
       code: 'provider_error',
-      details: { provider: 'elevenlabs', status: 401 },
+      details: { provider: 'elevenlabs', status: 500 },
     });
     expect(err.message).not.toContain('secret');
     const { p: limited } = provider([{ method: 'POST', url: STT, status: 429, json: {} }]);

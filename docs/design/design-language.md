@@ -495,7 +495,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### AskMessage
 - **Purpose:** one question or answer in the ask conversation.
-- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. **Composes:** `TimestampLink`. **Screens:** C3.
+- **Props:** `kind="question" | "answer"` (not `role`, which is an ARIA attribute), `parts` (text with `{ seconds }` citations in place), `author` (the model, on answers), `streaming`. Answers render a Markdown subset (headings, lists, bold, italic, code, quotes, line breaks) as React elements, never HTML; links stay text. Questions keep their line breaks. **Composes:** `TimestampLink`. **Screens:** C3. **RTL:** each answer block is `dir="auto"`.
 
 #### ConsentSheet
 - **Purpose:** asks for consent before a call's plaintext is sent to an LLM provider, naming who receives it.
@@ -649,6 +649,10 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### MaskedSecret
 - **Purpose:** shows that a secret is saved without revealing it.
 - **Props:** `prefix`, `last4`, `onReplace`, `onRemove`. **Composes:** `Input` (read-only), `Button`. **Screens:** S4, S5, A1, W1.
+
+#### SettingSwitch
+- **Purpose:** a yes/no setting with a one-line hint on what it changes.
+- **Props:** `label`, `hint`, `checked`, `disabled`, `onChange`. **Composes:** `Switch`, `Label`. **Screens:** S5 (zero retention on an own key), A1.
 
 #### TestConnectionResult
 - **Purpose:** the outcome of a provider or port health check.
