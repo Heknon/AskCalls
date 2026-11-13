@@ -1,10 +1,13 @@
-import { type ClientEvent, reportProductEvent } from '../../../../../../server/actions/telemetry';
+import { createApiClient } from '@askcalls/api-contract';
+import { type ClientEvent, reportEvent } from '@askcalls/api-contract/routes/telemetry';
 
 const ACTIVATED = 'askcalls:activated';
 
 /** Fire-and-forget; the server drops it unless the account opted in to product analytics. */
 export function report(event: ClientEvent): void {
-  reportProductEvent(event).catch(() => {});
+  createApiClient()
+    .request(reportEvent, { body: event })
+    .catch(() => {});
 }
 
 /** The activation event (spec 11.3): the first search with a result, once per browser. */

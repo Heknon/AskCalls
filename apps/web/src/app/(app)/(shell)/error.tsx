@@ -1,11 +1,12 @@
 'use client';
 
+import { createApiClient } from '@askcalls/api-contract';
+import { reportError } from '@askcalls/api-contract/routes/telemetry';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { Button } from '@askcalls/ui/primitives/button';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
-import { reportClientError } from '../../../server/actions/telemetry';
 
 /**
  * A route under the shell failed: one sentence, Try again and Go to calls. No content. The
@@ -14,9 +15,11 @@ import { reportClientError } from '../../../server/actions/telemetry';
 export default function ShellError({ error, reset }: { error: Error; reset: () => void }) {
   const t = useTranslations('common');
   useEffect(() => {
-    reportClientError({ errorName: error.name, stack: error.stack?.slice(0, 8_000) }).catch(
-      () => {},
-    );
+    createApiClient()
+      .request(reportError, {
+        body: { errorName: error.name.slice(0, 64), stack: error.stack?.slice(0, 8_000) },
+      })
+      .catch(() => {});
   }, [error]);
   return (
     <main id="main" className="mx-auto w-full max-w-280 px-4 py-4 md:px-6 md:py-6">

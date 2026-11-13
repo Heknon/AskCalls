@@ -27,6 +27,8 @@ import * as setupPasskey from '../../app/api/setup/passkey/route';
 import * as setup from '../../app/api/setup/route';
 import * as setupTest from '../../app/api/setup/test/route';
 import * as consent from '../../app/api/telemetry/consent/route';
+import * as telemetryErrors from '../../app/api/telemetry/errors/route';
+import * as telemetryEvents from '../../app/api/telemetry/events/route';
 import * as tokens from '../../app/api/tokens/route';
 import * as transcribe from '../../app/api/transcribe/route';
 import * as transcribeToken from '../../app/api/transcribe/token/route';
@@ -51,6 +53,8 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/transcribe', transcribe],
   ['/api/transcribe/token', transcribeToken],
   ['/api/telemetry/consent', consent],
+  ['/api/telemetry/events', telemetryEvents],
+  ['/api/telemetry/errors', telemetryErrors],
   ['/api/ask', ask],
   ['/api/calls', calls],
   ['/api/calls/[id]', callById],

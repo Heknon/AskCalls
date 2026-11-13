@@ -16,6 +16,7 @@ import * as providers from '@askcalls/api-contract/routes/providers';
 import * as search from '@askcalls/api-contract/routes/search';
 import * as settings from '@askcalls/api-contract/routes/settings';
 import * as setup from '@askcalls/api-contract/routes/setup';
+import * as telemetry from '@askcalls/api-contract/routes/telemetry';
 import * as tokens from '@askcalls/api-contract/routes/tokens';
 import * as userdata from '@askcalls/api-contract/routes/userdata';
 import * as vocab from '@askcalls/api-contract/routes/vocab';
@@ -41,6 +42,7 @@ const ROUTE_MODULES = [
   search,
   settings,
   setup,
+  telemetry,
   tokens,
   userdata,
   vocab,
