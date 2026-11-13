@@ -141,21 +141,6 @@ export function PasskeyStep({
             </Button>
           </div>
         </>
-      ) : state === 'passwordManager' ? (
-        <>
-          <Alert tone="warning" role="alert">
-            <TriangleAlert aria-hidden />
-            <span>{t('passkey.passwordManager')}</span>
-          </Alert>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="lg" autoFocus onClick={create}>
-              {tc('retry')}
-            </Button>
-            <Button variant="ghost" size="lg" onClick={() => setMode('passphrase')}>
-              {t('passkey.alt')}
-            </Button>
-          </div>
-        </>
       ) : state === 'done' ? (
         <p role="status" className="flex items-center gap-2">
           <CircleCheck className="size-5" aria-hidden />
@@ -165,6 +150,11 @@ export function PasskeyStep({
         <>
           {state === 'cancelled' ? (
             <ErrorState scope="inline" title={t('passkey.cancelled')} />
+          ) : state === 'passwordManager' ? (
+            <Alert tone="warning" role="alert">
+              <TriangleAlert aria-hidden />
+              <span>{t('passkey.passwordManager')}</span>
+            </Alert>
           ) : null}
           <div className="flex flex-wrap gap-2">
             <Button
