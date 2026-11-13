@@ -4,7 +4,7 @@ import { instanceUsage } from '@askcalls/domain/use-cases/admin';
 import type { Actor } from '@askcalls/domain/use-cases/context';
 import pkg from '../../../package.json' with { type: 'json' };
 import { AdapterUnavailableError } from '../adapters/errors';
-import { ConfigError, type ConfigService } from '../config/config-service';
+import { type ConfigService, isConfigError } from '../config/config-service';
 import { type OfflineBlocker, offlineBlockers } from '../config/offline';
 import type { Container } from '../container';
 import { OfflineBlockedError } from '../http/offline-fetch';
@@ -121,10 +121,13 @@ export async function instanceView(
  * adapter that refuses to build says which setting it needs. Never values.
  */
 export function configProblem(e: unknown): never {
-  if (e instanceof ConfigError) {
+  if (isConfigError(e)) {
     throw new DomainError('invalid', e.problems.join('; ').slice(0, 500));
   }
-  if (e instanceof AdapterUnavailableError || e instanceof OfflineBlockedError) {
+  if (
+    e instanceof Error &&
+    (e.name === AdapterUnavailableError.name || e.name === OfflineBlockedError.name)
+  ) {
     throw new DomainError('invalid', e.message);
   }
   if (e instanceof Error && !isDomainError(e) && /required/.test(e.message)) {
@@ -147,7 +150,7 @@ export function guardPatch(
     throw new DomainError('conflict', 'the database holds data; use askcalls backup and restore');
   }
   if (patch.offlineMode === true && !configService.get().config.offlineMode) {
-    const next = configService.preview(patch, { allowIncomplete: true });
+    const next = configService.preview({ ...patch, offlineMode: false }, { allowIncomplete: true });
     const blockers = offlineBlockers(next.config).filter((b) => b.id !== 'local-accounts');
     if (blockers.length || !next.config.auth.localAccounts) {
       throw new DomainError('conflict', 'settings still reach the internet', {

@@ -238,11 +238,13 @@ function Locked({
   path,
   label,
   value,
+  technical = true,
 }: {
   card: Card;
   path: string;
   label: string;
   value: string;
+  technical?: boolean;
 }) {
   const t = useTranslations('admin');
   return (
@@ -250,6 +252,7 @@ function Locked({
       label={label}
       value={card.view.env[path] && card.secretSet(path) ? card.view.env[path]! : value}
       caption={t('envLocked')}
+      technical={technical}
     />
   );
 }
@@ -362,6 +365,7 @@ export function SelectSetting({
         path={path}
         label={label}
         value={options.find((o) => o.value === value)?.label ?? value}
+        technical={false}
       />
     );
   }

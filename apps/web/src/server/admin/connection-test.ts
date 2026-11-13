@@ -38,7 +38,7 @@ function fromHealth(h: HealthResult, started: number): ConnectionTestResult {
 }
 
 function failure(e: unknown): ConnectionTestResult {
-  if (e instanceof OfflineBlockedError) {
+  if (e instanceof Error && e.name === OfflineBlockedError.name) {
     return { ok: false, message: 'offline_blocked', latencyMs: null };
   }
   const msg = e instanceof Error ? e.message : '';

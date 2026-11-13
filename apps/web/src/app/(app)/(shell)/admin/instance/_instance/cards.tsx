@@ -179,7 +179,7 @@ export function SignInCard() {
             />
           )}
           {providers.includes(id) ? (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-4">
               <TextSetting card={card} path={`auth.${id}.id`} label={t('field.clientId')} />
               <SecretSetting
                 card={card}
@@ -199,7 +199,7 @@ export function SignInCard() {
           />
         )}
         {providers.includes('email') ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <SecretSetting card={card} path="auth.email.server" label={t('field.smtp')} />
             <TextSetting
               card={card}

@@ -176,7 +176,7 @@ export function route<const D extends RouteDef>(
     try {
       container = await getContainer();
     } catch (e) {
-      const setup = e instanceof SetupRequiredError;
+      const setup = e instanceof Error && e.name === SetupRequiredError.name;
       return errorResponse(503, setup ? 'setup_required' : 'unavailable', 'instance unavailable');
     }
     const { ports } = container;

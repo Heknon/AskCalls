@@ -2,7 +2,7 @@ import { MemoryRateLimiter } from '@askcalls/adapter-mocks';
 import type { RouteDef } from '@askcalls/api-contract';
 import type { ResponseFor } from '@askcalls/api-contract/client';
 import { z } from 'zod';
-import { ConfigError } from '../config/config-service';
+import { isConfigError } from '../config/config-service';
 import type { SetupToken } from '../config/setup-token';
 import { getSetupToken } from '../container';
 import { domainErrorResponse, errorResponse, NO_STORE } from './errors';
@@ -56,7 +56,7 @@ export function setupRoute<const D extends RouteDef & { body: z.ZodType }>(
       const result = await fn(body, token, req);
       return Response.json(z.encode(def.response!, result), { headers: NO_STORE });
     } catch (e) {
-      if (e instanceof ConfigError) {
+      if (isConfigError(e)) {
         return errorResponse(400, 'invalid', e.problems.join('; ').slice(0, 500));
       }
       return domainErrorResponse(e) ?? errorResponse(500, 'internal', 'internal error');

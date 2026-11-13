@@ -215,6 +215,20 @@ describe('/api/admin', () => {
   });
 });
 
+describe('/api/admin with the LLM set by env', () => {
+  afterEach(() => setContainerForTests(null));
+
+  it('refuses offline mode with a 409 while an env-locked setting reaches the internet', async () => {
+    const c = await start({ LLM_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'sk-ant-env' });
+    const view = await (await call('GET', '/api/admin/instance', c.adminCookie)).json();
+    expect(view.offline.blockers.find((b: { id: string }) => b.id === 'llm').fixes).toEqual([]);
+    const res = await call('PATCH', '/api/admin/instance', c.adminCookie, {
+      patch: { offlineMode: true },
+    });
+    expect(res.status).toBe(409);
+  });
+});
+
 describe('/api/admin on the hosted instance', () => {
   afterEach(() => setContainerForTests(null));
 

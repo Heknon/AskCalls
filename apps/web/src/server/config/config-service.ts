@@ -11,6 +11,16 @@ export class ConfigError extends Error {
   }
 }
 
+/**
+ * By name, not `instanceof`: Next.js bundles middleware and route handlers separately, and the
+ * one ConfigService in the process may come from either copy of this module.
+ */
+export function isConfigError(e: unknown): e is ConfigError {
+  return (
+    e instanceof Error && e.name === 'ConfigError' && Array.isArray((e as ConfigError).problems)
+  );
+}
+
 type Json = Record<string, unknown>;
 
 function setPath(obj: Json, path: string, value: unknown) {
