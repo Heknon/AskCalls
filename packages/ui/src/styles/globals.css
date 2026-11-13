@@ -1,1 +1,3 @@
-/* Design tokens and base styles from docs/design/tokens.css. The app imports tailwindcss before this file. Use logical properties only (RTL). */
+/* The app imports tailwindcss before this file. Use logical properties only (RTL). */
+@import "./fonts.css";
+@import "./tokens.css";
