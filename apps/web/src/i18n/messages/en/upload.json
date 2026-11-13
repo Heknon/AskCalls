@@ -1,3 +1,144 @@
 {
-  "title": "Upload"
+  "title": "Upload",
+  "tab": {
+    "single": "Single",
+    "bulk": "Bulk"
+  },
+  "drop": "Drop audio or a transcript here",
+  "choose": "Choose files",
+  "formats": "M4A, MP3, WAV, OGG, AMR · TXT, SRT, VTT, JSON",
+  "removeFile": "Remove {name}",
+  "parts": {
+    "audio": "Audio",
+    "transcript": "Transcript"
+  },
+  "phone": "Phone number",
+  "phoneHint": "Leave empty for a hidden number.",
+  "badNumber": "Enter a number with country code, like +972 52 555 0134.",
+  "date": "Date and time",
+  "direction": {
+    "label": "Direction",
+    "in": "Incoming",
+    "out": "Outgoing",
+    "unknown": "Unknown"
+  },
+  "contact": "Contact name",
+  "backup": "Back up recording",
+  "cta": "Upload",
+  "done": "Done",
+  "open": "Open call",
+  "another": "Upload another",
+  "recordingFailed": "The call is uploaded. Its recording wasn't backed up.",
+  "dup": {
+    "title": "Already uploaded",
+    "open": "Open the existing call"
+  },
+  "txOff": "Transcription is off. Add a transcript file to upload this call.",
+  "unsupported": "This file type isn't supported. Use audio, or TXT, SRT, VTT or JSON transcripts.",
+  "quota": "Transcription limit reached for this month. Upload the transcript instead, or use your own key.",
+  "callLimit": "You've reached {n} calls. Delete calls to upload more.",
+  "steps": "Upload progress",
+  "flow": {
+    "managed": "Audio passes through AskCalls to {provider}, streamed and not stored. {provider} may keep request logs under its standard policy.",
+    "direct": "Audio goes from your device straight to {provider} under your account. AskCalls doesn't see it."
+  },
+  "provider": {
+    "elevenlabs": "ElevenLabs",
+    "openai": "OpenAI",
+    "deepgram": "Deepgram",
+    "soniox": "Soniox",
+    "openai-compatible": "OpenAI-compatible server",
+    "mock": "Mock transcriber",
+    "managed": "Transcription provider"
+  },
+  "queue": {
+    "queued": "Queued",
+    "decoding": "Decoding",
+    "transcribing": "Transcribing",
+    "indexing": "Indexing",
+    "encrypting": "Encrypting",
+    "uploading": "Uploading",
+    "done": "Done",
+    "duplicate": "Duplicate",
+    "failed": "Failed"
+  },
+  "reason": {
+    "audio_unreadable": "Couldn't decode the audio. The file may be damaged or in an unsupported format.",
+    "transcript_unreadable": "Couldn't read the transcript. Use TXT, SRT, VTT or JSON.",
+    "transcript_empty": "The transcript has no text.",
+    "transcription_unavailable": "Transcription is off. Add a transcript file to upload this call.",
+    "transcription_failed": "Transcription failed. Retry.",
+    "nothing_to_ingest": "Add audio or a transcript.",
+    "quota": "A plan limit was reached. Check your usage in Settings.",
+    "quotaMinutes": "Transcription limit reached for this month. Upload the transcript instead, or use your own key.",
+    "quotaCalls": "Call limit reached. Delete calls to upload more.",
+    "rate_limited": "Too many uploads at once. Retry in a minute.",
+    "locked": "AskCalls locked during the upload. Retry.",
+    "unauthorized": "You were signed out. Sign in again and retry.",
+    "upload_failed": "Upload failed. Check your connection and retry.",
+    "indexing_failed": "Indexing failed on this device. Retry.",
+    "unknown": "This file couldn't be uploaded. Retry."
+  },
+  "bulk": {
+    "drop": "Drop files, a folder or a ZIP",
+    "chooseFiles": "Choose files or a ZIP",
+    "chooseFolder": "Choose a folder",
+    "manifest": "Add manifest.csv (optional)",
+    "summary": "Import summary",
+    "sum": {
+      "audio": "audio only, will be transcribed",
+      "paired": "audio with transcript",
+      "tx": "transcript only",
+      "dup": "likely duplicates, skipped"
+    },
+    "minutes": "About {n} minutes of audio to transcribe.",
+    "usage": "Transcription this month, after this import",
+    "min": "min",
+    "manifestApplied": "manifest.csv set names and dates for {n} files.",
+    "manifestError": "Couldn't read the manifest. Check that it is a CSV with a file column.",
+    "unreadable": "{n, plural, one {# transcript can't be read and will fail.} other {# transcripts can't be read and will fail.}}",
+    "overQuota": "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key.",
+    "overCalls": "This import has {n} calls and your plan has room for {m} more. Delete calls to make room for the rest.",
+    "storage": "Recording storage is {n}% full. Recordings that don't fit aren't backed up; their calls still import.",
+    "backup": "Back up recordings",
+    "start": "Start import",
+    "change": "Choose different files",
+    "progressDone": "{done} of {total} files done.",
+    "progressDetail": "{active} in progress, {failed} failed, {dup} duplicates skipped.",
+    "eta": "About {t} left.",
+    "progressLabel": "Import progress",
+    "closeHint": "You can close this tab and resume later.",
+    "pause": "Pause",
+    "pausing": "Pausing…",
+    "resume": "Resume",
+    "stop": "Stop",
+    "tab": {
+      "all": "All",
+      "active": "In progress",
+      "failed": "Failed",
+      "dup": "Duplicates"
+    },
+    "filter": "Show",
+    "col": {
+      "file": "File",
+      "contact": "Contact",
+      "status": "Status"
+    },
+    "retry": "Retry",
+    "retryAll": "Retry all failed",
+    "dupOf": "Matches the call on {when}",
+    "resumeBanner": "Import paused: {done} of {total} done.",
+    "repick": "Pick the folder again to continue.",
+    "repickFiles": "Choose the files again",
+    "access": "Allow access to the folder again to continue.",
+    "done": "{n} calls imported. {f} failed, {d} duplicates.",
+    "viewCalls": "View calls",
+    "newImport": "New import",
+    "emptyFolder": "No audio or transcript files found in this folder.",
+    "zipError": "Couldn't open this ZIP.",
+    "pickFailed": "Couldn't open this folder. Choose it again.",
+    "planning": "Reading the files",
+    "showMore": "Show {n} more",
+    "noneInTab": "Nothing here."
+  }
 }
