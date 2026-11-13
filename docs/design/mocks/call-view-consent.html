@@ -419,7 +419,7 @@ textarea.input{height:auto;padding-block:.5rem;resize:vertical;line-height:1.375
 .stepper.vertical{flex-direction:column;gap:0}
 .stepper.vertical li{flex:none;padding-block:.5rem;position:relative}
 .stepper.vertical li:not(:last-child)::before{content:"";position:absolute;inset-inline-start:.75rem;top:2.25rem;height:calc(100% - 2rem);width:1px;background:var(--border)}
-.code{position:relative;background:var(--muted);border:1px solid var(--border);border-radius:var(--radius-md)}
+.code{position:relative;min-width:0;max-width:100%;background:var(--muted);border:1px solid var(--border);border-radius:var(--radius-md)}
 .code pre{margin:0;padding:.75rem 3rem .75rem .875rem;overflow-x:auto;font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.375rem;white-space:pre;text-align:left}
 .code .btn{position:absolute;top:.375rem;right:.375rem}
 .fp{font-size:2.5rem;font-weight:500;letter-spacing:.06em;line-height:1}
