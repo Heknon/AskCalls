@@ -1,0 +1,24 @@
+{
+  "title": "Settings",
+  "sectionsLabel": "Settings sections",
+  "back": "Settings",
+  "sections": {
+    "security": "Security",
+    "recordings": "Recordings",
+    "retention": "Retention",
+    "api": "API and MCP",
+    "providers": "Providers",
+    "privacy": "Privacy",
+    "audit": "Audit log",
+    "data": "Data"
+  },
+  "language": {
+    "title": "Language",
+    "label": "Language"
+  },
+  "shortcuts": {
+    "title": "Keyboard",
+    "label": "Single-key shortcuts",
+    "detail": "Shortcuts like j, s and / that use one key. Turn them off if they get in the way of a screen reader or voice control."
+  }
+}

@@ -1,14 +1,19 @@
 import { type ApiClient, createApiClient } from '@askcalls/api-contract';
 import type { BulkStateStore } from '@askcalls/client-core/bulk/queue';
 import { type ClientContext, createClientContext } from '@askcalls/client-core/context';
-import type { DeviceKeyStore, FetchLike, SecretStore } from '@askcalls/client-core/ports/index';
+import type {
+  DeviceKeyStore,
+  Embedder,
+  FetchLike,
+  SecretStore,
+} from '@askcalls/client-core/ports/index';
 import { KeySession } from '@askcalls/client-core/session';
 import { managedTranscriber } from '@askcalls/client-core/transcription';
 import type { Providers } from '@askcalls/client-core/userdata';
 import { DomainError } from '@askcalls/domain';
 import { BrowserAudioCodec } from './adapters/audio/codec';
 import { BrowserBulkFiles } from './adapters/bulk-files';
-import { WorkerEmbedder } from './adapters/embedder/embedder';
+import { type EmbedderStatus, WorkerEmbedder } from './adapters/embedder/embedder';
 import { DeviceDb } from './adapters/idb';
 import { bucketOrigin, SigV4BucketStore } from './adapters/own-bucket';
 import { SettingsTranscriber } from './adapters/own-key-transcriber';
@@ -36,7 +41,13 @@ export interface BrowserClient {
   passkeys: WebAuthnPasskeyAuthenticator;
   bulkState: BulkStateStore;
   bulkFiles: BrowserBulkFiles;
-  embedder: WorkerEmbedder;
+  embedder: Embedder;
+  /**
+   * The model's first-load status (download progress for the UI); null when a stand-in
+   * embedder replaces the model.
+   */
+  embedderStatus(): EmbedderStatus | null;
+  onEmbedderStatus(listener: (s: EmbedderStatus) => void): () => void;
   audio: BrowserAudioCodec;
   ownBuckets: SigV4BucketStore;
   /** Object URLs for decrypted media; revoked on lock. */
@@ -63,6 +74,8 @@ export interface BrowserClientOptions {
   onDirectAccessChange?: () => void;
   /** Keep the embedding worker (and model) loaded across locks. Default false. */
   keepEmbedderOnLock?: boolean;
+  /** Replaces the model worker (the e2e stand-in); the worker is then never started. */
+  embedder?: Embedder;
 }
 
 /** Provider ids and custom origins the browser will call directly, from the providers doc. */
@@ -101,7 +114,10 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     opts.idleTimeoutMs === undefined ? {} : { idleTimeoutMs: opts.idleTimeoutMs },
   );
   const db = new DeviceDb(opts.dbName);
-  const embedder = new WorkerEmbedder({ modelBaseUrl: readEmbeddingModelUrl() });
+  const worker = opts.embedder
+    ? null
+    : new WorkerEmbedder({ modelBaseUrl: readEmbeddingModelUrl() });
+  const embedder: Embedder = opts.embedder ?? worker!;
   const audio = new BrowserAudioCodec();
   const blobUrls = new BlobUrls();
   let ctx: ClientContext | null = null;
@@ -155,7 +171,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
   const unwipe = session.onWipe(() => {
     blobUrls.revokeAll();
     audio.dispose();
-    if (!opts.keepEmbedderOnLock) embedder.dispose();
+    if (!opts.keepEmbedderOnLock) worker?.dispose();
   });
   const uninstall = installLockRules(session);
 
@@ -169,6 +185,8 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     bulkState: new IdbBulkStateStore(db, session),
     bulkFiles: new BrowserBulkFiles(db),
     embedder,
+    embedderStatus: () => worker?.status ?? null,
+    onEmbedderStatus: (listener) => worker?.onStatus(listener) ?? (() => {}),
     audio,
     ownBuckets,
     blobUrls,
@@ -179,7 +197,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
       unsubscribe();
       session.lock('manual');
       unwipe();
-      embedder.dispose();
+      worker?.dispose();
       audio.dispose();
       db.close();
     },

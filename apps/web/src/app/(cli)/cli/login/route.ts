@@ -3,7 +3,9 @@ import { createApiToken } from '@askcalls/domain/use-cases/tokens';
 import { readSessionUserId } from '../../../../server/auth/secret';
 import { type Container, getContainer } from '../../../../server/container';
 import { newNonce } from '../../../../server/http/csp';
-import { type Locale, resolveLocale, translator } from '../../../../server/i18n/translator';
+import { requestTranslator } from '../../../../server/i18n/translator';
+
+type Tr = Awaited<ReturnType<typeof requestTranslator<'cli'>>>;
 
 /**
  * `askcalls login` (apps/agent login/loopback.ts). The CLI listens on 127.0.0.1:<port> with a
@@ -37,14 +39,14 @@ const escapeHtml = (s: string) =>
   );
 
 function html(opts: {
-  locale: Locale;
+  tr: Tr;
   status: number;
   body: string;
   nonce: string;
   formAction: string;
   script?: string;
 }): Response {
-  const { dir } = translator(opts.locale, 'cliLogin');
+  const { locale, dir } = opts.tr;
   const csp = [
     "default-src 'none'",
     `style-src 'nonce-${opts.nonce}'`,
@@ -53,7 +55,7 @@ function html(opts: {
     "frame-ancestors 'none'",
     "base-uri 'none'",
   ].join('; ');
-  const doc = `<!doctype html><html lang="${opts.locale}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AskCalls</title><style nonce="${opts.nonce}">body{font-family:system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1rem;line-height:1.5}button,a{font:inherit;margin-inline-end:.75rem}</style></head><body>${opts.body}${opts.script ? `<script nonce="${opts.nonce}">${opts.script}</script>` : ''}</body></html>`;
+  const doc = `<!doctype html><html lang="${locale}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AskCalls</title><style nonce="${opts.nonce}">body{font-family:system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1rem;line-height:1.5}button,a{font:inherit;margin-inline-end:.75rem}</style></head><body>${opts.body}${opts.script ? `<script nonce="${opts.nonce}">${opts.script}</script>` : ''}</body></html>`;
   return new Response(doc, {
     status: opts.status,
     headers: {
@@ -67,23 +69,18 @@ function html(opts: {
 }
 
 function message(
-  locale: Locale,
+  tr: Tr,
   status: number,
   key: 'invalid' | 'forbidden' | 'quota' | 'signedOut' | 'tooMany',
 ) {
-  const { t } = translator(locale, 'cliLogin');
+  const { t } = tr;
   return html({
-    locale,
+    tr,
     status,
     nonce: newNonce(),
     formAction: "'none'",
     body: `<h1>${escapeHtml(t('title'))}</h1><p role="alert">${escapeHtml(t(key))}</p>`,
   });
-}
-
-function localeOf(req: Request): Locale {
-  const cookie = req.headers.get('cookie')?.match(/(?:^|;\s*)locale=([^;]+)/)?.[1];
-  return resolveLocale(cookie, req.headers.get('accept-language'));
 }
 
 async function sessionUser(req: Request, container: Container): Promise<string | null> {
@@ -94,10 +91,10 @@ async function sessionUser(req: Request, container: Container): Promise<string |
 }
 
 export async function GET(req: Request): Promise<Response> {
-  const locale = localeOf(req);
+  const tr = await requestTranslator(req, 'cli');
   const url = new URL(req.url);
   const r = parse(url.searchParams.get('port'), url.searchParams.get('state'));
-  if (!r) return message(locale, 400, 'invalid');
+  if (!r) return message(tr, 400, 'invalid');
   const container = await getContainer();
   if (!(await sessionUser(req, container))) {
     const login = new URL('/login', container.config.config.appUrl);
@@ -107,9 +104,9 @@ export async function GET(req: Request): Promise<Response> {
       headers: { Location: login.toString(), 'Cache-Control': 'no-store' },
     });
   }
-  const { t } = translator(locale, 'cliLogin');
+  const { t } = tr;
   return html({
-    locale,
+    tr,
     status: 200,
     nonce: newNonce(),
     formAction: "'self'",
@@ -124,31 +121,31 @@ export async function GET(req: Request): Promise<Response> {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  const locale = localeOf(req);
+  const tr = await requestTranslator(req, 'cli');
   const container = await getContainer();
   const { ports } = container;
   if (req.headers.get('origin') !== new URL(container.config.config.appUrl).origin) {
-    return message(locale, 403, 'forbidden');
+    return message(tr, 403, 'forbidden');
   }
   const userId = await sessionUser(req, container);
-  if (!userId) return message(locale, 401, 'signedOut');
+  if (!userId) return message(tr, 401, 'signedOut');
   const limit = await ports.rateLimiter.hit(
     `rl:cli-login:${userId}`,
     RATE_LIMIT.limit,
     RATE_LIMIT.windowMs,
   );
-  if (!limit.allowed) return message(locale, 429, 'tooMany');
+  if (!limit.allowed) return message(tr, 429, 'tooMany');
 
   const type = req.headers.get('content-type') ?? '';
   const declared = Number(req.headers.get('content-length') ?? '0');
   if (!type.startsWith('application/x-www-form-urlencoded') || declared > MAX_FORM_BYTES) {
-    return message(locale, 400, 'invalid');
+    return message(tr, 400, 'invalid');
   }
   const text = await req.text();
-  if (text.length > MAX_FORM_BYTES) return message(locale, 400, 'invalid');
+  if (text.length > MAX_FORM_BYTES) return message(tr, 400, 'invalid');
   const form = new URLSearchParams(text);
   const r = parse(form.get('port'), form.get('state'));
-  if (!r) return message(locale, 400, 'invalid');
+  if (!r) return message(tr, 400, 'invalid');
 
   let token: string;
   try {
@@ -158,13 +155,13 @@ export async function POST(req: Request): Promise<Response> {
       { name: 'askcalls CLI', scopes: [...TOKEN_SCOPES], expiresInDays: null },
     ));
   } catch (e) {
-    if (isDomainError(e) && e.code === 'quota_exceeded') return message(locale, 403, 'quota');
+    if (isDomainError(e) && e.code === 'quota_exceeded') return message(tr, 403, 'quota');
     throw e;
   }
-  const { t } = translator(locale, 'cliLogin');
+  const { t } = tr;
   const callback = `http://127.0.0.1:${r.port}/callback`;
   return html({
-    locale,
+    tr,
     status: 200,
     nonce: newNonce(),
     formAction: callback,

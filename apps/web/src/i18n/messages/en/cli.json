@@ -1,0 +1,15 @@
+{
+  "title": "Authorize the askcalls CLI",
+  "intro": "The askcalls agent on your computer is asking for a personal access token for this account.",
+  "scopes": "The token can list, add and change your encrypted calls, use Ask, and fetch your wrapped keys (scopes: read, write, ask, keys). The agent still has to be linked in Settings → Devices before it can decrypt anything.",
+  "port": "The token goes to the askcalls program listening on this computer at 127.0.0.1:{port}. Continue only if you just ran askcalls login.",
+  "authorize": "Authorize",
+  "cancel": "Cancel",
+  "sending": "Sending the token to askcalls on this computer…",
+  "continue": "Continue",
+  "invalid": "This sign-in link is not valid. Run askcalls login again.",
+  "forbidden": "This request did not come from this AskCalls page. Run askcalls login again.",
+  "quota": "You have reached the limit of personal access tokens. Revoke one in Settings → API and MCP, then run askcalls login again.",
+  "signedOut": "Your session ended. Sign in and run askcalls login again.",
+  "tooMany": "Too many sign-in attempts. Wait a few minutes, then run askcalls login again."
+}

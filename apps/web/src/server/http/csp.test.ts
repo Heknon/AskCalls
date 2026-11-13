@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigService } from '../config/config-service';
-import { appCsp, blobOrigins, DIRECT_PROVIDER_ORIGINS, embeddingModelUrl } from './csp';
+import {
+  appCsp,
+  blobOrigins,
+  DIRECT_PROVIDER_ORIGINS,
+  embeddingModelUrl,
+  GOOGLE_ONE_TAP_ORIGIN,
+  publicCsp,
+} from './csp';
 
 const config = (env: Record<string, string>) =>
   new ConfigService({ DB_DRIVER: 'memory', ...env }).loadFromEnvOnly().config;
@@ -77,5 +84,24 @@ describe('app CSP', () => {
 
   it('rejects a plain-http model host', () => {
     expect(() => config({ EMBEDDING_MODEL_URL: 'http://models.example.com' })).toThrow();
+  });
+});
+
+describe('public CSP (/ and /login)', () => {
+  it('allows accounts.google.com only when One Tap is on, and never unsafe-inline', () => {
+    const on = publicCsp('n', 'production', true);
+    expect(directive(on, 'script-src')).toBe("script-src 'self' 'nonce-n' 'strict-dynamic'");
+    expect(directive(on, 'frame-src')).toBe(`frame-src ${GOOGLE_ONE_TAP_ORIGIN}`);
+    expect(directive(on, 'connect-src')).toContain(GOOGLE_ONE_TAP_ORIGIN);
+    expect(on).not.toContain('unsafe-inline');
+    const off = publicCsp('n', 'production', false);
+    expect(off).not.toContain('google');
+    expect(directive(off, 'frame-src')).toBe("frame-src 'none'");
+  });
+
+  it('keeps accounts.google.com out of the app CSP', () => {
+    expect(appCsp(config({ BLOB_DRIVER: 'memory' }), 'n', 'production')).not.toContain(
+      GOOGLE_ONE_TAP_ORIGIN,
+    );
   });
 });

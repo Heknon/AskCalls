@@ -1,9 +1,21 @@
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 // Off the usual dev ports, and never reused: a server someone else started has other env.
 const port = 3417;
 const baseURL = `http://localhost:${port}`;
 const ci = Boolean(process.env.CI);
+
+/**
+ * Indexing the sample call needs an embedder. With the model files fetched (`prebuild`), the
+ * browser runs the real model; without them (ASKCALLS_SKIP_MODEL_DOWNLOAD) the server, running
+ * with NODE_ENV=test, hands the browser a deterministic stand-in.
+ */
+const models = join(import.meta.dirname, 'public', 'models');
+const REAL_MODEL =
+  existsSync(models) &&
+  readdirSync(models, { recursive: true }).some((f) => String(f).endsWith('.onnx'));
 
 /**
  * Runs against the production build (`next build` first, see the `test:e2e` script) with the
@@ -31,6 +43,7 @@ export default defineConfig({
       TRANSCRIPTION_PROVIDER: 'mock',
       LLM_PROVIDER: 'mock',
       TELEMETRY: 'none',
+      ...(REAL_MODEL ? {} : { ASKCALLS_TEST_EMBEDDER: 'true' }),
     },
   },
 });

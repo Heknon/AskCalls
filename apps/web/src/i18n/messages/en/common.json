@@ -1,0 +1,35 @@
+{
+  "brand": "AskCalls",
+  "language": "Language",
+  "continue": "Continue",
+  "back": "Back",
+  "cancel": "Cancel",
+  "skip": "Skip",
+  "copy": "Copy",
+  "copied": "Copied",
+  "show": "Show",
+  "hide": "Hide",
+  "close": "Close",
+  "retry": "Try again",
+  "goToCalls": "Go to calls",
+  "notifications": "Notifications",
+  "incoming": "Incoming",
+  "outgoing": "Outgoing",
+  "unknownDirection": "Direction unknown",
+  "star": "Star",
+  "unstar": "Unstar",
+  "hiddenNumber": "Hidden number",
+  "moreActions": "More actions",
+  "decrypting": "Decrypting",
+  "loading": "Loading",
+  "error": {
+    "title": "Couldn't load this page",
+    "body": "The server didn't respond. Try again.",
+    "panel": "Couldn't load this section",
+    "offline": "You're offline. Check your connection and try again."
+  },
+  "notFound": {
+    "title": "This page doesn't exist",
+    "body": "Check the address, or go back to your calls."
+  }
+}

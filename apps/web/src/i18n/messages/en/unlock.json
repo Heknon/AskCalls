@@ -1,0 +1,37 @@
+{
+  "title": "Unlock your calls",
+  "body": "Use the passkey you created for AskCalls.",
+  "bodyNoPasskey": "Use your passphrase or your recovery code.",
+  "passkey": "Unlock with passkey",
+  "recovery": "Use recovery code",
+  "passphrase": "Use passphrase",
+  "account": "Signed in as <email></email>",
+  "signOut": "Sign out",
+  "lost": "Without a passkey or recovery code, calls can't be recovered. <link>Options</link>",
+  "back": "Other ways to unlock",
+  "waiting": "Waiting for your device…",
+  "rc": {
+    "title": "Enter your recovery code",
+    "body": "8 groups of 4 characters.",
+    "group": "Group {n}",
+    "wrong": "Wrong code. Check each group and try again.",
+    "incomplete": "Fill in all 8 groups."
+  },
+  "pass": {
+    "title": "Enter your passphrase",
+    "label": "Passphrase",
+    "wrong": "Wrong passphrase. Try again."
+  },
+  "passkeyFailed": "Couldn't unlock with this passkey. Try again or use your recovery code.",
+  "offline": "You're offline. Unlocking needs a connection to fetch your keys.",
+  "failed": "Couldn't unlock. Try again.",
+  "cta": "Unlock",
+  "busy": "Unlocking…",
+  "signOutConfirm": {
+    "title": "Sign out of AskCalls?",
+    "body": "Signing out also removes this device's saved keys. You'll need your passkey or recovery code to unlock again.",
+    "confirm": "Sign out"
+  },
+  "deviceLabel": "{browser} on {os}",
+  "locked": "AskCalls locked"
+}
