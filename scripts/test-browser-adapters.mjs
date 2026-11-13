@@ -11,7 +11,7 @@
  *   MODEL_HOST=1 node scripts/test-browser-adapters.mjs
  *
  * MODEL_HOST=1 serves the model from a second origin (gzip-encoded, CORS, immutable, like the
- * R2 bucket) and starts the app with EMBEDDING_MODEL_URL pointing at it.
+ * CloudFront model host) and starts the app with EMBEDDING_MODEL_URL pointing at it.
  */
 import { spawn } from 'node:child_process';
 import { createReadStream, readFileSync, statSync } from 'node:fs';

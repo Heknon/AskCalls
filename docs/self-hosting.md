@@ -43,8 +43,11 @@ A fresh instance (no `config.json`, and settings still missing) opens the setup 
 2. **Database:** built-in (PGlite, in the data directory) or an external Postgres URL. An
    external database must pass the connection test (it reports the Postgres and pgvector
    versions) before you can continue.
-3. **Storage:** a local folder, or an S3-compatible bucket (tested). When the bucket's CORS
-   rules don't allow this instance's origin, the wizard shows the exact rule to add.
+3. **Storage:** a local folder, or an S3-compatible bucket (tested): AWS S3, Cloudflare R2,
+   MinIO, Backblaze B2 or any other S3 API (`packages/adapters/blob-s3/README.md` has the
+   endpoint and region for each). When the bucket's CORS rules don't allow this instance's
+   origin, the wizard shows the exact rule to add. askcalls.com's own AWS setup (`infra/`, a
+   CDK app) is specific to the hosted site; a self-hosted instance needs none of it.
 4. **Sign-in:** local accounts, Google, GitHub and email links, each with its fields.
 5. **Transcription and AI:** for each, off, a cloud provider with a key, or a local
    OpenAI-compatible server (Whisper for transcription, Ollama or vLLM for questions).

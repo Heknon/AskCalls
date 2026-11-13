@@ -1,7 +1,8 @@
 # Deployment
 
 The hosted service (askcalls.com) deploys from GitHub Actions to Vercel, with Neon Postgres and
-Cloudflare R2. Vercel's git integration is off (`apps/web/vercel.json` →
+AWS S3 (recordings) and CloudFront (the embedding model), both defined as a CDK app in
+[`infra/`](../infra). Vercel's git integration is off (`apps/web/vercel.json` →
 `git.deploymentEnabled: false`) so a deploy can never race ahead of its migrations. Self-hosting
 is `docker compose up` (`docker/docker-compose.yml`) and needs none of this.
 
@@ -10,11 +11,12 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
     │                         blobs under askcalls-dev/preview/pr-<n>/) → PR comment → fast checks
     │                         (closing the PR deletes the Neon branch and the blob prefix)
     ▼ merge
-   dev   ──push──▶ dev        fast checks → migrate the dev branch → Vercel (DEV_DOMAIN follows the dev branch)
-    │
+   dev   ──push──▶ dev        fast checks → CDK AskCallsStorage-dev → publish the model (if new) → migrate the dev
+    │                         branch → Vercel (DEV_DOMAIN follows the dev branch)
     ▼ merge (PR dev → master)
  master  ─manual─▶ production Actions → Deploy → Run workflow on master → full tests (fast checks + integration ∥ E2E)
-                              → migrate main → Vercel --prod
+                              → CDK AskCallsStorage-prod + AskCallsModels → publish the model (if new) → migrate main
+                              → Vercel --prod
  v*.*.*  ──tag───▶ release    fast checks → client asset hashes → npm (agent) → Docker image (GHCR, amd64 + arm64)
                               → offline bundles → GitHub release
 ```
@@ -23,20 +25,29 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
 |---|---|---|
 | `ci.yml` (Full tests) | before production (called by `deploy.yml`); the `full-tests` label on a pull request; Run workflow by hand | two parallel jobs: fast checks + integration tests (pgvector Postgres service, MinIO), and Playwright E2E on Chromium |
 | `preview.yml` | pull request opened / synchronized / reopened / closed (not for docs-only changes) | one job: per-PR database branch + migrations + preview deploy + PR comment, then the fast checks; cleanup on close |
-| `deploy.yml` | push to `dev`; production only via Run workflow on `master` (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → migrations → Vercel |
+| `deploy.yml` | push to `dev`; production only via Run workflow on `master` (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → `cdk deploy` (`AskCallsStorage-<env>`, plus `AskCallsModels` on production) through the OIDC deploy role → `models:publish` (a few HEAD requests when the pinned build is already there) → migrations → Vercel |
 | `release.yml` | a `v<major>.<minor>.<patch>` tag | one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
 | `codeql.yml` | weekly, pushes to `master`, by hand | CodeQL (JavaScript and TypeScript, security-extended) |
+
+`AskCallsGithubDeploy` (the OIDC roles the workflows assume) is the one stack no workflow
+deploys; it is deployed by hand once (AWS setup below).
 
 Dependabot (`.github/dependabot.yml`) opens one grouped pull request per ecosystem each week:
 Bun packages, GitHub Actions, the Dockerfile and the Compose files.
 
 Shared pieces: `.github/actions/setup` (Bun at the `packageManager` version, cached store keyed
-on `bun.lock`, frozen install) and `.github/actions/checks` (lint, typecheck, boundaries, unit
-and contract tests on PGlite, fs and in-memory adapters, including the leak test on both
-storages, the telemetry scrubber contract and the CSP check; then the dependency audit, a
-production build and the bundle-size budget). The Vercel and
-Neon CLIs are pinned root devDependencies, so the workflows run `bunx vercel` and
-`bunx neonctl` at the versions in `bun.lock`.
+on `bun.lock` and `infra/bun.lock`, frozen installs of the app and of `infra/`) and
+`.github/actions/checks` (lint, typecheck, boundaries, unit and contract tests on PGlite, fs and
+in-memory adapters, including the leak test on both storages, the telemetry scrubber contract
+and the CSP check; the `infra/` typecheck, CDK assertion tests and `cdk synth` of every stack,
+with no AWS credentials; then the dependency audit, a production build and the bundle-size
+budget). The Vercel and Neon CLIs are pinned root devDependencies, so the workflows run
+`bunx vercel` and `bunx neonctl` at the versions in `bun.lock`; the CDK CLI is pinned in
+`infra/package.json`.
+
+`infra/` is its own package with its own `bun.lock`, not a workspace: `aws-cdk-lib` (about
+170 MB with the CLI) stays out of the app's install on Vercel and in Docker. `bun run check`
+installs it (`bun run check:infra`) and runs its checks.
 
 ## Cost rules
 
@@ -60,6 +71,23 @@ Neon CLIs are pinned root devDependencies, so the workflows run `bunx vercel` an
   checks. The same happens while `NEON_API_KEY` or `VERCEL_TOKEN` is unset (before the one-time
   setup below), and `deploy.yml` skips migrate and deploy on `dev` with a notice. Once the
   secrets are in, a missing repository variable fails the run with its name.
+
+## AWS costs
+
+Rough monthly numbers for `eu-central-1`; check the AWS pricing pages before relying on them.
+
+- **S3 storage:** about $0.0245 per GB-month (S3 Standard, Frankfurt) for the encrypted
+  recordings, plus requests ($0.0054 per 1,000 PUTs, $0.00043 per 1,000 GETs). The free tier
+  covers 5 GB for the first year only. Dev's preview objects expire after 14 days.
+- **Egress for recording downloads:** browsers download recordings straight from the bucket with
+  presigned URLs, which is internet data transfer out. The first 100 GB per month (across the
+  account) are free, then about $0.09 per GB. Uploads (data in) are free.
+- **Model downloads:** CloudFront's always-free tier is 1 TB of transfer out and 10 million
+  requests per month. The model is about 25 MB gzip and each browser keeps it in Cache Storage
+  after the first load, so that is roughly 40,000 first loads a month for free. CloudFront to
+  S3 transfer is free; only cache misses (one per edge per file, once per build) reach S3.
+- **IAM, OIDC, CloudFormation, the CDK bootstrap:** free, apart from the bootstrap's asset
+  bucket (a few KB).
 
 ## Rules for changes
 
@@ -92,10 +120,11 @@ secret. Off Vercel, `SCHEDULER=in-process` runs the same job inside the server.
 
 ## Region
 
-Everything runs in Frankfurt: Neon (`eu-central-1`), the R2 buckets (EU jurisdiction), and
-Vercel Functions (`"regions": ["fra1"]` in `apps/web/vercel.json`; also set the project's
+Everything runs in Frankfurt: Neon (`eu-central-1`), the S3 buckets (`askcalls:region` in
+`infra/cdk.json`, `eu-central-1`), and Vercel Functions (`"regions": ["fra1"]` in `apps/web/vercel.json`; also set the project's
 Function Region to Frankfurt, see Vercel below). Vercel's default, Washington D.C., would put an
-Atlantic round trip on every query.
+Atlantic round trip on every query. The model CDN is CloudFront (price class 100: North
+America, Europe and Israel); its bucket is in Frankfurt too.
 
 ## One-time setup
 
@@ -114,68 +143,100 @@ Atlantic round trip on every query.
 5. Note the project id (Settings → General) and the **direct** (unpooled) connection strings of
    `main` and `dev` for GitHub, and the **pooled** ones for Vercel.
 
-### 2. Cloudflare R2
+### 2. AWS (once, with admin credentials)
 
-1. Create two buckets with location **EU jurisdiction**: `askcalls-prod` and `askcalls-dev`. Dev
-   uses `askcalls-dev` under `dev/`; each preview under `preview/pr-<n>/` (`S3_KEY_PREFIX`).
-2. CORS (bucket → Settings → CORS policy). Browsers PUT and GET encrypted recordings straight to
-   the bucket. This is `corsJson(origins)` from `@askcalls/adapter-blob-s3`:
+The CDK app in [`infra/`](../infra) owns everything on AWS. Context in `infra/cdk.json`:
 
-   `askcalls-prod`:
+| Key | Value |
+|---|---|
+| `askcalls:region` | `eu-central-1` (the app's `S3_REGION`) |
+| `askcalls:githubRepo` | `Heknon/AskCalls` (the only repository the OIDC roles trust) |
+| `askcalls:buckets` | `{ "prod": "askcalls-prod", "dev": "askcalls-dev" }` |
+| `askcalls:modelsBucket` | `askcalls-models` |
+| `askcalls:appOrigins` | per environment, the origins allowed by bucket CORS: prod `https://askcalls.com`; dev `https://<DEV_DOMAIN>` (`https://dev.askcalls.com` in the file: change it if `DEV_DOMAIN` differs), `https://askcalls-*.vercel.app` (previews), `http://localhost:3000` |
+| `askcalls:existingOidcProviderArn` | optional, `-c` on the command line: reuse the account's GitHub OIDC provider |
+| `askcalls:modelsDomain`, `askcalls:modelsCertificateArn` | optional pair: custom domain for the model CDN (step 6) |
 
-   ```json
-   [
-     {
-       "AllowedOrigins": ["https://askcalls.com"],
-       "AllowedMethods": ["GET", "PUT", "HEAD"],
-       "AllowedHeaders": ["content-type"],
-       "ExposeHeaders": ["ETag", "Content-Length"],
-       "MaxAgeSeconds": 3600
-     }
-   ]
-   ```
+| Stack | Deployed by | Owns |
+|---|---|---|
+| `AskCallsGithubDeploy` | hand, once | GitHub OIDC provider; role `askcalls-github-deploy` (trusts only this repo's `dev` and `production` environments; may assume the CDK bootstrap roles, publish to `askcalls-models/e5-pruned/*`, read `AskCallsModels`' outputs); role `askcalls-github-preview-cleanup` (trusts only the `preview` environment; may list and delete `askcalls-dev/preview/*`) |
+| `AskCallsStorage-dev` | `deploy.yml` on dev | bucket `askcalls-dev` (dev under `dev/`, each preview under `preview/pr-<n>/`); IAM user `askcalls-app-dev` |
+| `AskCallsStorage-prod` | `deploy.yml` on production | bucket `askcalls-prod`; IAM user `askcalls-app-prod` |
+| `AskCallsModels` | `deploy.yml` on production | bucket `askcalls-models` behind a CloudFront distribution |
 
-   `askcalls-dev` (`DEV_DOMAIN`, the preview URLs, local development):
+Recording buckets: public access blocked, ACLs disabled, SSE-S3, a bucket policy denying
+anything but TLS 1.2+, CORS exactly `corsJson(origins)` from `@askcalls/adapter-blob-s3` (GET,
+PUT, HEAD; the `content-type` header; `ETag` and `Content-Length` exposed), incomplete multipart
+uploads aborted after a day, and in dev `preview/` objects expire after 14 days (a safety net
+behind the PR-close cleanup). Versioning is off on purpose: the buckets hold ciphertext only, a
+segment is never rewritten, and a deleted recording (retention purge, call or account deletion)
+must be gone rather than kept as a noncurrent version. SSE-KMS would add per-request cost and
+nothing else, since the objects are already encrypted with keys AWS never sees. Every bucket is
+`RETAIN`: deleting a stack never deletes data. Each IAM user may only `GetObject`, `PutObject`,
+`DeleteObject` in its own bucket, plus `ListBucket` and `GetBucketCORS` on it.
 
-   ```json
-   [
-     {
-       "AllowedOrigins": [
-         "https://<DEV_DOMAIN>",
-         "https://askcalls-*-<vercel-team-slug>.vercel.app",
-         "http://localhost:3000"
-       ],
-       "AllowedMethods": ["GET", "PUT", "HEAD"],
-       "AllowedHeaders": ["content-type"],
-       "ExposeHeaders": ["ETag", "Content-Length"],
-       "MaxAgeSeconds": 3600
-     }
-   ]
-   ```
-
-   Preview URLs are random, hence the wildcard. Cloudflare's docs only show exact origins, so
-   check it once a preview exists: a preflight must echo the preview's origin back.
+1. Check the context above (`askcalls:appOrigins.dev` must hold the real `DEV_DOMAIN`). S3 bucket
+   names are global: if one is taken, change it in `askcalls:buckets` and in the Vercel table
+   below.
+2. Bootstrap CDK and deploy the GitHub roles:
 
    ```sh
-   curl -si -X OPTIONS "https://<account-id>.eu.r2.cloudflarestorage.com/askcalls-dev/probe" \
+   cd infra && bun install
+   bunx cdk bootstrap aws://<account>/eu-central-1
+   bunx cdk deploy AskCallsGithubDeploy
+   # account already has a GitHub OIDC provider:
+   #   bunx cdk deploy AskCallsGithubDeploy -c askcalls:existingOidcProviderArn=arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com
+   ```
+
+   Copy the `DeployRoleArn` and `PreviewCleanupRoleArn` outputs into the GitHub variables
+   (GitHub, below). The deploy role can only hand off to the bootstrap roles, and the
+   bootstrap's CloudFormation execution role has `AdministratorAccess` by default; to narrow
+   it, bootstrap with `--cloudformation-execution-policies` set to a policy covering S3,
+   CloudFront and IAM.
+3. Deploy the storage and model stacks once by hand, or let the first dev and production
+   deploys do it (`deploy.yml` creates them):
+
+   ```sh
+   bunx cdk deploy AskCallsStorage-dev AskCallsStorage-prod AskCallsModels
+   ```
+
+   `AskCallsModels` prints `ModelsUrl` (`https://<id>.cloudfront.net`, or the custom domain):
+   that is `EMBEDDING_MODEL_URL`. A dev deploy skips the model publish with a notice until the
+   first production deploy (or this command) has created the stack.
+4. Access keys for the app users, created by hand, never in CDK outputs or GitHub. One per
+   environment, straight into Vercel (table below):
+
+   ```sh
+   aws iam create-access-key --user-name askcalls-app-prod   # → Vercel Production
+   aws iam create-access-key --user-name askcalls-app-dev    # → Vercel Preview (all, and branch dev)
+   ```
+
+   The dev key can't touch `askcalls-prod`. To rotate: create a second key, update Vercel,
+   redeploy, then `aws iam delete-access-key --user-name <user> --access-key-id <old>`.
+5. Check CORS once a preview exists (S3 allows one `*` per origin, and `askcalls-*.vercel.app`
+   covers both the deployment and the branch URLs of the `askcalls` project). A preflight must
+   echo the preview's origin back:
+
+   ```sh
+   curl -si -X OPTIONS "https://askcalls-dev.s3.eu-central-1.amazonaws.com/probe" \
      -H "Origin: https://<a-preview-url>" -H "Access-Control-Request-Method: PUT" \
      -H "Access-Control-Request-Headers: content-type" | grep -i access-control-allow-origin
    ```
 
-   If R2 doesn't match the pattern, recordings fail in previews; everything else works.
-   (`checkCorsByPreflight` in `@askcalls/adapter-blob-s3` runs the same check from code.)
-3. API tokens (R2 → Manage API tokens), **one per bucket**, "Object Read & Write" scoped to that
-   bucket only:
-   - `askcalls-prod` → Vercel Production only.
-   - `askcalls-dev` (the non-prod key, which can't touch production) → Vercel Preview, and the
-     GitHub `preview` environment for blob cleanup.
-4. The S3 endpoint is `https://<account-id>.eu.r2.cloudflarestorage.com` (the `.eu.` host for
-   EU-jurisdiction buckets); region `auto`.
-5. The embedding model has its own public bucket, `askcalls-models`, on the custom domain
-   `models.askcalls.com`, with a Cache Rule and CORS for GET/HEAD. Publish each model build
-   with `bun run models:publish` before deploying the code that pins it. Browsers verify every
-   file's SHA-256 before using it, so the bucket needs no access control.
-   Full steps: [`scripts/models/README.md`](../scripts/models/README.md).
+   (`checkBucketCors` and `checkCorsByPreflight` in `@askcalls/adapter-blob-s3` run the same
+   checks from code.)
+6. Optional, recommended: the model CDN on `models.askcalls.com` (the agent's default model
+   host when an instance doesn't say). Request a certificate for it in ACM in **us-east-1**
+   (CloudFront only reads certificates there), DNS-validated with the CNAME ACM gives you. Then
+   set `askcalls:modelsDomain` (`models.askcalls.com`) and `askcalls:modelsCertificateArn` in
+   `infra/cdk.json`, deploy `AskCallsModels`, and add a CNAME `models` → the
+   `DistributionDomain` output at the domain's DNS provider (DNS only, no proxying). Until then
+   use the CloudFront domain.
+7. The embedding model: `deploy.yml` runs `bun run models:publish` on every deploy (dev and
+   production) after the CDK step, with the deploy role; it publishes a build only when the
+   pinned one is missing, then reads every file back through `ModelsUrl` and checks its hash,
+   `Cache-Control` and CORS. Browsers verify every file's SHA-256 before using it. Manual
+   publishing and the details: [`scripts/models/README.md`](../scripts/models/README.md).
 
 ### 3. Vercel
 
@@ -211,10 +272,10 @@ Atlantic round trip on every query.
    | `DB_DRIVER` | `postgres` | — (set per deploy) | `postgres` |
    | `DATABASE_URL` | `main`, pooled | — (set per deploy) | `dev` branch, pooled |
    | `BLOB_DRIVER` | `s3` | `s3` | `s3` |
-   | `S3_ENDPOINT` | `https://<account-id>.eu.r2.cloudflarestorage.com` | same | same |
-   | `S3_REGION` | `auto` | `auto` | `auto` |
+   | `S3_ENDPOINT` | — (unset: AWS S3) | — | — |
+   | `S3_REGION` | `eu-central-1` | `eu-central-1` | `eu-central-1` |
    | `S3_BUCKET` | `askcalls-prod` | `askcalls-dev` | `askcalls-dev` |
-   | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | prod bucket token | dev bucket token | dev bucket token |
+   | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | `askcalls-app-prod` access key | `askcalls-app-dev` access key | `askcalls-app-dev` access key |
    | `S3_KEY_PREFIX` | — (unset) | — (set per deploy: `preview/pr-<n>/`) | `dev/` |
    | `TRANSCRIPTION_PROVIDER` | `elevenlabs` | `elevenlabs` (overridden to `mock` per deploy without `real-providers`) | `elevenlabs` |
    | `ELEVENLABS_API_KEY` | prod key | non-prod key | non-prod key |
@@ -223,7 +284,7 @@ Atlantic round trip on every query.
    | `ANTHROPIC_API_KEY` | prod key | non-prod key | non-prod key |
    | `CRON_SECRET` | required (`openssl rand -base64 32`) | — | — |
    | `TELEMETRY` | `none`, or the backends in use (content-free) | `none` | `none` |
-   | `EMBEDDING_MODEL_URL` | `https://models.askcalls.com` | same | same |
+   | `EMBEDDING_MODEL_URL` | `ModelsUrl` of `AskCallsModels`: `https://models.askcalls.com` with the custom domain, else `https://<id>.cloudfront.net` | same | same |
    | `ASKCALLS_SKIP_MODEL_DOWNLOAD` | `1` | `1` | `1` |
 
    - `ASKCALLS_HOSTED=true` only in production: it locks the instance config, hides the offline
@@ -232,6 +293,8 @@ Atlantic round trip on every query.
      match, but a set variable also locks the setting in `/admin/instance`.
    - `SCHEDULER` can stay unset: on Vercel it defaults to `vercel-cron`.
    - Never set `AUTH_TEST_PROVIDER` on Vercel; the test provider is for E2E only.
+   - `S3_REGION` is required with AWS: the CSP's `connect-src` and the presigned URLs use the
+     regional virtual-hosted endpoint (`https://askcalls-prod.s3.eu-central-1.amazonaws.com`).
 
 ### 4. GitHub
 
@@ -239,16 +302,21 @@ Atlantic round trip on every query.
    for feature pull requests.
 2. Repository variables (Settings → Secrets and variables → Actions → Variables):
    `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `NEON_PROJECT_ID`, `NEON_PREVIEW_PARENT_BRANCH` (`dev`),
-   `DEV_DOMAIN` (host only, e.g. `dev.askcalls.com`).
+   `DEV_DOMAIN` (host only, e.g. `dev.askcalls.com`), `AWS_REGION` (`eu-central-1`),
+   `AWS_DEPLOY_ROLE_ARN` and `AWS_PREVIEW_CLEANUP_ROLE_ARN` (the `AskCallsGithubDeploy`
+   outputs). Role ARNs are not secret; GitHub holds no AWS keys.
 3. Environments (Settings → Environments), each with secrets:
 
    | Environment | Deployment branches | Secrets |
    |---|---|---|
-   | `preview` | any | `NEON_API_KEY`, `VERCEL_TOKEN`, `S3_ENDPOINT`, `S3_BUCKET` (`askcalls-dev`), `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (the dev bucket token, for cleanup on close) |
+   | `preview` | any | `NEON_API_KEY`, `VERCEL_TOKEN` |
    | `dev` | `dev` only | `DATABASE_URL` (`dev` branch, **direct**), `VERCEL_TOKEN` |
    | `production` | `master` only | `DATABASE_URL` (`main`, **direct**), `VERCEL_TOKEN` |
 
-   `DATABASE_URL` here only runs migrations; the app's pooled URL is in Vercel.
+   `DATABASE_URL` here only runs migrations; the app's pooled URL is in Vercel. The environment
+   names matter: `askcalls-github-deploy` trusts only `dev` and `production` (either
+   capitalization), `askcalls-github-preview-cleanup` only `preview`. The preview environment no
+   longer needs the `S3_*` secrets the R2 setup used; delete them.
 4. Repository secret `NPM_TOKEN`: an npm automation token for the `askcalls` package, used by
    `release.yml`. Without it a release skips the npm publish and says so. The workflow publishes
    GHCR images with its own `GITHUB_TOKEN` (`packages: write`); make the package public under the

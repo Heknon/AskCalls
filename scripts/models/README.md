@@ -26,7 +26,7 @@ the wire with gzip.
 | `onnx-rows.ts` | Rewrites one initializer of an ONNX protobuf to a subset of its rows. |
 | `prune-e5.ts` | The pruning: model rows, tokenizer remap, `config.json`, manifest, build hash. |
 | `build-e5.ts` | `bun run models:build [outDir]`: original files + keep-set → `<outDir>/<build>/`. |
-| `publish.ts` | `bun run models:publish`: uploads a build to the model bucket. |
+| `publish.ts` | `bun run models:publish`: uploads a build to the model bucket (skips it when already there). |
 | `source.ts`, `files.ts` | Pinned download of the original files into `node_modules/.cache/askcalls-models`. |
 
 ## Toolchain
@@ -109,8 +109,8 @@ different order and is not bit-identical to either.
   downloads a published build from `EMBEDDING_MODEL_URL` when that is set at build time,
   otherwise it builds it from the original model (downloaded once from Hugging Face, or
   `ASKCALLS_MODEL_MIRROR`), and checks every file against `assets.ts`.
-- **Model host (hosted site):** set `EMBEDDING_MODEL_URL` to the bucket's base URL, e.g.
-  `https://models.askcalls.com`. The value is instance config (ConfigService), rendered into
+- **Model host (hosted site):** set `EMBEDDING_MODEL_URL` to the model CDN's base URL, e.g.
+  `https://models.askcalls.com` (CloudFront in front of `askcalls-models`, below). The value is instance config (ConfigService), rendered into
   `/app` pages as `<meta name="askcalls-embedding-model-url">`, so one build serves any
   instance. The CSP's `connect-src` gets that one origin; offline mode ignores the setting and
   always serves the model from the app. ONNX Runtime's JS and WebAssembly stay same-origin.
@@ -137,51 +137,54 @@ Vercel builds for an instance with `EMBEDDING_MODEL_URL` should set
 2. `bun run models:build`: prints the manifest.
 3. Copy the build hash, keep-set hash/rows and file pins into `apps/web/src/client/assets.ts`
    and `apps/agent/src/adapters/model-files.ts` (tests check they agree).
-4. `bun run models:publish`, then deploy. Old builds stay in the bucket, so pages still running
-   the previous version keep working.
+4. Deploy. `deploy.yml` runs `bun run models:publish` before the app goes live, on dev and on
+   production, so the CDN has the new build before any page pins it. Old builds stay in the
+   bucket, so pages still running the previous version keep working.
 
-## One-time R2 setup
+## Hosted setup: S3 and CloudFront
 
-1. **Bucket.** Cloudflare dashboard → R2 → Create bucket `askcalls-models` (EU jurisdiction if
-   you want it next to the other buckets; the contents are public weights, no user data).
-2. **Public access.** Bucket → Settings → Custom Domains → Connect Domain → `models.askcalls.com`
-   (the zone must be on Cloudflare). Don't use the `r2.dev` URL in production: it is
-   rate-limited and not cached.
-3. **Edge caching.** Cloudflare only caches some extensions by default, not `.onnx`. Add a Cache
-   Rule on the zone: hostname equals `models.askcalls.com` → Eligible for cache, Edge TTL "Use
-   cache-control header if present". Objects carry `Cache-Control: public, max-age=31536000,
-   immutable` and `Content-Encoding: gzip` (set by `models:publish`).
-4. **CORS.** Bucket → Settings → CORS policy:
+The hosted site serves the model from the `AskCallsModels` stack in [`infra/`](../../infra)
+(docs/deployment.md, AWS): a private bucket `askcalls-models` in `eu-central-1` that only a
+CloudFront distribution reads, through origin access control. Nothing here is set up by hand
+except the optional custom domain.
 
-   ```json
-   [
-     {
-       "AllowedOrigins": ["https://askcalls.com", "https://<DEV_DOMAIN>"],
-       "AllowedMethods": ["GET", "HEAD"],
-       "ExposeHeaders": ["Content-Length", "Content-Encoding"],
-       "MaxAgeSeconds": 86400
-     }
-   ]
-   ```
+- **Caching.** Objects carry `Cache-Control: public, max-age=31536000, immutable` and
+  `Content-Encoding: gzip` (set by `models:publish`). The distribution's cache policy honors the
+  origin's Cache-Control (min TTL 0, max TTL one year), has no headers, cookies or query strings
+  in the key, and compression on; CloudFront passes the stored gzip through as is.
+- **CORS.** A response-headers policy answers `Access-Control-Allow-Origin: *` for GET and HEAD
+  and exposes `Content-Length` and `Content-Encoding`. The files are public weights fetched
+  without credentials, and every file's SHA-256 is pinned in the app, so any origin (including
+  random preview URLs) may read them.
+- **Domain.** `ModelsUrl` (a stack output) is `https://<id>.cloudfront.net`, or
+  `https://models.askcalls.com` once `askcalls:modelsDomain` and `askcalls:modelsCertificateArn`
+  (an ACM certificate in us-east-1) are set in `infra/cdk.json` and DNS has a CNAME to the
+  distribution. The agent defaults to `https://models.askcalls.com` when an instance doesn't
+  say, so the custom domain is worth setting up.
+- **App env.** In Vercel (production, preview, dev): `EMBEDDING_MODEL_URL=<ModelsUrl>` and
+  `ASKCALLS_SKIP_MODEL_DOWNLOAD=1`.
+- **Publishing.** Automatic: `deploy.yml` runs `models:publish` with the GitHub deploy role
+  (it may write only `askcalls-models/e5-pruned/*`) and checks every file through `ModelsUrl`.
+  When every pinned file is already there with its hash, the script skips the build and
+  costs a few HEAD requests.
 
-   Vercel preview URLs are not known in advance; since the files are public and fetched without
-   credentials, `"AllowedOrigins": ["*"]` is also acceptable.
-5. **Upload token.** R2 → Manage R2 API Tokens → Create token, Object Read & Write, limited to
-   `askcalls-models`. Keep the access key id and secret for step 7 (a GitHub Actions secret if
-   publishing from CI).
-6. **App env.** In Vercel (production, preview, dev): `EMBEDDING_MODEL_URL=https://models.askcalls.com`
-   and `ASKCALLS_SKIP_MODEL_DOWNLOAD=1`.
-7. **Publish** each new build before deploying the code that pins it:
+To publish by hand (with AWS credentials that may write the bucket, e.g. `AWS_PROFILE`):
 
-   ```sh
-   MODELS_S3_ENDPOINT=https://<account id>.r2.cloudflarestorage.com \
-   MODELS_S3_BUCKET=askcalls-models \
-   MODELS_S3_ACCESS_KEY_ID=… MODELS_S3_SECRET_ACCESS_KEY=… \
-   MODELS_PUBLIC_URL=https://models.askcalls.com \
-   MODELS_CHECK_ORIGINS=https://askcalls.com,https://<DEV_DOMAIN> \
-   bun run models:publish
-   ```
+```sh
+MODELS_S3_BUCKET=askcalls-models MODELS_S3_REGION=eu-central-1 \
+MODELS_PUBLIC_URL=https://models.askcalls.com \
+MODELS_CHECK_ORIGINS=https://askcalls.com,https://<DEV_DOMAIN> \
+bun run models:publish
+```
 
-   (`https://<account id>.eu.r2.cloudflarestorage.com` for an EU-jurisdiction bucket.) With
-   `MODELS_PUBLIC_URL` the script fetches every file back through the public domain and checks
-   its hash, `Cache-Control` and CORS for each origin.
+With `MODELS_PUBLIC_URL` the script fetches every file back through the CDN and checks its hash,
+`Cache-Control` and CORS for each origin.
+
+### Other hosts
+
+Any S3-compatible bucket with a public URL works (self-hosters: Cloudflare R2, MinIO, Backblaze
+B2). Give it `Cache-Control`-honoring caching and CORS for GET/HEAD, then publish with
+`MODELS_S3_ENDPOINT` (e.g. `https://<account id>.r2.cloudflarestorage.com`; region `auto` by
+default) and an access key (`MODELS_S3_ACCESS_KEY_ID`, `MODELS_S3_SECRET_ACCESS_KEY`) limited to
+that bucket. On R2, connect a custom domain (not the rate-limited `r2.dev` URL) and add a Cache
+Rule, since Cloudflare doesn't cache `.onnx` by default.
