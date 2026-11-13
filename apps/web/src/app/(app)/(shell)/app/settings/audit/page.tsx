@@ -82,7 +82,7 @@ function Filter<T extends string>({
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={(v) => onChange(v as T)}>
-        <SelectTrigger id={id} className={className ?? 'w-40'}>
+        <SelectTrigger id={id} className={className ?? 'w-36'}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -172,12 +172,12 @@ export default function AuditSettingsPage() {
   return (
     <SectionScreen section="audit">
       <SettingsSection title={t('filters')}>
-        <div className="flex flex-wrap gap-4 py-3">
+        <div className="flex flex-wrap gap-3 py-3">
           <Filter
             label={t('action')}
             value={action}
             onChange={setAction}
-            className="w-56"
+            className="w-48"
             options={[
               { value: 'any' as const, label: t('anyAction') },
               ...ACTIONS.map((a) => ({ value: a, label: t(`actions.${a}`) })),
