@@ -1,16 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { isMarketingPath } from './app/(marketing)/_data/routes';
-import { directOrigins, readDirectCookie, rewriteConnectSrc } from './client/direct-origins';
+import { directOrigins, readDirectCookie } from './client/direct-origins';
 import { enabledProviders } from './server/auth/config';
 import { readSessionUserId } from './server/auth/secret';
 import { getConfigService, getContainer, getSetupToken } from './server/container';
-import {
-  appCsp,
-  DIRECT_PROVIDER_ORIGINS,
-  MARKETING_HEADER,
-  newNonce,
-  publicCsp,
-} from './server/http/csp';
+import { appCsp, MARKETING_HEADER, newNonce, publicCsp } from './server/http/csp';
 
 /**
  * - /app/** and /admin/**: require a session (redirect to /login), /admin/** also the admin role;
@@ -92,16 +86,10 @@ export async function middleware(req: NextRequest) {
   }
 
   const nonce = newNonce();
-  const direct = container.config.config.offlineMode
-    ? []
-    : directOrigins(
-        readDirectCookie((n) => req.cookies.get(n)?.value, req.nextUrl.protocol === 'https:'),
-      );
-  const csp = rewriteConnectSrc(
-    appCsp(container.config.config, nonce, container.config.environment),
-    DIRECT_PROVIDER_ORIGINS,
-    direct,
+  const direct = directOrigins(
+    readDirectCookie((n) => req.cookies.get(n)?.value, req.nextUrl.protocol === 'https:'),
   );
+  const csp = appCsp(container.config.config, nonce, container.config.environment, direct);
   const res = withCsp(req, nonce, csp);
   res.headers.set('Cache-Control', 'no-store');
   return res;

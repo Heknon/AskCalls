@@ -33,11 +33,6 @@ export const PROVIDER_ORIGINS: Readonly<Record<string, readonly string[]>> = {
   google: ['https://generativelanguage.googleapis.com'],
 };
 
-/** Every origin `PROVIDER_ORIGINS` names. */
-export const ALL_PROVIDER_ORIGINS: readonly string[] = [
-  ...new Set(Object.values(PROVIDER_ORIGINS).flat()),
-];
-
 const MAX_CUSTOM_ORIGINS = 4;
 
 export interface DirectAccess {
@@ -89,26 +84,4 @@ export function parseDirectCookie(value: string | null | undefined): DirectAcces
 export function directOrigins(cookie: string | null | undefined): string[] {
   const a = parseDirectCookie(cookie);
   return [...new Set([...a.providers.flatMap((p) => PROVIDER_ORIGINS[p]!), ...a.origins])];
-}
-
-/**
- * Rewrites `connect-src` in a CSP: drops every origin in `remove`, then adds `add`. Other
- * directives are untouched.
- */
-export function rewriteConnectSrc(
-  csp: string,
-  remove: readonly string[],
-  add: readonly string[],
-): string {
-  return csp
-    .split('; ')
-    .map((d) => {
-      if (!d.startsWith('connect-src ')) return d;
-      const kept = d
-        .slice('connect-src '.length)
-        .split(' ')
-        .filter((s) => s && !remove.includes(s));
-      return `connect-src ${[...new Set([...kept, ...add])].join(' ')}`;
-    })
-    .join('; ');
 }
