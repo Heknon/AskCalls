@@ -20,7 +20,7 @@ export async function buildBlobStore(config: InstanceConfig): Promise<BlobStore>
     case 'memory':
       return new MemoryBlobStore();
     case 's3': {
-      const { bucket, endpoint, region, accessKeyId, secretAccessKey } = config.blob.s3;
+      const { bucket, endpoint, region, accessKeyId, secretAccessKey, keyPrefix } = config.blob.s3;
       if (!bucket) throw new Error('S3_BUCKET: required when BLOB_DRIVER=s3');
       return new S3BlobStore({
         bucket,
@@ -28,6 +28,7 @@ export async function buildBlobStore(config: InstanceConfig): Promise<BlobStore>
         ...(region ? { region } : {}),
         ...(accessKeyId ? { accessKeyId } : {}),
         ...(secretAccessKey ? { secretAccessKey } : {}),
+        ...(keyPrefix ? { keyPrefix } : {}),
       });
     }
     case 'fs':

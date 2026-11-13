@@ -6,7 +6,7 @@ The design engineers build from. Start with the design language, then the screen
 | --- | --- |
 | [`design-language.md`](design-language.md) | The consistency reference: layer model (primitives → product components → screens), meaning-based component catalog, no-duplication rules, colour/type/icon/motion roles, voice and copy rules, and the screen → component map |
 | [`design-system.md`](design-system.md) | Principles, app shell, palettes with checked WCAG contrast ratios, type scale, spacing, radii, elevation, motion, iconography, RTL rules, focus and state patterns, keyboard shortcuts, copy glossary, shadcn/ui inventory |
-| [`tokens.css`](tokens.css) | Tailwind v4 tokens (`@theme`, `@theme inline`, `:root`, `.dark`, `:lang(he)`, reduced motion). Compiled with Tailwind 4.3.5 to confirm it is valid. Copy into `packages/ui` |
+| [`tokens.css`](../../packages/ui/src/styles/tokens.css) | Tailwind v4 tokens (`@theme`, `@theme inline`, `:root`, `.dark`, `:lang(he)`, reduced motion), in `packages/ui/src/styles` and exported as `@askcalls/ui/styles.css` |
 | [`screens.md`](screens.md) | Every screen: purpose, layout (desktop and mobile), states, interactions, keyboard, and message keys with English and Hebrew copy |
 | [`research.md`](research.md) | What we studied (search, encrypted apps, passkeys, transcripts, AI panels, uploads, provider settings, setup wizards, RTL, accessibility, marketing), with sources and the decisions D1 to D54 |
 | [`mocks/index.html`](mocks/index.html) | 17 self-contained HTML mocks with light/dark and English/Hebrew toggles, responsive to mobile. Each element that is a catalog component carries `data-component` |

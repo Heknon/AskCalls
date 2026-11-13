@@ -1,6 +1,6 @@
 # AskCalls design system (R1)
 
-The rules engineers build from. Token values live in [`tokens.css`](tokens.css); this document explains them. Decision numbers (D1, D2, ...) refer to [`research.md`](research.md).
+The rules engineers build from. Token values live in [`tokens.css`](../../packages/ui/src/styles/tokens.css); this document explains them. Decision numbers (D1, D2, ...) refer to [`research.md`](research.md).
 
 Contents
 

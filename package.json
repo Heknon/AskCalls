@@ -30,8 +30,10 @@
     "@biomejs/biome": "2.6.7",
     "@types/node": "26.6.6",
     "dependency-cruiser": "18.7.2",
+    "neonctl": "8.13.2",
     "turbo": "2.11.11",
     "typescript": "5.9.3",
+    "vercel": "65.8.0",
     "vitest": "5.1.0"
   }
 }

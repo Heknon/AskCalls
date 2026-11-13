@@ -136,6 +136,34 @@ describe('S3BlobStore operations (stubbed client)', () => {
     expect(dels.map((d) => d.input.Delete?.Objects?.length)).toEqual([2, 1]);
   });
 
+  it('keeps every operation inside the key prefix', async () => {
+    const client = new S3Client({ region: 'us-east-1', credentials: creds });
+    const keys: unknown[] = [];
+    client.send = (async (cmd: { input: { Key?: string; Prefix?: string } }) => {
+      keys.push(cmd.input.Key ?? cmd.input.Prefix);
+      if (cmd instanceof ListObjectsV2Command)
+        return { Contents: [{ Key: `${cmd.input.Prefix}1` }] };
+      if (cmd instanceof DeleteObjectsCommand) return {};
+      return { ContentLength: 1 };
+    }) as S3Client['send'];
+    const store = new S3BlobStore({ bucket: 'b', client, keyPrefix: 'preview/pr-12/' });
+    await store.put('u1/rec', new Uint8Array(1));
+    await store.size('u1/rec');
+    await store.delete('u1/rec');
+    expect(await store.deletePrefix('u1/')).toBe(1);
+    // An empty prefix inside a store with a key prefix clears only that prefix (preview cleanup).
+    expect(await store.deletePrefix('')).toBe(1);
+    expect(keys).toEqual([
+      'preview/pr-12/u1/rec',
+      'preview/pr-12/u1/rec',
+      'preview/pr-12/u1/rec',
+      'preview/pr-12/u1/',
+      undefined,
+      'preview/pr-12/',
+      undefined,
+    ]);
+  });
+
   it('fails deletePrefix when some deletions fail', async () => {
     const { store } = stubbed((cmd) => {
       if (cmd instanceof ListObjectsV2Command) return { Contents: [{ Key: 'p/1' }] };
