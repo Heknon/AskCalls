@@ -104,5 +104,13 @@
     "change": "Change provider: Settings → Providers",
     "cancel": "Cancel",
     "send": "Send and ask"
+  },
+  "lang": {
+    "label": "Transcript language",
+    "original": "Original",
+    "sideBySide": "Side by side",
+    "machine": "Machine translation by {provider}. Names and numbers are kept as said; check the original when it matters.",
+    "single": "This call is in one language only. Add a translation rule in Settings → Providers.",
+    "column": "Transcript in {language}"
   }
 }

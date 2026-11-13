@@ -7,6 +7,7 @@ export type QueueState =
   | 'queued'
   | 'decoding'
   | 'transcribing'
+  | 'translating'
   | 'indexing'
   | 'encrypting'
   | 'uploading'
@@ -27,6 +28,7 @@ export type QueueItemStatusProps = {
 const working = new Set<QueueState>([
   'decoding',
   'transcribing',
+  'translating',
   'indexing',
   'encrypting',
   'uploading',

@@ -79,7 +79,14 @@ export function buildAuthConfig(container: Container): NextAuthConfig {
   for (const p of enabledProviders(resolved)) {
     switch (p.id) {
       case 'google':
-        providers.push(Google({ clientId: auth.google.id!, clientSecret: auth.google.secret! }));
+        providers.push(
+          Google({
+            clientId: auth.google.id!,
+            clientSecret: auth.google.secret!,
+            // Otherwise Google reuses the browser's Google session and the user can't switch accounts.
+            authorization: { params: { prompt: 'select_account' } },
+          }),
+        );
         break;
       case 'google-one-tap':
         providers.push(

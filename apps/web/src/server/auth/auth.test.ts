@@ -185,6 +185,26 @@ describe('sign-in configuration', () => {
     expect(testProviderEnabled(resolve({ NODE_ENV: 'test', ASKCALLS_HOSTED: 'true' }))).toBe(false);
   });
 
+  it('asks Google which account to use on every sign-in', () => {
+    const config = resolve({
+      NODE_ENV: 'test',
+      AUTH_SECRET: 's'.repeat(32),
+      AUTH_PROVIDERS: 'google',
+      AUTH_GOOGLE_ID: 'gid',
+      AUTH_GOOGLE_SECRET: 'gs',
+    });
+    const auth = buildAuthConfig({
+      config,
+      ports: makeTestPorts(),
+      restartRequired: [],
+      close: async () => {},
+    });
+    const google = auth.providers.find(
+      (p) => typeof p !== 'function' && p.id === 'google',
+    ) as unknown as { options: { authorization: { params: { prompt: string } } } };
+    expect(google.options.authorization.params.prompt).toBe('select_account');
+  });
+
   it('builds a JWT config with the redirect proxy for previews', () => {
     const config = resolve({
       NODE_ENV: 'test',

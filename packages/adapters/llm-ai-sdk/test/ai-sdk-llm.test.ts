@@ -1,5 +1,8 @@
-import { ASK_SYSTEM_PROMPT, wrapTranscript } from '@askcalls/domain';
-import { describeLlmProviderContract } from '@askcalls/domain/contracts/providers';
+import { ASK_SYSTEM_PROMPT, TRANSLATE_SYSTEM_PROMPT, wrapTranscript } from '@askcalls/domain';
+import {
+  describeLlmProviderContract,
+  LLM_CONTRACT_SEGMENTS,
+} from '@askcalls/domain/contracts/providers';
 import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
@@ -27,6 +30,20 @@ function mockModel(deltas: string[]) {
   });
 }
 
+/** A model whose non-streaming replies are `replies`, in turn. */
+function replyModel(replies: string[]) {
+  let i = 0;
+  return new MockLanguageModelV4({
+    doGenerate: async () => ({
+      content: [{ type: 'text', text: replies[Math.min(i++, replies.length - 1)]! }],
+      finishReason: { unified: 'stop', raw: 'end_turn' },
+      usage,
+      warnings: [],
+    }),
+    doStream: mockModel(['The ', 'price ', 'was 1,250.']).doStream,
+  });
+}
+
 async function collect(it: AsyncIterable<string>) {
   const out: string[] = [];
   for await (const c of it) out.push(c);
@@ -38,8 +55,56 @@ describeLlmProviderContract('ai-sdk (mock model)', {
     new AiSdkLlmProvider({
       provider: 'anthropic',
       apiKey: 'k',
-      languageModel: mockModel(['The ', 'price ', 'was 1,250.']),
+      languageModel: replyModel([JSON.stringify(LLM_CONTRACT_SEGMENTS.map((s) => `[he] ${s}`))]),
     }),
+});
+
+describe('AiSdkLlmProvider.translate', () => {
+  it('sends the translation prompt with the segments wrapped as untrusted data', async () => {
+    const model = replyModel(['["שלום", "המחיר 1,250"]']);
+    const llm = new AiSdkLlmProvider({ provider: 'anthropic', apiKey: 'k', languageModel: model });
+    const out = await llm.translate({
+      segments: ['Hello', 'The price is 1,250'],
+      source: 'en',
+      target: 'he',
+    });
+    expect(out).toEqual(['שלום', 'המחיר 1,250']);
+    const call = model.doGenerateCalls[0]!;
+    expect(call.prompt[0]).toEqual({ role: 'system', content: TRANSLATE_SYSTEM_PROMPT });
+    const user = call.prompt[1] as { content: Array<{ text: string }> };
+    expect(user.content[0]!.text).toContain(
+      wrapTranscript(JSON.stringify(['Hello', 'The price is 1,250'])),
+    );
+    expect(call.providerOptions).toEqual({ openai: { store: false } });
+  });
+
+  it('repairs a misaligned reply and batches long inputs', async () => {
+    const model = replyModel(['["one"]', '["a", "b"]', '["c"]']);
+    const llm = new AiSdkLlmProvider({
+      provider: 'anthropic',
+      apiKey: 'k',
+      languageModel: model,
+      translateBatchSegments: 2,
+    });
+    const out = await llm.translate({ segments: ['1', '2', '3'], source: 'en', target: 'he' });
+    expect(out).toEqual(['a', 'b', 'c']);
+    expect(model.doGenerateCalls).toHaveLength(3);
+    expect(model.doGenerateCalls[1]!.prompt).toHaveLength(4);
+  });
+
+  it('reports provider failures without request text', async () => {
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        throw new Error('upstream said: The price is 1,250');
+      },
+    });
+    const llm = new AiSdkLlmProvider({ provider: 'openai', apiKey: 'k', languageModel: model });
+    const err = await llm
+      .translate({ segments: ['The price is 1,250'], source: 'en', target: 'he' })
+      .catch((e) => e);
+    expect(err).toMatchObject({ code: 'provider_error' });
+    expect(JSON.stringify({ m: err.message, d: err.details })).not.toContain('1,250');
+  });
 });
 
 describe('AiSdkLlmProvider', () => {

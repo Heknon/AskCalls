@@ -56,7 +56,7 @@ Every word on screen must earn its place. If removing it loses nothing, remove i
 ## Security rules (non-negotiable)
 
 1. Plaintext never persists server-side: no transcript text, words, names, numbers, tag names, notes or recordings stored unencrypted, logged, cached or sent to telemetry.
-2. Plaintext reaches third parties only per request with consent, in transit: audio via `POST /api/transcribe`, one call via `POST /api/ask`. Those routes stream, never write to disk or blobs, never log bodies.
+2. Plaintext reaches third parties only per request with consent, in transit, through three routes: audio via `POST /api/transcribe`, one call via `POST /api/ask`, and transcripts of the calls the user's translation rules cover via `POST /api/translate` (consent is the rules themselves, set in Settings → Providers and stated on the upload screen; no rules, nothing sent). Those routes stream, never write to disk or blobs, never log bodies. Search queries never leave the device.
 3. Keys never leave a device unwrapped. The server stores wrapped keys and public keys only.
 4. No third-party scripts on `/app/**`. Strict CSP: `script-src 'self' 'wasm-unsafe-eval'`. Next.js needs inline bootstrap scripts, so app routes use a per-request nonce set in middleware, never `'unsafe-inline'`.
 5. Service worker caches the static shell only. Decrypted data lives in memory and is wiped on lock.

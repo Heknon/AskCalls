@@ -1,6 +1,7 @@
 'use client';
 
 import { Onboarding } from '@askcalls/client-core/keys';
+import { DEFAULT_TRANSLATION_RULES } from '@askcalls/client-core/userdata';
 import { GateHeading } from '@askcalls/ui/components/Gate';
 import { Stepper } from '@askcalls/ui/components/Stepper';
 import { Button } from '@askcalls/ui/primitives/button';
@@ -59,6 +60,13 @@ export function OnboardingFlow() {
       deviceKeys: client.deviceKeys,
       deviceLabel,
     });
+    await client.ctx.userData
+      .update('providers', (p) =>
+        p.translation.rules.length
+          ? p
+          : { ...p, translation: { rules: DEFAULT_TRANSLATION_RULES } },
+      )
+      .catch(() => {});
     await refreshMe().catch(() => {});
     setStep('try');
   };

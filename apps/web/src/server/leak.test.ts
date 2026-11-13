@@ -27,6 +27,9 @@ describe('leak test (spec 2 rule 7)', () => {
     const db = h.app.ports.db;
     expect(db.calls.size).toBe(5);
     expect([...db.chunks.values()].flat().length).toBeGreaterThanOrEqual(5);
+    const langs = new Set([...db.chunks.values()].flat().map((c) => c.lang));
+    expect(langs).toEqual(new Set(['en', 'he']));
+    expect(h.app.ports.mockLlm.translated.length).toBeGreaterThanOrEqual(5);
     expect(db.vocab.length).toBeGreaterThan(0);
     expect(db.userData.size).toBeGreaterThanOrEqual(4);
     const recordings = [...db.calls.values()].flatMap((c) => (c.recording ? [c.recording] : []));

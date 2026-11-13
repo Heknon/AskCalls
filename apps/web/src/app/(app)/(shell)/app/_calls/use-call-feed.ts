@@ -20,6 +20,10 @@ export interface FeedItem {
   /** Decrypts once, when first asked (the row renders, a filter needs it). */
   meta: () => Promise<CallMeta>;
   snippet: string | null;
+  /** The snippet's language and chunk when it came from a semantic match. */
+  snippetLang: string | null;
+  snippetTranslated: boolean;
+  snippetOrd: number | null;
   highlights: HighlightRange[];
 }
 
@@ -82,7 +86,14 @@ async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null
       limit: PAGE,
     });
     return {
-      items: res.items.map((r) => ({ ...r, snippet: null, highlights: [] })),
+      items: res.items.map((r) => ({
+        ...r,
+        snippet: null,
+        snippetLang: null,
+        snippetTranslated: false,
+        snippetOrd: null,
+        highlights: [],
+      })),
       nextCursor: res.nextCursor,
       alsoMatched: [],
       forms: [],
@@ -111,6 +122,9 @@ async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null
       hasRecording: r.hasRecording,
       meta: () => Promise.resolve(r.meta),
       snippet: r.snippet,
+      snippetLang: r.snippetLang,
+      snippetTranslated: r.snippetTranslated,
+      snippetOrd: r.snippetOrd,
       highlights: r.highlights,
     })),
     nextCursor: res.nextCursor,

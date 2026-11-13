@@ -22,7 +22,8 @@
     "decrypting": "Decrypting",
     "open": "Open",
     "tags": "Tags",
-    "list": "Calls"
+    "list": "Calls",
+    "fromTranslation": "From the {language} translation"
   },
   "search": {
     "placeholder": "Search names, numbers, tags or words",

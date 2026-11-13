@@ -9,7 +9,6 @@ import {
   transcriptFile,
   updateCallTags,
 } from '@askcalls/client-core/calls';
-import { highlightRanges } from '@askcalls/client-core/search';
 import type { CallMeta } from '@askcalls/domain';
 import { CallActions } from '@askcalls/ui/components/CallActions';
 import { CallHeader } from '@askcalls/ui/components/CallHeader';
@@ -31,6 +30,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { nativeName } from '../../../../../../../client/i18n/language-names';
 import { useNotify } from '../../../../../../../client/notices/notices';
 import { useUnlocked } from '../../../../../../../client/session/session';
 import { useShortcut } from '../../../../../../../client/shortcuts/shortcuts';
@@ -42,8 +42,10 @@ import { contactName, DIRECTION, downloadText, startedAt, tagChips } from '../..
 import { TagDialog } from '../../../_calls/tag-dialog';
 import { useCatalogs } from '../../../_calls/use-catalogs';
 import { useDeleteCall } from '../../../_calls/use-delete';
+import { LanguageBar } from './language-bar';
 import { SidePanel } from './side-panel';
 import { speakerLabels } from './speakers';
+import { ORIGINAL, useTranscriptView } from './transcript-view';
 
 function useBackTarget() {
   const t = useTranslations('call.backTo');
@@ -222,23 +224,31 @@ function CallView({
   }, [ctx, client, initial]);
 
   const forms = back.search?.forms ?? [];
-  const hits = useMemo(() => {
-    const set = new Set(forms);
-    return segments.map((s) =>
-      highlightRanges(s.text, set).map((r) => s.text.slice(r.start, r.end)),
-    );
-  }, [segments, forms]);
-  const hitSegments = useMemo(() => hits.flatMap((h, i) => (h.length ? [i] : [])), [hits]);
+  const tv = useTranscriptView(
+    call,
+    forms,
+    back.search?.matched?.[call.id],
+    catalogs.contacts.map((c) => c.name),
+  );
+  const cols = tv.shown.length;
+  const hitSegments = useMemo(
+    () => segments.flatMap((_, i) => (tv.shown.some((c) => c.hits[i]?.length) ? [i] : [])),
+    [segments, tv.shown],
+  );
   const [hitIndex, setHitIndex] = useState(0);
 
-  const scrollToSegment = useCallback((index: number) => {
-    const el = listRef.current?.children[index] as HTMLElement | undefined;
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, []);
+  const scrollToSegment = useCallback(
+    (index: number) => {
+      const el = listRef.current?.children[index * cols] as HTMLElement | undefined;
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    },
+    [cols],
+  );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once, on the first hit
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, on the matched passage
   useEffect(() => {
-    if (hitSegments.length) scrollToSegment(hitSegments[0]!);
+    const at = tv.startSegment ?? hitSegments[0];
+    if (at !== undefined) scrollToSegment(at);
   }, []);
 
   const gotoHit = (by: number) => {
@@ -253,10 +263,10 @@ function CallView({
 
   useEffect(() => {
     if (follow && playingIndex >= 0 && time > 0) {
-      const el = listRef.current?.children[playingIndex] as HTMLElement | undefined;
+      const el = listRef.current?.children[playingIndex * cols] as HTMLElement | undefined;
       el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  }, [playingIndex, follow, time]);
+  }, [playingIndex, follow, time, cols]);
 
   useEffect(() => {
     const stop = () => setFollow(false);
@@ -508,23 +518,56 @@ function CallView({
         {call.signature.status === 'invalid' ? (
           <Alert tone="destructive">{t('sig.invalidBanner')}</Alert>
         ) : null}
-        <ol ref={listRef} className="m-0 flex list-none flex-col gap-1 p-0">
-          {segments.map((s, i) => (
-            <TranscriptSegment
-              // biome-ignore lint/suspicious/noArrayIndexKey: segments are fixed for the call
-              key={i}
-              speaker={labels[i]!.name}
-              isYou={labels[i]!.isYou}
-              start={s.start}
-              text={s.text}
-              hits={hits[i]}
-              playing={i === playingIndex || i === focused}
-              groupedWithPrevious={i > 0 && s.speaker === segments[i - 1]!.speaker}
-              onSeek={seek}
-              playFromLabel={t('playFrom', { t: formatClock(s.start) })}
-              noRecordingHint={noRecording}
-            />
-          ))}
+        <LanguageBar
+          tv={tv}
+          originalLanguage={meta.language}
+          providers={Object.fromEntries(
+            Object.entries(call.transcript.translations ?? {}).map(([l, x]) => [l, x.provider]),
+          )}
+        />
+        {cols > 1 ? (
+          <div aria-hidden className="grid grid-cols-2 gap-x-4 border-border border-b pb-1">
+            {tv.shown.map((c) => (
+              <p key={c.view} className="px-3.5 font-medium text-muted-foreground text-xs">
+                {c.view === ORIGINAL
+                  ? t('lang.original')
+                  : t('lang.column', { language: nativeName(c.view) })}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        <ol
+          ref={listRef}
+          data-columns={cols}
+          className={
+            cols > 1
+              ? 'm-0 grid list-none grid-cols-2 gap-x-4 gap-y-1 p-0'
+              : 'm-0 flex list-none flex-col gap-1 p-0'
+          }
+        >
+          {segments.flatMap((s, i) =>
+            tv.shown.map((c) => {
+              const seg = c.segments[i] ?? s;
+              return (
+                <TranscriptSegment
+                  // biome-ignore lint/suspicious/noArrayIndexKey: segments are fixed for the call
+                  key={`${c.view}-${i}`}
+                  speaker={labels[i]!.name}
+                  isYou={labels[i]!.isYou}
+                  start={s.start}
+                  text={seg.text}
+                  hits={c.hits[i]}
+                  playing={i === playingIndex || i === focused}
+                  groupedWithPrevious={
+                    cols === 1 && i > 0 && s.speaker === segments[i - 1]!.speaker
+                  }
+                  onSeek={seek}
+                  playFromLabel={t('playFrom', { t: formatClock(s.start) })}
+                  noRecordingHint={noRecording}
+                />
+              );
+            }),
+          )}
         </ol>
         {hasRecording ? (
           <div className="sticky bottom-0 z-10 mt-auto -mx-4 border-border border-t bg-card px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6">

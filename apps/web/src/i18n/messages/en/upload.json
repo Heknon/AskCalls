@@ -60,7 +60,8 @@
     "uploading": "Uploading",
     "done": "Done",
     "duplicate": "Duplicate",
-    "failed": "Failed"
+    "failed": "Failed",
+    "translating": "Translating"
   },
   "reason": {
     "audio_unreadable": "Couldn't decode the audio. The file may be damaged or in an unsupported format.",
@@ -140,5 +141,18 @@
     "planning": "Reading the files",
     "showMore": "Show {n} more",
     "noneInTab": "Nothing here."
+  },
+  "flowTr": {
+    "managed": "Calls your translation rules cover are also translated as they upload: the transcript passes through AskCalls to {provider}, streamed and not stored. No prompt each time; change the rules in Settings → Providers.",
+    "direct": "Calls your translation rules cover are also translated as they upload: the transcript goes from your device straight to {provider} under your account. No prompt each time; change the rules in Settings → Providers.",
+    "off": "No translation rules: calls are kept in their own language only."
+  },
+  "providerLlm": {
+    "anthropic": "Anthropic",
+    "openai": "OpenAI",
+    "google": "Google",
+    "openai-compatible": "OpenAI-compatible server",
+    "mock": "Mock LLM",
+    "managed": "The AI provider"
   }
 }

@@ -16,6 +16,8 @@ export interface LastSearch {
   ids: string[];
   /** The filter query string of the list (`?tag=…`). */
   query: string;
+  /** Per call, the passage that matched: its language and chunk, to open the call there. */
+  matched?: Record<string, { lang: string | null; translated: boolean; ord: number | null }>;
 }
 
 let lastSearch: LastSearch | null = null;

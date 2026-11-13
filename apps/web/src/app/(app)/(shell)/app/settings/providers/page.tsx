@@ -10,13 +10,18 @@ import {
   SelectValue,
 } from '@askcalls/ui/primitives/select';
 import { useLocale, useTranslations } from 'next-intl';
-import { useId, useState } from 'react';
+import { lazy, Suspense, useId, useState } from 'react';
 import { useUnlocked } from '../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../i18n/locales';
 import { AsyncView, useAsync } from '../../../_shell/states';
 import { SectionScreen } from '../_settings/section-screen';
 import { BucketCard } from './_providers/bucket-card';
 import { Field, KeyCard } from './_providers/key-card';
+
+/** The rules editor and its re-index job load after the page: only this card needs them. */
+const TranslationCard = lazy(() =>
+  import('./_providers/translation-card').then((m) => ({ default: m.TranslationCard })),
+);
 
 /** Transcription language hints offered; any provider takes these BCP-47 codes. */
 const LANGUAGES = ['he', 'en', 'ar', 'ru', 'es', 'fr', 'de', 'it', 'pt', 'uk', 'am'] as const;
@@ -120,6 +125,9 @@ export default function ProvidersSettingsPage() {
                 }
                 onSaved={setDoc}
               />
+              <Suspense fallback={null}>
+                <TranslationCard key={p.llm.mode} value={p} onSaved={setDoc} />
+              </Suspense>
               <BucketCard value={p.recordings} onSaved={setDoc} />
             </div>
           );

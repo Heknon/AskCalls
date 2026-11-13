@@ -39,6 +39,8 @@ export interface Ports {
   transcription: TranscriptionProvider | null;
   /** Null when the LLM is Off. */
   llm: LlmProvider | null;
+  /** False when the instance turned translation off; translating also needs `llm`. */
+  translationEnabled: boolean;
   rateLimiter: RateLimiter;
   telemetry: Telemetry;
   billing: BillingProvider;

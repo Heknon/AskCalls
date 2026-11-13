@@ -8,7 +8,7 @@ import { Button } from '@askcalls/ui/primitives/button';
 import { Card } from '@askcalls/ui/primitives/card';
 import { Plus, Replace } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useUnlocked } from '../../../../../../client/session/session';
 import { AsyncView, useAsync } from '../../../_shell/states';
 import { draftKey } from './rule-draft';
@@ -16,6 +16,11 @@ import { SaveIndicator, useSaver } from './shared';
 import { checkGroups, type Group } from './synonyms';
 
 const SAVE_AFTER_MS = 800;
+
+/** Re-indexing runs the whole indexing pipeline: loaded only where it is offered. */
+const ReindexJob = lazy(() =>
+  import('../../_calls/reindex-job').then((m) => ({ default: m.ReindexJob })),
+);
 
 /** T4: words that search as one term. */
 export function SynonymsTab() {
@@ -55,6 +60,9 @@ function Synonyms({ initial }: { initial: SynonymEntry[] }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground">{t('note')}</p>
+      <Suspense fallback={null}>
+        <ReindexJob mode="all" ns="tags.syn.reindex" icon={Replace} />
+      </Suspense>
       <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="outline"

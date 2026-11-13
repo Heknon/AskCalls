@@ -10,6 +10,7 @@ import { and, asc, desc, eq, gte, isNull, lt, lte, or, type SQL, sql } from 'dri
 import { decodeCursor, encodeCursor, pageLimit, tokParam } from '../codec';
 import type { Db, Driver } from '../driver';
 import { calls } from '../schema';
+import { writeChunks } from './chunks';
 import { healthCheck } from './health';
 
 type CallRow = typeof calls.$inferSelect;
@@ -183,6 +184,33 @@ export function createCallRepository(d: Driver): CallRepository {
       if (!r) throw new DomainError('not_found', 'call not found');
       return toCall(r);
     },
+
+    replaceContent: async (userId, id, content, expectedUpdatedAt) =>
+      d.asUser(userId, async (tx) => {
+        const [current] = await tx
+          .select({ updatedAt: calls.updatedAt })
+          .from(calls)
+          .where(and(eq(calls.userId, userId), eq(calls.id, id)))
+          .for('update');
+        if (!current) throw new DomainError('not_found', 'call not found');
+        if (current.updatedAt.getTime() !== expectedUpdatedAt.getTime()) {
+          throw new DomainError('version_conflict', 'call changed since it was read');
+        }
+        // Strictly later, so a read taken before this write never matches again.
+        const updatedAt = new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1));
+        const [r] = await tx
+          .update(calls)
+          .set({
+            transcriptCt: content.transcriptCt,
+            metaCt: content.metaCt,
+            keywordToks: [...content.keywordToks],
+            updatedAt,
+          })
+          .where(and(eq(calls.userId, userId), eq(calls.id, id)))
+          .returning();
+        await writeChunks(tx, userId, id, content.chunks);
+        return toCall(r!);
+      }),
 
     delete: async (userId, id) => {
       // CallChunk rows go with it (ON DELETE CASCADE).

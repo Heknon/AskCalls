@@ -2,9 +2,22 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogle } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import type { HealthResult, LlmAskRequest, LlmProvider } from '@askcalls/domain';
-import { ASK_SYSTEM_PROMPT, DomainError, wrapTranscript } from '@askcalls/domain';
-import { APICallError, type LanguageModel, type ModelMessage, RetryError, streamText } from 'ai';
+import type {
+  GenerateText,
+  HealthResult,
+  LlmAskRequest,
+  LlmProvider,
+  LlmTranslateRequest,
+} from '@askcalls/domain';
+import { ASK_SYSTEM_PROMPT, DomainError, translateAligned, wrapTranscript } from '@askcalls/domain';
+import {
+  APICallError,
+  generateText,
+  type LanguageModel,
+  type ModelMessage,
+  RetryError,
+  streamText,
+} from 'ai';
 
 export const LLM_PROVIDER_IDS = ['anthropic', 'openai', 'google', 'openai-compatible'] as const;
 export type LlmProviderId = (typeof LLM_PROVIDER_IDS)[number];
@@ -35,6 +48,8 @@ export interface AiSdkLlmOptions {
   baseUrl?: string;
   /** Answer length cap. Default 4096 tokens. */
   maxOutputTokens?: number;
+  /** Segments per translation request; longer inputs go in several. Default 40. */
+  translateBatchSegments?: number;
   fetch?: typeof fetch;
   /** Injects a prebuilt model (tests). */
   languageModel?: LanguageModel;
@@ -150,6 +165,43 @@ export class AiSdkLlmProvider implements LlmProvider {
       if (req.signal?.aborted || (e as Error)?.name === 'AbortError') throw abortError();
       throw llmError(this.id, e);
     }
+  }
+
+  /**
+   * Segment-aligned translation (TRANSLATE_SYSTEM_PROMPT, transcript wrapped as untrusted data):
+   * batches of segments, each validated, repaired or split by `translateAligned`.
+   */
+  async translate(req: LlmTranslateRequest): Promise<string[]> {
+    const generate: GenerateText = async ({ system, messages, signal }) => {
+      try {
+        const res = await generateText({
+          model: this.languageModel,
+          instructions: system,
+          messages,
+          maxOutputTokens: this.opts.maxOutputTokens ?? 8192,
+          maxRetries: 1,
+          ...(signal ? { abortSignal: signal } : {}),
+          providerOptions: { openai: { store: false } },
+        });
+        return res.text;
+      } catch (e) {
+        if (signal?.aborted || (e as Error)?.name === 'AbortError') throw abortError();
+        throw llmError(this.id, e);
+      }
+    };
+    const size = Math.max(1, this.opts.translateBatchSegments ?? 40);
+    const out: string[] = [];
+    for (let i = 0; i < req.segments.length; i += size) {
+      out.push(
+        ...(await translateAligned(generate, {
+          segments: req.segments.slice(i, i + size),
+          source: req.source,
+          target: req.target,
+          ...(req.signal ? { signal: req.signal } : {}),
+        })),
+      );
+    }
+    return out;
   }
 
   /** Lists models with the key: proves reachability and auth without spending tokens. */

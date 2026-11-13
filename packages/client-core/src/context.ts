@@ -9,6 +9,7 @@ import {
   type RecordingUploader,
   systemClock,
   type Transcriber,
+  type Translator,
 } from './ports/index';
 import type { KeySession } from './session';
 import { knownIntentIds, TagDirectory } from './tags';
@@ -29,6 +30,8 @@ export interface ClientDeps {
   audio?: AudioCodec;
   /** Managed (`managedTranscriber`) or own-key transcription; absent when transcription is off. */
   transcriber?: Transcriber;
+  /** Managed (`managedTranslator`) or own-key translation; absent when translation is off. */
+  translator?: Translator;
   uploader?: RecordingUploader;
   fetcher?: BlobFetcher;
   ownBuckets?: OwnBucketStore;
@@ -46,6 +49,7 @@ export interface ClientContext extends Required<Pick<ClientDeps, 'api' | 'sessio
   clock: Clock;
   audio: AudioCodec | null;
   transcriber: Transcriber | null;
+  translator: Translator | null;
   uploader: RecordingUploader | null;
   fetcher: BlobFetcher | null;
   ownBuckets: OwnBucketStore | null;
@@ -71,6 +75,7 @@ export function createClientContext(deps: ClientDeps): ClientContext {
     clock: deps.clock ?? systemClock,
     audio: deps.audio ?? null,
     transcriber: deps.transcriber ?? null,
+    translator: deps.translator ?? null,
     uploader: deps.uploader ?? null,
     fetcher: deps.fetcher ?? null,
     ownBuckets: deps.ownBuckets ?? null,

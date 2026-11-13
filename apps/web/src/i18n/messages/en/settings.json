@@ -328,7 +328,10 @@
       "askOff": "Ask about a call is off.",
       "recManaged": "Recordings are kept in the AskCalls bucket, unreadable without your keys.",
       "recOwn": "Recordings and bucket credentials go from your device to your bucket, not through AskCalls.",
-      "recOff": "New recordings aren't backed up. Calls keep their transcripts."
+      "recOff": "New recordings aren't backed up. Calls keep their transcripts.",
+      "trManaged": "When you upload a call your rules cover, its transcript passes through AskCalls servers to {provider} to be translated, streamed and never stored. This happens for every such call, without asking each time.",
+      "trOwn": "When you upload a call your rules cover, its transcript goes from your device straight to {provider} under your account to be translated. AskCalls doesn't see it. This happens for every such call, without asking each time.",
+      "trOff": "No translation rules: calls are kept in their own language only, and nothing is sent to translate."
     },
     "bucket": {
       "endpoint": "Endpoint",
@@ -356,6 +359,41 @@
       "done": "{count, plural, one {# recording moved} other {# recordings moved}}",
       "failed": "{count, plural, one {# recording couldn't be moved. Try again.} other {# recordings couldn't be moved. Try again.}}",
       "keepOpen": "Keep this tab open until it finishes."
+    },
+    "tr": "Translation",
+    "trNeedsLlm": "Translation uses the provider of Ask about a call. Turn that on to translate calls.",
+    "usageTr": "Managed translation this month",
+    "chars": "characters",
+    "backfill": {
+      "title": "Apply to existing calls",
+      "body": "{count, plural, one {# call doesn't match your rules yet. This device can add or remove its translations now.} other {# calls don't match your rules yet. This device can add or remove their translations now.}}",
+      "start": "Apply to existing calls",
+      "resume": "Resume",
+      "progress": "Applying rules: {done} of {total}",
+      "progressLabel": "Applying translation rules",
+      "stop": "Stop",
+      "pause": "Pause",
+      "stopped": "Stopped after {done} of {total}. Resume to apply the rules to the rest.",
+      "done": "{count, plural, one {# call updated} other {# calls updated}}",
+      "untranslated": "{count, plural, one {# call stayed in one language. The translation limit or the provider stopped it; try again later.} other {# calls stayed in one language. The translation limit or the provider stopped them; try again later.}}",
+      "failed": "{count, plural, one {# call couldn't be re-indexed. Try again.} other {# calls couldn't be re-indexed. Try again.}}",
+      "keepOpen": "Keep this tab open while it runs. You can stop and resume later."
+    },
+    "rules": {
+      "label": "Translation rules",
+      "from": "Calls in",
+      "any": "Any other language",
+      "otherLanguages": "other languages",
+      "addTarget": "Add language",
+      "removeTarget": "Stop translating into {language}",
+      "remove": "Remove the rule for {language}",
+      "add": "Add rule",
+      "search": "Search languages",
+      "noLanguage": "No language matches.",
+      "none": "Add a rule to keep calls in more than one language.",
+      "coverage": "{from} calls are also searchable in {to}.",
+      "coverageAny": "Calls in other languages are also searchable in {to}.",
+      "oneWay": "A keyword search in {from} won't find calls held only in {to}; search by meaning still does."
     }
   },
   "priv": {

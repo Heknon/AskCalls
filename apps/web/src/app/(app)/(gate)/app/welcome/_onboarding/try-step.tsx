@@ -137,7 +137,19 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
 
   return (
     <>
-      <GateHeading title={t('title')} description={<p>{t('body')}</p>} />
+      <GateHeading
+        title={t('title')}
+        description={
+          <>
+            <p>{t('body')}</p>
+            <p data-slot="translation-note">
+              {t.rich('translation', {
+                link: (c) => <Link href="/app/settings/providers">{c}</Link>,
+              })}
+            </p>
+          </>
+        }
+      />
       {!imported ? (
         <div className="flex flex-col gap-3">
           {importFailed ? (

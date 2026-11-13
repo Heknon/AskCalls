@@ -66,6 +66,7 @@ export async function buildContainer(
     blobs,
     transcription,
     llm,
+    translationEnabled: config.llm.translation,
     telemetry,
     billing: noBilling,
     scheduler,

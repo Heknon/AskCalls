@@ -5,6 +5,7 @@ import type {
   HealthResult,
   IdGenerator,
   LlmProvider,
+  LlmTranslateRequest,
   PresignedRequest,
   RateLimiter,
   Telemetry,
@@ -104,11 +105,53 @@ export class MockTranscriptionProvider implements TranscriptionProvider {
   }
 }
 
-/** Streams a fixed, content-free answer word by word. */
+/**
+ * The mock translator's whole vocabulary: deterministic, so tests can search one language and
+ * find a call in the other. Words it does not know pass through unchanged, like names and numbers.
+ */
+export const MOCK_DICTIONARY: ReadonlyArray<readonly [string, string]> = [
+  ['hello', 'שלום'],
+  ['price', 'מחיר'],
+  ['order', 'הזמנה'],
+  ['delivery', 'משלוח'],
+  ['contract', 'חוזה'],
+  ['refrigerators', 'מקררים'],
+  ['branch', 'סניף'],
+  ['tuesday', 'שלישי'],
+  ['thursday', 'חמישי'],
+  ['morning', 'בוקר'],
+  ['quote', 'הצעה'],
+  ['roof', 'גג'],
+  ['warehouse', 'מחסן'],
+  ['panels', 'פאנלים'],
+  ['installation', 'התקנה'],
+  ['company', 'חברה'],
+  ['customer', 'לקוח'],
+  ['invoice', 'חשבונית'],
+  ['meeting', 'פגישה'],
+  ['yes', 'כן'],
+];
+
+const EN_HE = new Map(MOCK_DICTIONARY.map(([en, he]) => [en, he]));
+const HE_EN = new Map(MOCK_DICTIONARY.map(([en, he]) => [he, en]));
+const HE_PREFIX = /^[והבלמשכ]/;
+
+/** English ↔ Hebrew by the dictionary; other targets keep every word (names-and-numbers style). */
+function mockTranslateWord(word: string, target: string): string {
+  if (target === 'he') return EN_HE.get(word.toLowerCase()) ?? word;
+  if (target !== 'en') return word;
+  const direct = HE_EN.get(word);
+  if (direct) return direct;
+  if (word.length > 3 && HE_PREFIX.test(word)) return HE_EN.get(word.slice(1)) ?? word;
+  return word;
+}
+
+/** Streams a fixed, content-free answer word by word; translates with `MOCK_DICTIONARY`. */
 export class MockLlmProvider implements LlmProvider {
   readonly id = 'mock';
   readonly model = 'mock-1';
   readonly asked: Array<{ questionLength: number; transcriptLength: number }> = [];
+  readonly translated: Array<{ segments: number; target: string }> = [];
   constructor(private answer = 'This is a mock answer based on the call transcript.') {}
   healthCheck = ok;
   async *ask(req: { question: string; transcriptText: string }) {
@@ -117,6 +160,12 @@ export class MockLlmProvider implements LlmProvider {
       transcriptLength: req.transcriptText.length,
     });
     for (const word of this.answer.split(/(?<= )/)) yield word;
+  }
+  async translate(req: LlmTranslateRequest): Promise<string[]> {
+    this.translated.push({ segments: req.segments.length, target: req.target });
+    return req.segments.map((s) =>
+      s.replace(/[\p{L}\p{M}']+/gu, (w) => mockTranslateWord(w, req.target)),
+    );
   }
 }
 

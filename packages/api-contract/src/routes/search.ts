@@ -30,6 +30,8 @@ export const SearchHitSchema = z.object({
   starred: z.boolean().nullable(),
   bestSnippetCt: BytesCodec.nullable(),
   bestChunkOrd: z.number().int().nullable(),
+  /** Language of the best chunk; null for chunks stored before translations. */
+  bestChunkLang: z.string().nullable(),
   score: z.number().nullable(),
 });
 

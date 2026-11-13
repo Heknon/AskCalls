@@ -197,7 +197,7 @@
       "when": "13 Nov 2026, 14:32 · 8 min 14 s",
       "bytes": "{count} bytes",
       "caption": "Real bytes: the sample call encrypted with the app's own code under a published demo key. Field names are the server's column names.",
-      "exceptionsTitle": "Where plaintext does go, and only when you ask.",
+      "exceptionsTitle": "Where plaintext does go, and only for what you choose.",
       "route": "Route",
       "leaves": "What leaves your device",
       "receives": "Who receives it",
@@ -221,7 +221,12 @@
       "proofModel": "The security model",
       "proofSource": "The source",
       "proofLeak": "The leak test",
-      "proofVerify": "Verify the code we serve"
+      "proofVerify": "Verify the code we serve",
+      "translation": {
+        "name": "Translation",
+        "what": "The transcript of a call your translation rules cover (say, Hebrew → English), as you upload it. You set the rules; with none, nothing is sent.",
+        "who": "Anthropic, streamed through our server. With your own key, your device sends it directly."
+      }
     },
     "uses": {
       "titleA": "For people whose work",
@@ -405,7 +410,7 @@
     },
     "plaintext": {
       "title": "Where plaintext goes.",
-      "body": "Only when you ask, one request at a time. These routes stream straight through and never write to disk, storage or logs.",
+      "body": "Only for what you choose: a call you upload for transcription, a call you ask about, and the calls your translation rules cover. These routes stream straight through and never write to disk, storage or logs.",
       "device": "device",
       "remoteTool": "remote AI tool",
       "sealed": "sealed to your key",
@@ -426,7 +431,9 @@
       "anthropic": "No per-request retention flag; retention follows the instance's agreement with Anthropic.",
       "openaiLlm": "Requests send <code>store: false</code>, so the Responses API doesn't store them.",
       "local": "Ollama, LM Studio or a local Whisper server: requests stay on the network you run them on.",
-      "localName": "OpenAI-compatible, local"
+      "localName": "OpenAI-compatible, local",
+      "translation": "Translation",
+      "translationBody": "The transcript of each call your translation rules cover, as it uploads, so you can search it in the languages you chose. You set the rules in Settings → Providers, and the upload screen says it will happen; there is no prompt per call. With no rules nothing is sent. The transcript is wrapped as untrusted data, and the translation comes back to your device and is encrypted with the call. Your searches never leave your device."
     },
     "keys": {
       "title": "Your keys.",
@@ -581,7 +588,7 @@
       "s3t": "What we can't see",
       "s3": "Transcript text, words, phone numbers, contact names, tag names, notes, decrypted recordings and your unwrapped keys. Encryption happens on your device before upload.",
       "s4t": "When content leaves your device",
-      "s4": "Only when you ask: audio you choose to transcribe goes to the transcription provider, and one call goes to the AI provider when you ask about it. These requests stream through and are not stored by us. The subprocessors page lists who receives what.",
+      "s4": "Only for what you choose: audio you choose to transcribe goes to the transcription provider; one call goes to the AI provider when you ask about it; and calls your translation rules cover go to the AI provider to be translated as you upload them. These requests stream through and are not stored by us. The subprocessors page lists who receives what.",
       "s5t": "Analytics and cookies",
       "s5": "The marketing pages may count page views without cookies or personal data. Signing in sets a session cookie, and the language you choose is kept in a cookie. Product analytics in the app are off unless you turn them on in Settings → Privacy.",
       "s6t": "Retention and deletion",
@@ -613,7 +620,7 @@
       "s1t": "Roles",
       "s1": "You are the controller of the call content you upload. The operator of askcalls.com processes it on your instructions as your processor.",
       "s2t": "Nature of the processing",
-      "s2": "Storage of ciphertext and keyed tokens, search over them, and on your request, streaming of audio to a transcription provider and of one call to an AI provider.",
+      "s2": "Storage of ciphertext and keyed tokens, search over them, and on your request, streaming of audio to a transcription provider and of calls to an AI provider for questions and for the translations your rules ask for.",
       "s3t": "Security measures",
       "s3": "Encryption on your device with AES-256-GCM under keys we never hold, keyed HMAC tokens for search, a strict content security policy on app routes, audit logging of reads and writes, and a leak test on every change.",
       "s4t": "Subprocessors",
@@ -643,7 +650,7 @@
       "elevenlabsData": "Audio of calls you choose to transcribe, per request",
       "elevenlabsWhere": "ElevenLabs' processing regions",
       "anthropic": "Answers about a call (default)",
-      "anthropicData": "One call's transcript and your question, per request, after you agree",
+      "anthropicData": "One call's transcript and your question, per request, after you agree; and the transcripts of calls your translation rules cover, as you upload them",
       "anthropicWhere": "Anthropic's processing regions",
       "note": "With your own provider key, your device calls the provider directly under your own account, and that provider is not our subprocessor."
     }
