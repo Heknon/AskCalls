@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { ADMIN_DATA_DIR, ADMIN_PORT, ADMIN_URL } from './e2e/admin-helpers';
 
 // Off the usual dev ports, and never reused: a server someone else started has other env.
-// E2E_PORT and E2E_ADMIN_PORT let parallel checkouts run their suites side by side.
+// E2E_PORT, E2E_ADMIN_PORT and E2E_GOOGLE_PORT let parallel checkouts run their suites side by side.
 const port = Number(process.env.E2E_PORT ?? 3417);
 const baseURL = `http://localhost:${port}`;
 const ci = Boolean(process.env.CI);
@@ -38,6 +38,9 @@ const REAL_MODEL =
 const local = process.env.E2E_TARGET === 'local';
 const LOCAL_HOME = join(tmpdir(), `askcalls-e2e-local-${port}`);
 const NO_NETWORK_PROXY = { server: 'http://127.0.0.1:9', bypass: 'localhost,127.0.0.1,[::1]' };
+
+/** The fake Google behind the Google Drive spec (e2e/google-helpers.ts derives the same port). */
+const GOOGLE_PORT = Number(process.env.E2E_GOOGLE_PORT ?? port + 2);
 
 const MOCK_PROVIDERS = {
   TRANSCRIPTION_PROVIDER: 'mock',
@@ -104,8 +107,17 @@ export default defineConfig({
             APP_URL: baseURL,
             DB_DRIVER: 'memory',
             BLOB_DRIVER: 'memory',
+            STORAGE_GOOGLE_ID: 'e2e-drive-client',
+            STORAGE_GOOGLE_SECRET: 'e2e-drive-secret',
+            STORAGE_GOOGLE_TEST_OAUTH_URL: `http://127.0.0.1:${GOOGLE_PORT}`,
             ...MOCK_PROVIDERS,
           },
+        },
+        {
+          command: `bun e2e/fake-google-server.ts ${GOOGLE_PORT}`,
+          url: `http://127.0.0.1:${GOOGLE_PORT}/health`,
+          reuseExistingServer: false,
+          timeout: 30_000,
         },
         {
           command: `rm -rf ${ADMIN_DATA_DIR} && next start --port ${ADMIN_PORT}`,
