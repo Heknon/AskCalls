@@ -124,8 +124,9 @@ different order and is not bit-identical to either.
   search; keyword search and reading calls never start the worker. `WorkerEmbedder.status` and
   `onStatus` give `{ loaded, total }` bytes for a progress bar.
 - **Agent:** downloads the same pinned files into `~/.askcalls/models/e5-pruned/<build>/` from
-  `ASKCALLS_MODEL_URL` (default `https://models.askcalls.com`; a self-hosted instance can use
-  `https://<instance>/models`) and checks every file's SHA-256 before each load.
+  the model host of the instance it is logged in to (its `EMBEDDING_MODEL_URL`, read from
+  `GET /api/client-config`, else `https://<instance>/models`); `ASKCALLS_MODEL_URL` overrides
+  both. It checks every file's SHA-256 before each load.
 
 Vercel builds for an instance with `EMBEDDING_MODEL_URL` should set
 `ASKCALLS_SKIP_MODEL_DOWNLOAD=1`, so the deployment does not carry its own copy.

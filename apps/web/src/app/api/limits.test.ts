@@ -259,6 +259,7 @@ describe('cron/retention', () => {
       callsDeleted: 0,
       inboxExpired: 0,
       linkSessionsExpired: 0,
+      rateBucketsExpired: 0,
     });
   });
 

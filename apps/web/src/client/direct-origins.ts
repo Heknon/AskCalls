@@ -3,9 +3,10 @@
  * (which records what the user enabled) and the middleware (which builds `connect-src`).
  *
  * The provider choice and the own bucket's endpoint live in the encrypted providers document,
- * which the server cannot read. After unlock the client mirrors only the origins into the
- * `askcalls-direct` cookie: provider ids and bucket/endpoint origins, never keys, never content.
- * Without the cookie, `connect-src` carries no provider origins at all.
+ * which the server cannot read. After unlock the client sends only the origins to
+ * PUT /api/settings/direct-access, which sets the `askcalls-direct` cookie (provider ids and
+ * bucket/endpoint origins, never keys, never content) HttpOnly and signed for the user.
+ * Without a validly signed cookie, `connect-src` carries no provider origins at all.
  */
 
 export const DIRECT_COOKIE = 'askcalls-direct';
@@ -32,11 +33,6 @@ export const PROVIDER_ORIGINS: Readonly<Record<string, readonly string[]>> = {
   anthropic: ['https://api.anthropic.com'],
   google: ['https://generativelanguage.googleapis.com'],
 };
-
-/** Every origin `PROVIDER_ORIGINS` names. */
-export const ALL_PROVIDER_ORIGINS: readonly string[] = [
-  ...new Set(Object.values(PROVIDER_ORIGINS).flat()),
-];
 
 const MAX_CUSTOM_ORIGINS = 4;
 
@@ -89,26 +85,4 @@ export function parseDirectCookie(value: string | null | undefined): DirectAcces
 export function directOrigins(cookie: string | null | undefined): string[] {
   const a = parseDirectCookie(cookie);
   return [...new Set([...a.providers.flatMap((p) => PROVIDER_ORIGINS[p]!), ...a.origins])];
-}
-
-/**
- * Rewrites `connect-src` in a CSP: drops every origin in `remove`, then adds `add`. Other
- * directives are untouched.
- */
-export function rewriteConnectSrc(
-  csp: string,
-  remove: readonly string[],
-  add: readonly string[],
-): string {
-  return csp
-    .split('; ')
-    .map((d) => {
-      if (!d.startsWith('connect-src ')) return d;
-      const kept = d
-        .slice('connect-src '.length)
-        .split(' ')
-        .filter((s) => s && !remove.includes(s));
-      return `connect-src ${[...new Set([...kept, ...add])].join(' ')}`;
-    })
-    .join('; ');
 }

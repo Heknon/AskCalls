@@ -117,7 +117,7 @@ export async function authenticateApiToken(
   const user = await ports.users.findById(token.userId);
   if (!user || user.deletedAt) throw fail();
   if (!token.lastUsedAt || now.getTime() - token.lastUsedAt.getTime() >= TOUCH_EVERY_MS) {
-    await ports.apiTokens.touch(token.id, now);
+    await ports.apiTokens.touch(token.userId, token.id, now);
   }
   return { token: strip(token), user };
 }

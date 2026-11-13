@@ -147,12 +147,16 @@ export function createUserRepository(d: Driver): UserRepository {
       if (!inserted.length) throw new DomainError('conflict', 'account already linked');
     },
 
-    unlinkAccount: async (provider, providerAccountId) => {
-      await d.asSystem((db) =>
-        db
+    unlinkAccount: async (userId, provider, providerAccountId) => {
+      await d.asUser(userId, (tx) =>
+        tx
           .delete(accounts)
           .where(
-            and(eq(accounts.provider, provider), eq(accounts.providerAccountId, providerAccountId)),
+            and(
+              eq(accounts.userId, userId),
+              eq(accounts.provider, provider),
+              eq(accounts.providerAccountId, providerAccountId),
+            ),
           ),
       );
     },

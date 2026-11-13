@@ -33,5 +33,33 @@
     "confirm": "Sign out"
   },
   "deviceLabel": "{browser} on {os}",
-  "locked": "AskCalls locked"
+  "locked": "AskCalls locked",
+  "linkBrowser": "Link this browser from another device",
+  "join": {
+    "title": "Link this browser",
+    "body": "On a device that's already unlocked, open Settings → Security → Link a device. Scan its QR code with this device, or paste the code here.",
+    "codeLabel": "Link code",
+    "submit": "Continue",
+    "joining": "Connecting…",
+    "invalid": "This code isn't readable. Copy it again.",
+    "otherAccount": "This code is for a different account. Sign in with that account first.",
+    "failed": "Couldn't connect with this code. Create a new one and try again.",
+    "compareTitle": "Compare the code",
+    "compareBody": "Check that your other device shows the same 6 digits, then confirm there.",
+    "waiting": "Waiting for confirmation…",
+    "expired": "This code expired. Create a new one on your other device.",
+    "again": "Enter another code",
+    "protectTitle": "Protect this browser",
+    "protectBody": "This browser is linked. Create a passkey so you can unlock here next time.",
+    "passkey": "Create passkey",
+    "passkeyWaiting": "Waiting for your device…",
+    "passkeyCancelled": "Passkey wasn't created. Try again or use a passphrase.",
+    "noPrf": "This browser can't unlock AskCalls with a passkey. Set a passphrase instead.",
+    "hasPassphrase": "This browser can't unlock AskCalls with a passkey. Use your passphrase to unlock here.",
+    "usePassphrase": "Use a passphrase instead",
+    "passTitle": "Create a passphrase",
+    "passCta": "Save passphrase",
+    "done": "Go to my calls",
+    "alreadyUnlocked": "This browser is already unlocked."
+  }
 }

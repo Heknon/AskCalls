@@ -142,6 +142,7 @@
       "done": "Done"
     },
     "agent": "On a computer, run <code>askcalls link</code> and paste this code.",
+    "browser": "In another browser, open <url></url> and paste this code, or scan the QR code with the new device.",
     "scan": "Scan with the new device, or copy the code",
     "qr": "QR code of the link code",
     "copy": "Copy link code",
@@ -150,7 +151,7 @@
     "waiting": "Waiting for the new device…",
     "connected": "A new device connected:",
     "question": "Does the new device show this code?",
-    "agentHint": "In the terminal, askcalls link prints the same 6 digits.",
+    "agentHint": "The new device shows the same 6 digits: on the link page in a browser, or printed by askcalls link.",
     "warning": "Only link a device you are holding. AskCalls never asks for this code.",
     "match": "They match, link this device",
     "noMatch": "They don't match",
