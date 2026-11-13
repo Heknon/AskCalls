@@ -70,14 +70,14 @@ services:
 
   # Ollama's OpenAI-compatible API (/v1/chat/completions) for "ask about a call".
   ollama:
-    image: ollama/ollama:0.6.8
+    image: ollama/ollama:0.40.16
     volumes:
       - ollama:/root/.ollama
     networks: [internal]
 
   # One-off model downloads, run while online (see the top of this file).
   ollama-pull:
-    image: ollama/ollama:0.6.8
+    image: ollama/ollama:0.40.16
     profiles: [pull]
     entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 3 && ollama pull ${LLM_MODEL:-llama3.2}"]
     volumes:
