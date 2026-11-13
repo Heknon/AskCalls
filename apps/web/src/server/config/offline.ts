@@ -1,3 +1,5 @@
+import { POSTHOG_DEFAULT_HOST } from '@askcalls/adapter-telemetry-posthog';
+import { UMAMI_DEFAULT_HOST } from '@askcalls/adapter-telemetry-umami';
 import type { InstanceConfig } from './schema';
 
 /**
@@ -278,8 +280,8 @@ export function offlineBlockers(
   const telemetryHost: Record<string, string | null> = {
     otel: tel.otel.endpoint ? hostOf(tel.otel.endpoint) : null,
     sentry: tel.sentryDsn ? hostOf(tel.sentryDsn) : null,
-    posthog: hostOf(tel.posthog.host ?? 'https://us.i.posthog.com'),
-    umami: hostOf(tel.umami.host ?? 'https://cloud.umami.is'),
+    posthog: hostOf(tel.posthog.host ?? POSTHOG_DEFAULT_HOST),
+    umami: hostOf(tel.umami.host ?? UMAMI_DEFAULT_HOST),
   };
   for (const backend of tel.backends) {
     const host = telemetryHost[backend];

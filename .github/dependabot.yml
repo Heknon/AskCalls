@@ -1,0 +1,58 @@
+# Weekly, one grouped pull request per ecosystem (spec 14.1). Each opens a preview with the fast
+# checks; add the `full-tests` label to run integration and E2E tests on it.
+version: 2
+updates:
+  # Bun workspaces: one update covers every package.json and bun.lock.
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    groups:
+      bun:
+        patterns: ["*"]
+    commit-message:
+      prefix: Update
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/UTC
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: Update
+
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/UTC
+    groups:
+      docker:
+        patterns: ["*"]
+    commit-message:
+      prefix: Update
+
+  - package-ecosystem: docker-compose
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/UTC
+    groups:
+      docker-compose:
+        patterns: ["*"]
+    commit-message:
+      prefix: Update

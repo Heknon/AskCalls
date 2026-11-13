@@ -1,5 +1,5 @@
 import { createApiClient } from '@askcalls/api-contract';
-import type { Limits } from '@askcalls/domain';
+import type { Limits, Ports } from '@askcalls/domain';
 import { encode } from 'next-auth/jwt';
 import * as account from '../../app/api/account/route';
 import * as adminInstanceOffline from '../../app/api/admin/instance/offline/route';
@@ -29,6 +29,8 @@ import * as setupPasskey from '../../app/api/setup/passkey/route';
 import * as setup from '../../app/api/setup/route';
 import * as setupTest from '../../app/api/setup/test/route';
 import * as consent from '../../app/api/telemetry/consent/route';
+import * as telemetryErrors from '../../app/api/telemetry/errors/route';
+import * as telemetryEvents from '../../app/api/telemetry/events/route';
 import * as tokens from '../../app/api/tokens/route';
 import * as transcribe from '../../app/api/transcribe/route';
 import * as transcribeToken from '../../app/api/transcribe/token/route';
@@ -54,6 +56,8 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/transcribe', transcribe],
   ['/api/transcribe/token', transcribeToken],
   ['/api/telemetry/consent', consent],
+  ['/api/telemetry/events', telemetryEvents],
+  ['/api/telemetry/errors', telemetryErrors],
   ['/api/ask', ask],
   ['/api/calls', calls],
   ['/api/calls/[id]', callById],
@@ -140,6 +144,8 @@ export function startTestApp(
     limits?: Partial<Limits>;
     llm?: boolean;
     transcription?: boolean;
+    /** Real adapters in place of the in-memory ones (the PGlite + fs leak test). */
+    adapters?: Partial<Ports>;
   } = {},
 ): TestApp {
   const config = new ConfigService({
@@ -152,11 +158,14 @@ export function startTestApp(
     CRON_SECRET,
     ...opts.env,
   }).loadFromEnvOnly();
-  const ports = makeTestPorts({
-    ...(opts.limits && { limits: opts.limits }),
-    ...(opts.llm !== undefined && { llm: opts.llm }),
-    ...(opts.transcription !== undefined && { transcription: opts.transcription }),
-  });
+  const ports: TestPorts = {
+    ...makeTestPorts({
+      ...(opts.limits && { limits: opts.limits }),
+      ...(opts.llm !== undefined && { llm: opts.llm }),
+      ...(opts.transcription !== undefined && { transcription: opts.transcription }),
+    }),
+    ...opts.adapters,
+  };
   setContainerForTests({ config, ports, restartRequired: [], close: async () => {} });
 
   const headersFor = (as: Credential | undefined): Record<string, string> => {

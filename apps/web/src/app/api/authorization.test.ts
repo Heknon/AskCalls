@@ -137,6 +137,22 @@ const CASES: Case[] = [
     cross: 'own',
   },
   {
+    name: 'POST /api/telemetry/events',
+    method: 'POST',
+    path: () => '/api/telemetry/events',
+    auth: 'session',
+    json: () => ({ name: 'first_search_with_result' }),
+    cross: 'own',
+  },
+  {
+    name: 'POST /api/telemetry/errors',
+    method: 'POST',
+    path: () => '/api/telemetry/errors',
+    auth: 'session',
+    json: () => ({ errorName: 'TypeError' }),
+    cross: 'own',
+  },
+  {
     name: 'POST /api/ask',
     method: 'POST',
     path: () => '/api/ask',
