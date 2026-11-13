@@ -1,4 +1,5 @@
 import type { BlobFetcher, RecordingUploader } from '@askcalls/client-core/ports/index';
+import { sendWithRetry } from '@askcalls/client-core/retry';
 import { DomainError } from '@askcalls/domain';
 
 export type Progress = (loaded: number, total: number | null) => void;
@@ -70,11 +71,13 @@ export class FetchRecordingUploader implements RecordingUploader {
     request: { url: string; method: 'PUT'; headers: Record<string, string> },
     body: Uint8Array,
   ): Promise<void> {
-    const res = await send(
-      this.fetchImpl,
-      request.url,
-      { method: 'PUT', headers: request.headers, body: body as BodyInit },
-      'recording upload',
+    const res = await sendWithRetry(() =>
+      send(
+        this.fetchImpl,
+        request.url,
+        { method: 'PUT', headers: request.headers, body: body as BodyInit },
+        'recording upload',
+      ),
     );
     await assertOk(res, 'recording upload');
     await res.body?.cancel().catch(() => {});
@@ -90,11 +93,13 @@ export class FetchBlobFetcher implements BlobFetcher {
   ) {}
 
   async get(request: { url: string; headers?: Record<string, string> }): Promise<Uint8Array> {
-    const res = await send(
-      this.fetchImpl,
-      request.url,
-      { method: 'GET', headers: request.headers ?? {} },
-      'blob download',
+    const res = await sendWithRetry(() =>
+      send(
+        this.fetchImpl,
+        request.url,
+        { method: 'GET', headers: request.headers ?? {} },
+        'blob download',
+      ),
     );
     return readBody(await assertOk(res, 'blob download'), this.onProgress);
   }

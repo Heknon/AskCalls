@@ -126,6 +126,7 @@ beforeAll(async () => {
     dir,
     secrets: { store: new MemorySecretStore(), kind: 'keychain' },
     fetch: (url, init) => dispatch(new Request(url, init)),
+    api: { maxPerMinute: 0, sleep: async () => {} },
     embedder: h.embedder,
     audio: new FakeAudioCodec(),
     blobs: {

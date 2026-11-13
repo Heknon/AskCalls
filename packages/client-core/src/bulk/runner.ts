@@ -154,8 +154,11 @@ export async function preflight(
         continue;
       }
       const tok = await contentToken(ctx.session.keys.indexKey, contentText(text));
-      const res = await ctx.api.request(listCalls, { query: { content_tok: tok, limit: 1 } });
-      if (res.items.length) dup.add(item.key);
+      // The count is a hint: the import checks again before each upload.
+      const res = await ctx.api
+        .request(listCalls, { query: { content_tok: tok, limit: 1 } })
+        .catch(() => null);
+      if (res?.items.length) dup.add(item.key);
     }
   }
   s.estimatedMinutes = Math.ceil(seconds / 60);

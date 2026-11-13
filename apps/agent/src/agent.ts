@@ -1,4 +1,4 @@
-import { type ApiClient, createApiClient } from '@askcalls/api-contract';
+import { type ApiClient, type ApiClientOptions, createApiClient } from '@askcalls/api-contract';
 import { getClientConfig } from '@askcalls/api-contract/routes/account';
 import {
   type AudioCodec,
@@ -57,6 +57,8 @@ export interface AgentDeps {
   audio?: AudioCodec | null;
   blobs?: RecordingUploader & BlobFetcher;
   clock?: Clock;
+  /** Pacing and retry waits of the API client. */
+  api?: Pick<ApiClientOptions, 'maxPerMinute' | 'sleep'>;
 }
 
 export interface AgentAccount {
@@ -83,7 +85,12 @@ export async function openSecrets(
 }
 
 export const apiClient = (origin: string, token: string, deps: AgentDeps) =>
-  createApiClient({ baseUrl: origin, token, ...(deps.fetch && { fetch: deps.fetch }) });
+  createApiClient({
+    baseUrl: origin,
+    token,
+    ...(deps.fetch && { fetch: deps.fetch }),
+    ...deps.api,
+  });
 
 /** The logged-in account: server from config.json, token from the keychain. */
 export async function openAccount(deps: AgentDeps = {}): Promise<AgentAccount> {
