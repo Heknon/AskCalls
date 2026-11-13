@@ -19,8 +19,10 @@ import {
   type CallMeta,
   type CallSource,
   dayFromDate,
+  resolveLanguage,
   type Transcript,
   type TranscriptSegment,
+  type TranslationLanguage,
 } from '@askcalls/domain';
 import {
   contentText,
@@ -43,12 +45,14 @@ import { duplicateOf, type FailureReason, failureReason, IngestError } from './e
 import type { AudioSource, DecodedAudio } from './ports/index';
 import { ensureTags, intentTagId } from './tags';
 import { RECORDING_BITRATE_KBPS, transcribeAudio } from './transcription';
+import { missingTranslations, translateTranscript } from './translation';
 
 /** Per-file states of the bulk queue (spec 8). */
 export type IngestStatus =
   | 'queued'
   | 'decoding'
   | 'transcribing'
+  | 'translating'
   | 'indexing'
   | 'encrypting'
   | 'uploading'
@@ -95,9 +99,16 @@ export type IngestResult =
       recording: 'none' | 'stored' | 'failed';
       /** `failed` when the call was stored but its vocabulary delta was not (fuzzy search misses it). */
       vocabulary: 'updated' | 'failed';
+      /**
+       * `failed`: stored in its own language only (quota, provider error); "Translate existing
+       * calls" picks it up later. `off`: translation is turned off on this device.
+       */
+      translation: TranslationOutcome;
     }
   | { status: 'duplicate'; existingId: string; match: 'audio' | 'content' }
   | { status: 'failed'; reason: FailureReason };
+
+export type TranslationOutcome = 'done' | 'failed' | 'off';
 
 /** Concurrency gates the bulk queue passes in; the defaults run immediately. */
 export interface IngestGates {
@@ -230,13 +241,37 @@ async function runIngest(
     throw new IngestError('transcript_empty', 'transcript has no text');
   }
 
-  return gates.indexing(async () => {
-    // 3. Content token and duplicate check.
-    onStatus('indexing');
+  // 3. Content token and duplicate check, before anything is sent for translation.
+  const language = resolveLanguage(parsed.language, transcript.text);
+  const dup = await gates.indexing(async () => {
     const contentTok = await contentToken(session.keys.indexKey, contentText(transcript.text));
-    const existing = await findExisting(ctx, { content_tok: contentTok });
-    if (existing) return { status: 'duplicate', existingId: existing, match: 'content' };
+    return { contentTok, existing: await findExisting(ctx, { content_tok: contentTok }) };
+  });
+  if (dup.existing) return { status: 'duplicate', existingId: dup.existing, match: 'content' };
+  const { contentTok } = dup;
 
+  // 3a. Translation: every call is stored in English and Hebrew (in transit only).
+  let full: Transcript = transcript;
+  let translation: TranslationOutcome = 'done';
+  if (missingTranslations(transcript, language).length) {
+    if (!ctx.translator) {
+      translation = 'off';
+    } else {
+      const translator = ctx.translator;
+      onStatus('translating');
+      full = await gates
+        .transcription(() =>
+          translateTranscript(translator, transcript, language, { clock: ctx.clock }),
+        )
+        .catch(() => {
+          translation = 'failed';
+          return transcript;
+        });
+    }
+  }
+  const translatedTo = Object.keys(full.translations ?? {}) as TranslationLanguage[];
+
+  return gates.indexing(async () => {
     // 4. Index (spec 7).
     const [contacts, synonyms, rules] = await Promise.all([
       ctx.userData.get('contacts'),
@@ -246,8 +281,10 @@ async function runIngest(
     const meta = input.meta ?? {};
     const intents = await ctx.intents.get(settings.customIntents);
     const decodedAudio = decoded;
+    onStatus('indexing');
     const indexed = await indexCall({
-      transcript,
+      transcript: full,
+      language,
       meta: {
         phone: meta.phone ?? null,
         contactName: meta.contactName ?? null,
@@ -271,7 +308,7 @@ async function runIngest(
     const callId = uuidv7();
     const keyCtx = { userId, callId };
     const { dek, wrappedDek } = await createDek(session.keys.kek, keyCtx);
-    const plaintext = transcriptPlaintext(transcript);
+    const plaintext = transcriptPlaintext(full);
     const device = session.device;
     const signature = device
       ? {
@@ -295,9 +332,10 @@ async function runIngest(
       title: meta.title ?? null,
       notes: null,
       sourceFileName: input.sourceFileName ?? input.transcriptFileName ?? null,
-      language: parsed.language,
+      language,
       signature,
       segmentsFormat: parsed.format,
+      translatedTo,
     };
     const index = session.keys.indexKey;
     const [transcriptCt, metaCt, chunks, keywordToks, tagToks, contactTok] = await Promise.all([
@@ -306,6 +344,7 @@ async function runIngest(
       Promise.all(
         indexed.chunks.map(async (c) => ({
           ord: c.ord,
+          lang: c.lang,
           embedding: c.embedding,
           snippetCt: await encryptSnippet(dek, keyCtx, c.ord, c.snippet),
         })),
@@ -350,7 +389,7 @@ async function runIngest(
       () => 'updated' as const,
       () => 'failed' as const,
     );
-    return { status: 'done', callId, recording, vocabulary };
+    return { status: 'done', callId, recording, vocabulary, translation };
   });
 }
 

@@ -40,6 +40,15 @@ const SEEDED_TEXT = [
   TAG_NAME,
   NOTES,
   'Quote call about Orbitex',
+  // Words only the mock translations hold: the Hebrew version of the English call, the English
+  // version of the Hebrew one. They live inside transcriptCt and as tokens only.
+  'מחסן',
+  'חוזה',
+  'התקנה',
+  'פאנלים',
+  'refrigerators',
+  'delivery',
+  'Tuesday morning',
 ];
 
 const PHONES = [
@@ -245,6 +254,9 @@ describe('leak test (spec 2 rule 7)', () => {
     expect(recordings).toHaveLength(1);
     expect(h.app.ports.blobStore.objects.has(recordings[0]!.objectKey)).toBe(true);
     expect(db.inbox.size).toBe(0);
+    const langs = new Set([...db.chunks.values()].flat().map((c) => c.lang));
+    expect(langs).toEqual(new Set(['en', 'he']));
+    expect(h.app.ports.mockLlm.translated.length).toBeGreaterThanOrEqual(5);
   });
 
   it('finds no seeded word, name or number in any stored byte', () => {

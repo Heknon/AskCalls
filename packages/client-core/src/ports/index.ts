@@ -2,7 +2,7 @@
  * Client-side ports (spec 3.3). The browser and the agent each provide adapters.
  * Nothing here may touch plaintext persistence: decrypted data lives in memory only.
  */
-import type { TranscriptSegment } from '@askcalls/domain';
+import type { TranscriptSegment, TranslationLanguage } from '@askcalls/domain';
 
 /** Text to a 384-dimension, L2-normalized vector. Callers add the e5 `query: ` / `passage: ` prefix. */
 export interface Embedder {
@@ -89,6 +89,26 @@ export interface Transcriber {
   /** Largest chunk the transcriber accepts. */
   readonly maxChunkBytes: number;
   transcribe(chunk: EncodedAudio, opts: { language: string }): Promise<TranscriptionResult>;
+}
+
+export interface TranslationResult {
+  /** One per input segment, in order. */
+  segments: string[];
+  /** The LLM that translated (provider id and model), recorded with the translation. */
+  provider: string;
+  model: string;
+}
+
+/**
+ * Translates a call's segment texts, keeping count and order. `managedTranslator` posts batches
+ * to `/api/translate`; own-key mode supplies an adapter that calls the provider directly.
+ */
+export interface Translator {
+  readonly id: string;
+  translate(
+    segments: readonly string[],
+    opts: { source: string | null; target: TranslationLanguage; signal?: AbortSignal },
+  ): Promise<TranslationResult>;
 }
 
 /** PUTs ciphertext to a presigned URL (instance bucket) and returns the stored size. */

@@ -52,4 +52,9 @@ export interface CallMeta {
   language: string | null;
   signature: { deviceKeyId: string; signature: string } | null;
   segmentsFormat: string | null;
+  /**
+   * Languages `transcriptCt` holds translations for, so the calls list can tell which calls
+   * still need one without decrypting transcripts. Absent on calls stored before translations.
+   */
+  translatedTo?: TranslationLanguage[];
 }

@@ -26,19 +26,39 @@ export const CallMetaSchema = z.object({
   language: z.string().nullable(),
   signature: z.object({ deviceKeyId: z.string(), signature: z.string() }).nullable(),
   segmentsFormat: z.string().nullable(),
+  translatedTo: z.array(z.enum(['en', 'he'])).optional(),
 }) satisfies z.ZodType<CallMeta>;
 
-export const TranscriptSchema = z.object({
-  segments: z.array(
-    z.object({
-      start: z.number(),
-      end: z.number(),
-      speaker: z.string().optional(),
-      text: z.string(),
-    }),
-  ),
+const SegmentSchema = z.object({
+  start: z.number(),
+  end: z.number(),
+  speaker: z.string().optional(),
   text: z.string(),
-}) satisfies z.ZodType<Transcript>;
+});
+
+const TranslationSchema = z.object({
+  segments: z.array(SegmentSchema),
+  text: z.string(),
+  provider: z.string(),
+  model: z.string(),
+  createdAt: z.string(),
+});
+
+export const TranscriptSchema = z
+  .object({
+    segments: z.array(SegmentSchema),
+    text: z.string(),
+    translations: z
+      .object({ en: TranslationSchema.optional(), he: TranslationSchema.optional() })
+      .optional(),
+  })
+  .superRefine((t, ctx) => {
+    for (const [lang, tr] of Object.entries(t.translations ?? {})) {
+      if (tr && tr.segments.length !== t.segments.length) {
+        ctx.addIssue({ code: 'custom', path: ['translations', lang], message: 'not aligned' });
+      }
+    }
+  }) satisfies z.ZodType<Transcript>;
 
 export interface CallKeyContext {
   userId: string;
@@ -52,7 +72,13 @@ export const openDek = (session: KeySession, callId: string, wrappedDek: Uint8Ar
 
 /** The exact bytes encrypted into `transcriptCt` (and signed, spec 6.6). */
 export const transcriptPlaintext = (t: Transcript) =>
-  utf8(JSON.stringify({ segments: t.segments, text: t.text }));
+  utf8(
+    JSON.stringify(
+      t.translations && Object.keys(t.translations).length
+        ? { segments: t.segments, text: t.text, translations: t.translations }
+        : { segments: t.segments, text: t.text },
+    ),
+  );
 
 export const encryptTranscript = (dek: CryptoKey, ctx: CallKeyContext, plaintext: Uint8Array) =>
   encrypt(dek, plaintext, field(ctx, AadFields.transcript));

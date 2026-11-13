@@ -107,8 +107,13 @@ describe('client-core end to end against the route handlers', () => {
       },
       { onStatus: (s) => statuses.push(s) },
     );
-    expect(en).toMatchObject({ status: 'done', recording: 'none', vocabulary: 'updated' });
-    expect(statuses).toEqual(['indexing', 'encrypting', 'uploading']);
+    expect(en).toMatchObject({
+      status: 'done',
+      recording: 'none',
+      vocabulary: 'updated',
+      translation: 'done',
+    });
+    expect(statuses).toEqual(['translating', 'indexing', 'encrypting', 'uploading']);
     const he = await ingestCall(browser.ctx, {
       source: 'app',
       transcript: new TextEncoder().encode(HEBREW_CALL.text),
@@ -285,7 +290,14 @@ describe('client-core end to end against the route handlers', () => {
       { onStatus: (s) => statuses.push(s) },
     );
     expect(r).toMatchObject({ status: 'done', recording: 'stored' });
-    expect(statuses).toEqual(['decoding', 'transcribing', 'indexing', 'encrypting', 'uploading']);
+    expect(statuses).toEqual([
+      'decoding',
+      'transcribing',
+      'translating',
+      'indexing',
+      'encrypting',
+      'uploading',
+    ]);
     ids.audio = (r as { callId: string }).callId;
     const call = await getCall(browser.ctx, ids.audio);
     expect(call.transcript.text).toContain('Mock segment at 5 seconds.');
