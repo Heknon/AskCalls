@@ -3,6 +3,7 @@
   "context": {
     "askcalls:region": "eu-central-1",
     "askcalls:githubRepo": "Heknon/AskCalls",
+    "askcalls:githubSubjectPrefix": "repo:Heknon@37449596/AskCalls@1456390963",
     "askcalls:buckets": {
       "prod": "askcalls-prod",
       "dev": "askcalls-dev"

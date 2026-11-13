@@ -12,8 +12,8 @@ import {
 } from './config';
 
 interface GithubDeployStackProps extends StackProps {
-  /** owner/name */
-  githubRepo: string;
+  /** The OIDC `sub` prefix GitHub sends for this repository (`InfraConfig.githubSubjectPrefix`). */
+  subjectPrefix: string;
   /** An account can hold one GitHub OIDC provider; pass its ARN if it already exists. */
   existingOidcProviderArn?: string;
   /** The dev bucket, which previews share under `preview/pr-<n>/`. */
@@ -27,10 +27,10 @@ const OIDC_HOST = 'token.actions.githubusercontent.com';
  * GitHub matches environment names case-insensitively, but the token's `sub` carries the name
  * as configured and IAM compares it exactly, so both spellings are trusted.
  */
-export function environmentSubjects(repo: string, environments: string[]): string[] {
+export function environmentSubjects(prefix: string, environments: string[]): string[] {
   return environments.flatMap((name) => {
     const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-    return [...new Set([name, capitalized])].map((s) => `repo:${repo}:environment:${s}`);
+    return [...new Set([name, capitalized])].map((s) => `${prefix}:environment:${s}`);
   });
 }
 
@@ -68,7 +68,7 @@ export class GithubDeployStack extends Stack {
       new iam.WebIdentityPrincipal(provider.oidcProviderArn, {
         StringEquals: {
           [`${OIDC_HOST}:aud`]: 'sts.amazonaws.com',
-          [`${OIDC_HOST}:sub`]: environmentSubjects(props.githubRepo, environments),
+          [`${OIDC_HOST}:sub`]: environmentSubjects(props.subjectPrefix, environments),
         },
       });
 

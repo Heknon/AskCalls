@@ -304,9 +304,14 @@ describe('AskCallsGithubDeploy', () => {
 
   const subjects = (...envs: string[]) =>
     envs.flatMap((e) => [
-      `repo:Heknon/AskCalls:environment:${e}`,
-      `repo:Heknon/AskCalls:environment:${e.charAt(0).toUpperCase()}${e.slice(1)}`,
+      `repo:Heknon@37449596/AskCalls@1456390963:environment:${e}`,
+      `repo:Heknon@37449596/AskCalls@1456390963:environment:${e.charAt(0).toUpperCase()}${e.slice(1)}`,
     ]);
+
+  it('defaults the OIDC subject to the repository name', () => {
+    const named = synth({ 'askcalls:githubSubjectPrefix': '' });
+    expect(named.config.githubSubjectPrefix).toBe('repo:Heknon/AskCalls');
+  });
 
   const trust = (roleName: string) => {
     const roles = t.findResources('AWS::IAM::Role', { Properties: { RoleName: roleName } });
