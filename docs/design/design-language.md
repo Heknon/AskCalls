@@ -83,7 +83,7 @@ Name text by role. Each role maps to one token set; never pick sizes ad hoc.
 | Role | Token | Meaning | Never use for |
 | --- | --- | --- | --- |
 | **Accent** | `primary` | The one primary action in a view, focus rings, selected/active state (active chip, current nav item, selected choice card), links | Decoration, icons at rest, large backgrounds, status |
-| **Encrypted / on device** | `muted-foreground` + the lock icon | Content exists but is protected: decrypting placeholders, the lock status, "encrypted" save status. Encryption is the normal state, so it is quiet | Errors or warnings (being encrypted is never a problem) |
+| **Encrypted / on device** | `muted-foreground` + the lock icon | Content exists but is not yet decrypted (placeholders) and the Lock control. Encryption is the normal state, so it is quiet and wordless | Errors or warnings; captions or badges that advertise encryption (2.6) |
 | **Plaintext leaves the device** | neutral surface + route diagram (`DataFlowNote`) | A chosen path where content goes to a third party | Alarm colours; these paths are user choices, not dangers |
 | **Attention** | `warning` / `warning-subtle` | Something needs the user's action soon: missing bucket CORS, quota near limit, signature not verified, offline mode blockers | Normal informational text |
 | **Danger** | `destructive` / `destructive-subtle` | Irreversible actions (delete call, delete account, revoke) and failures | Anything reversible |
@@ -148,9 +148,32 @@ One icon per concept; one concept per icon. If a new concept needs an icon, add 
 | Spinner in a button | This button's action is running |
 | No motion | Locking. The gate replaces content instantly |
 
-### 2.6 Voice
+### 2.6 Voice and copy
 
-Plain, specific, honest; full rules and the glossary are in `design-system.md` section 12. Components that state data flow (`DataFlowNote`, `ConsentSheet`) take their sentences from one shared message namespace (`dataFlow.*`) so the same path is always described in the same words.
+The product talks like a careful colleague: short, specific, and silent when there is nothing to say. These rules apply to every screen, mock and message file.
+
+**No slop.**
+
+1. **No restating.** A page title needs no subtitle unless the subtitle carries information the user acts on. "Calls" is the whole header of the calls page; the count lives in the navigation and the result line.
+2. **Don't advertise encryption inside the app.** Mention encryption, keys or "your device" only where it changes a decision:
+   - the unlock gate,
+   - the recovery code (onboarding and regenerate),
+   - consent before content goes to a provider (`ConsentSheet`),
+   - the inbox in-transit notice,
+   - the data-flow line on provider cards, the upload pre-flight and under the ask input (`DataFlowNote`).
+   Everywhere else, encryption is the silent default. No "encrypted" badges, captions, toasts or save messages.
+3. **Locked and decrypting state is an icon, not a sentence.** `DecryptingPlaceholder` is a skeleton plus a lock icon with an `aria-label` ("Decrypting"). No caption.
+4. **The lock control is a control.** `LockStatus` is a compact "Lock" button with a tooltip ("Locks after 15 min idle") and the shortcut; no explanatory paragraph.
+5. **Empty states:** one short line plus the action. "No calls yet." + "Upload calls". "No calls match." + "Clear filters".
+6. **Labels are nouns or verbs, not sentences.** "Auto-lock", "Lock after idle for", "Billed by Anthropic", "Retry".
+7. **Errors are one line: what happened, what to do.** "Wrong code. Check each group and try again." "Couldn't reach ElevenLabs. Try again." Never include content, stack traces or blame.
+8. **Banned words:** seamless, secure, powerful, effortless, simply, just, easily, robust, magic. No exclamation marks, no emojis, no "coming soon" (use "Planned" or "Not available in this version").
+9. **Name third parties and say what they get,** once, at the decision point: "This call's transcript and your question go through AskCalls to Anthropic."
+10. **Marketing explains the privacy model once:** the trust diagram, the source link and the leak test, in one section. Other sections describe what the product does, without repeating privacy claims and without generic feature fluff.
+
+**Shared phrasing.** `DataFlowNote` and `ConsentSheet` take their sentences from the `dataFlow.*` message namespace, so a path is always described in the same words. Full sentences per route are in `design-system.md` section 12.
+
+**Review check.** Before merging UI copy, search the diff for the banned words and for "encrypt", "decrypt", "your device" outside the allowed components above.
 
 ---
 
@@ -213,16 +236,16 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 - **Composes:** `Button`. **Screens:** all `/app/**` on mobile. **RTL:** back arrow mirrors.
 
 #### PageHeader
-- **Purpose:** the title, one-line description and page actions of a page.
-- **Props:** `title`, `description`, `actions`.
+- **Purpose:** the title and page actions of a page.
+- **Props:** `title`, `description?` (only when it carries information the user acts on; most pages have none), `actions`.
 - **Composes:** layout only. **Screens:** C1, T1, P1, S1–S8, A1. **A11y:** title is the page's `h1`.
 
 #### LockStatus
-- **Purpose:** shows whether this tab holds unlocked keys and lets the user lock now.
-- **Use:** sidebar footer (variant `card`), mobile top bar (variant `button`). **Don't use:** to describe server-side encryption in general; that is `DataFlowNote`.
-- **Props:** `variant="card" | "button"`, `autoLockMinutes`.
+- **Purpose:** locks AskCalls now; its presence means keys are unlocked in this tab.
+- **Use:** sidebar footer (variant `sidebar`: lock icon, "Lock", `⇧L`; icon only in the rail), mobile top bar (variant `icon`). **Don't use:** to describe encryption; no paragraph or status sentence (2.6).
+- **Props:** `variant="sidebar" | "icon"`, `autoLockMinutes` (shown only in the tooltip: "Locks after 15 min idle").
 - **Composes:** `Button`, `Tooltip`, `Kbd`.
-- **Screens:** all app routes. **States:** unlocked (lock-open icon, "Locks after 15 min idle"); locking (instant navigation to the gate).
+- **Screens:** all app routes. **States:** default; locking (instant navigation to the gate).
 - **A11y:** button "Lock now", shortcut Shift+L; locking announces "AskCalls locked" assertively on the gate.
 - **RTL:** nothing special.
 
@@ -339,11 +362,11 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 #### DecryptingPlaceholder
 - **Purpose:** stands in for content that is present but not yet decrypted on this device.
 - **Use:** call rows while metadata decrypts, the call view while the transcript decrypts, contact names, notes. **Don't use:** for network loading (use the `Skeleton` primitive alone), or for content that failed to decrypt (use `ErrorState`).
-- **Props:** `shape="line" | "row" | "paragraph"`, `caption` (default "Decrypting on this device").
+- **Props:** `shape="line" | "row" | "paragraph"`. No caption: the lock icon carries `aria-label="Decrypting"` (2.6).
 - **Composes:** `Skeleton` + `lock` icon.
 - **Screens:** C1, C2, C3, K1, T1.
 - **States:** animated shimmer, static under reduced motion.
-- **A11y:** container `aria-busy="true"`; caption is real text, read once.
+- **A11y:** container `aria-busy="true"`; the icon's label is read once per list, not per row.
 - **Not to be confused with:** `Skeleton` (primitive, network wait).
 
 ### 4.4 Call view
@@ -404,7 +427,7 @@ Format for each entry: **Purpose**, **Use / Don't use**, **Props and variants** 
 
 #### SaveStatus
 - **Purpose:** tells the user an edit was encrypted and saved, or failed.
-- **Props:** `state="saving" | "saved" | "error"`. Saved text "Saved, encrypted" with the lock icon.
+- **Props:** `state="saving" | "saved" | "error"`. Text: "Saving…", "Saved" (check icon), "Couldn't save. Retry".
 - **Screens:** C3, T1–T4, K1. **A11y:** polite live region.
 
 ### 4.5 Trust, keys and devices

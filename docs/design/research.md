@@ -82,8 +82,8 @@ Contents
 ### Decisions
 
 - **D8. Sign in and unlock are two named steps.** Copy always says "Sign in" for the account and "Unlock" for the keys. The unlock gate states who is signed in and offers "Sign out" separately (Proton, Bitwarden).
-- **D9. Persistent lock status.** The sidebar footer always shows the lock state ("Unlocked. Locks after 15 min idle.") with a "Lock now" button and the `L` shortcut. On mobile the lock button sits in the top bar. Locking is one click, never buried in a menu.
-- **D10. Locked placeholders, never fake content.** Rows whose metadata is still being decrypted show a static skeleton plus a small lock glyph and the caption "Decrypting on this device". After lock, the app replaces every decrypted view with the gate; nothing decrypted stays in the DOM (spec 6.8).
+- **D9. Persistent lock control.** The sidebar footer always has a compact "Lock" button (tooltip "Locks after 15 min idle", shortcut Shift+L); its presence is the unlocked signal. On mobile the lock button sits in the top bar. Locking is one click, never buried in a menu.
+- **D10. Locked placeholders, never fake content.** Rows whose metadata is still being decrypted show a skeleton plus a small lock icon labelled "Decrypting" for screen readers, with no visible caption (owner copy rule, design-language 2.6). After lock, the app replaces every decrypted view with the gate; nothing decrypted stays in the DOM (spec 6.8).
 - **D11. Unlock happens only on the gate screen,** never in a popover or inline field (1Password anti-spoofing). The gate is a full page with focus placed on the primary button.
 - **D12. Name the exceptions.** Wherever we say "we can't read your calls", the next sentence (or the linked page) lists where plaintext does go: the transcription provider for audio, the LLM provider when you ask, and the server in transit for inbox uploads (Tuta's honesty pattern).
 

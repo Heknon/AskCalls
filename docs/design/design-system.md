@@ -45,7 +45,7 @@ Contents
 
 ### App shell (`/app/**`)
 
-- **Sidebar (start edge, 240 px):** brand, primary navigation (Calls with count, Upload, Tags and rules, Contacts, Settings), an "Instance" group with Admin for admins only, then a footer with the **lock card** (state sentence, "Lock now" with `L`), and the account row (avatar, name, plan and call count, shortcuts button).
+- **Sidebar (start edge, 240 px):** brand, primary navigation (Calls with count, Upload, Tags and rules, Contacts, Settings), an "Instance" group with Admin for admins only, then a footer with the **Lock** button (icon, label, `⇧L`, tooltip "Locks after 15 min idle") and the account row (avatar, name, plan and call count, shortcuts button).
 - **Top bar (56 px, per page):** page-level actions on the end side (Upload on Calls), shortcut hints on wide screens.
 - **Content:** padding 24 px (16 px on mobile), max width 1120 px; reading surfaces (transcript, settings forms) use narrower measures: transcript 720 px (`max-w-transcript`), settings forms 640 px.
 - **Mobile:** top bar shows the logo, page title, one page action and the lock button. Bottom navigation has five destinations: Calls, Upload, Tags, Contacts, Settings (the maximum Apple and Material recommend). Admin is reached from Settings.
@@ -305,7 +305,7 @@ Rules (D49):
 5. **Bidi islands (D43):** wrap phone numbers, codes, tokens, file names, emails and URLs in `<bdi>` or `.ltr-island`. Format phone numbers with libphonenumber in international format inside the island: `+972 52-555-0134`.
 6. **User content (D44):** names, snippets, notes, tag names, ask answers and transcript segments carry `dir="auto"`. Rows and snippets align to the UI direction; transcript segments align to their own direction.
 7. **Numbers and dates** use `Intl` with the UI locale (`he-IL`: "היום, 14:32", "10 בנוב׳"). Durations: "8 min" / "8 דק׳". Western digits in Hebrew (standard in Israel).
-8. **Mixed punctuation:** the ellipsis on truncated snippets is placed by the browser (`text-overflow` or `line-clamp`), never concatenated as a string, so it lands on the correct side.
+8. **Mixed punctuation:** trailing truncation uses `line-clamp`, so the browser places the ellipsis. The leading "…" of a mid-sentence snippet is part of the text inside the `dir="auto"` element, never outside it, so it lands on the correct side.
 9. **Icons inside inputs** (search) sit at the start edge; clear buttons at the end edge.
 10. **Arabic (later):** add `ar.json`, the Arabic font is already declared; `:lang(ar)` raises line heights. **Russian (later):** add `ru.json`; Plex Sans includes Cyrillic. Neither needs layout changes. Budget 30 % text expansion for Russian.
 
@@ -332,14 +332,14 @@ Every async surface defines four states. Copy is in `screens.md`.
 
 ### Loading
 
-- **Lists:** skeleton rows at the real row height (72 px), 6 rows, with the static lock glyph and "Decrypting on this device" on rows whose ciphertext has arrived but is not yet decrypted. Network loading shows skeletons without the lock.
+- **Lists:** skeleton rows at the real row height (72 px), 6 rows. Rows whose ciphertext has arrived but is not yet decrypted add a small lock icon (`aria-label="Decrypting"`), with no caption. Network loading shows skeletons without the lock.
 - **Panels:** skeleton lines at text sizes. Never a full-page spinner after the shell has rendered.
 - **Buttons:** a 14 px spinner replaces the icon and the label changes to the progressive verb ("Testing…", "Unlocking…"); width does not change.
 - **Threshold:** show skeletons only after 150 ms; keep them at least 300 ms once shown to avoid flicker.
 
 ### Empty
 
-A 48 px tinted icon circle, a one-line heading, one sentence, one primary action. Variants: first use (no calls), no results (with "Clear filters" and the "Also matched" line explaining what was tried), filtered list empty, feature off (for example "Ask is turned off on this instance").
+A 48 px tinted icon circle, one short line, one action. No explanatory paragraph. Variants: first use (no calls), no results (with "Clear filters" and the "Also matched" line explaining what was tried), filtered list empty, feature off (for example "Ask is turned off on this instance").
 
 ### Error
 
@@ -347,11 +347,11 @@ A 48 px tinted icon circle, a one-line heading, one sentence, one primary action
 - **Panel** (a section failed to load): callout with "Try again".
 - **Page** (route failed): heading, one sentence, "Try again" and "Go to calls".
 - **Never include plaintext:** error messages use codes, counts and file names the user chose (file names are shown only locally, never sent to telemetry). A decrypt failure says "This call couldn't be decrypted on this device." with the call id prefix for support.
-- **Offline:** a slim banner under the top bar: "You're offline. Decrypted calls stay readable until you lock. Changes will sync when you're back online." (Reads only; writes are disabled with a tooltip.)
+- **Offline:** a slim banner under the top bar: "Offline. Changes are paused until you reconnect." (Reads keep working; writes are disabled with a tooltip.)
 
 ### Locked
 
-- When locking (manual, idle timeout, tab close), the app navigates to the unlock gate immediately, wipes decrypted stores and revokes Blob URLs. A toast on the gate: "AskCalls locked after 15 minutes idle."
+- When locking (manual, idle timeout, tab close), the app navigates to the unlock gate immediately, wipes decrypted stores and revokes Blob URLs. After an idle lock, a toast on the gate: "AskCalls locked" / "After 15 minutes idle."
 - Any deep link while locked lands on the gate and returns to the requested route after unlock.
 - Signed-out is different from locked: the sign-in page explains "Signing out also removes this device's saved keys. You'll need your passkey or recovery code to unlock again."
 
@@ -388,7 +388,7 @@ Single-key shortcuts work only when focus is not in a text field, and can be tur
 
 Rules:
 
-1. Sentence case. No exclamation marks, no emojis, no "coming soon", no "magic", "seamless", "effortless", "AI-powered", "military-grade".
+1. Sentence case. No exclamation marks, no emojis, no "coming soon". Banned words: seamless, secure, powerful, effortless, simply, just, easily, robust, magic (also "AI-powered", "military-grade"). The full no-slop rules, including where encryption may be mentioned at all, are in `design-language.md` section 2.6.
 2. Say the verb on the button: "Unlock with passkey", "Start import", "Send and ask", "Delete call". Not "OK", "Submit", "Continue" when a specific verb exists.
 3. Name third parties: "ElevenLabs", "Anthropic", not "our partners".
 4. Never overclaim. Use "We can't read your calls" only where the data-flow exceptions are one click away. Required phrasing for the three plaintext paths:
@@ -464,7 +464,7 @@ shadcn/ui primitive (Radix underneath) or "custom" when composed. All live in `p
 | Transcript segment | custom | Timestamp button, speaker, `dir="auto"` text, hit marks |
 | Audio player | custom (native `<audio>` + controls) | LTR in all locales; hit ticks |
 | Ask panel (chat) | custom on `ScrollArea` + `Textarea` | Streaming, citations as buttons |
-| Notes editor | `Textarea` (autosize) | "Saved, encrypted" status |
+| Notes editor | `Textarea` (autosize) | "Saved" status |
 | Stepper | custom | Onboarding (horizontal), wizard (vertical) |
 | Recovery code grid | custom | Mono, numbered groups, print stylesheet |
 | Code group input | custom on `InputOTP` pattern | Two-group confirm, 6-digit fingerprint |
