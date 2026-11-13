@@ -1,5 +1,5 @@
 import { ApiError } from '@askcalls/api-contract';
-import { replaceCallContent } from '@askcalls/api-contract/routes/calls';
+import { replaceCallContent } from '@askcalls/api-contract/routes/reindex';
 import { signCall, toBase64Url, tokenSet } from '@askcalls/crypto';
 import {
   type CallMeta,

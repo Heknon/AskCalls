@@ -45,7 +45,6 @@ import { duplicateOf, type FailureReason, failureReason, IngestError } from './e
 import type { AudioSource, DecodedAudio } from './ports/index';
 import { ensureTags, intentTagId } from './tags';
 import { RECORDING_BITRATE_KBPS, transcribeAudio } from './transcription';
-import { translateTranscript } from './translation';
 
 /** Per-file states of the bulk queue (spec 8). */
 export type IngestStatus =
@@ -262,6 +261,8 @@ async function runIngest(
       translation = 'off';
     } else {
       onStatus('translating');
+      // Loaded only when a rule asks for a translation.
+      const { translateTranscript } = await import('./translation');
       full = await gates.transcription(() =>
         translateTranscript(translator, transcript, language, targets, {
           clock: ctx.clock,

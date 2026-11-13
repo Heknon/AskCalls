@@ -107,12 +107,8 @@ export const ProvidersDocSchema = z.object({
    * Translation at ingest, through the `llm` choice (managed or own key): calls in a rule's
    * `from` language are also stored in each `to` language. No rules: translation is off.
    */
-  translation: z
-    .object({ rules: z.array(TranslationRuleSchema).max(20) })
-    .refine((t) => new Set(t.rules.map((r) => r.from)).size === t.rules.length, {
-      message: 'one rule per source language',
-    })
-    .default({ rules: [] }),
+  // One rule per source language (the editor keeps it so); on a duplicate the first one applies.
+  translation: z.object({ rules: z.array(TranslationRuleSchema).max(20) }).default({ rules: [] }),
   recordings: z
     .discriminatedUnion('mode', [
       z.object({ mode: z.literal('managed') }),

@@ -1,4 +1,4 @@
-import { translate } from '@askcalls/api-contract/routes/providers';
+import { translate } from '@askcalls/api-contract/routes/translate';
 import { createApiToken } from '@askcalls/domain/use-cases/tokens';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { session } from '../../../server/testing/fixtures';

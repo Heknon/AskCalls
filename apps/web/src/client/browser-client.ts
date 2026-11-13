@@ -7,10 +7,10 @@ import type {
   Embedder,
   FetchLike,
   SecretStore,
+  Translator,
 } from '@askcalls/client-core/ports/index';
 import { KeySession } from '@askcalls/client-core/session';
 import { managedTranscriber } from '@askcalls/client-core/transcription';
-import { managedTranslator } from '@askcalls/client-core/translation';
 import type { Providers } from '@askcalls/client-core/userdata';
 import { DomainError } from '@askcalls/domain';
 import { BrowserAudioCodec } from './adapters/audio/codec';
@@ -20,7 +20,6 @@ import { DeviceDb } from './adapters/idb';
 import { bucketOrigin, SigV4BucketStore } from './adapters/own-bucket';
 import { SettingsTranscriber } from './adapters/own-key-transcriber';
 import { WebAuthnPasskeyAuthenticator } from './adapters/passkey';
-import { SettingsTranslator } from './adapters/settings-translator';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from './adapters/stores';
 import { FetchBlobFetcher, FetchRecordingUploader } from './adapters/transfer';
 import { type DirectAccess, normalizeOrigin, PROVIDER_ORIGINS } from './direct-origins';
@@ -91,6 +90,23 @@ export function directAccessFor(p: Providers): DirectAccess {
   return { providers, origins };
 }
 
+/** Translation code loads on the first upload that needs it, not with every page. */
+function lazyTranslator(load: () => Promise<Translator>): Translator {
+  let loaded: Promise<Translator> | null = null;
+  const get = () => {
+    loaded ??= load().catch((e) => {
+      loaded = null;
+      throw e;
+    });
+    return loaded;
+  };
+  return {
+    id: 'settings',
+    enabled: async () => (await get()).enabled?.() ?? true,
+    translate: async (...args) => (await get()).translate(...args),
+  };
+}
+
 /**
  * The browser composition root: client-core's context wired to the browser adapters, the
  * same-origin typed API client (session cookie) and the lock rules of spec 6.8. Heavy parts
@@ -129,11 +145,14 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
       managedTranscriber(api),
       session,
     ),
-    translator: new SettingsTranslator(
-      api,
-      () => context().userData,
-      managedTranslator(api),
-      session,
+    translator: lazyTranslator(() =>
+      Promise.all([
+        import('./adapters/settings-translator'),
+        import('@askcalls/client-core/translation'),
+      ]).then(
+        ([{ SettingsTranslator }, { managedTranslator }]) =>
+          new SettingsTranslator(api, () => context().userData, managedTranslator(api), session),
+      ),
     ),
     uploader: new FetchRecordingUploader(),
     fetcher: new FetchBlobFetcher(),

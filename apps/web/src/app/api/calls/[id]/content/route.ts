@@ -1,4 +1,4 @@
-import { replaceCallContent } from '@askcalls/api-contract/routes/calls';
+import { replaceCallContent } from '@askcalls/api-contract/routes/reindex';
 import { replaceCallContent as replace } from '@askcalls/domain/use-cases/calls';
 import { route } from '../../../../../server/http/handler';
 

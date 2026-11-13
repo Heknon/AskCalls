@@ -1,4 +1,4 @@
-import { translate } from '@askcalls/api-contract/routes/providers';
+import { translate } from '@askcalls/api-contract/routes/translate';
 import { translateSegments } from '@askcalls/domain/use-cases/providers';
 import { route } from '../../../server/http/handler';
 

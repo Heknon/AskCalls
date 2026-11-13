@@ -9,6 +9,12 @@ export interface TranscriptSegment {
 /** An ISO 639-1 code: the language of a transcript or of one of its translations. */
 export type TranslationLanguage = string;
 
+/**
+ * Most translations one call gets: each is a text to index, embed and store. Kept here, not with
+ * the language helpers, so the settings schema can use it without loading them.
+ */
+export const MAX_TRANSLATIONS_PER_CALL = 4;
+
 export const isTranslationLanguage = (v: string): v is TranslationLanguage => /^[a-z]{2}$/.test(v);
 
 /**

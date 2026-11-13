@@ -1,5 +1,5 @@
 import type { ApiClient } from '@askcalls/api-contract';
-import { translate } from '@askcalls/api-contract/routes/providers';
+import { translate } from '@askcalls/api-contract/routes/translate';
 import {
   DomainError,
   type Transcript,

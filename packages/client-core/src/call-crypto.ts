@@ -44,19 +44,11 @@ const TranslationSchema = z.object({
   createdAt: z.string(),
 });
 
-export const TranscriptSchema = z
-  .object({
-    segments: z.array(SegmentSchema),
-    text: z.string(),
-    translations: z.record(z.string().regex(/^[a-z]{2}$/), TranslationSchema).optional(),
-  })
-  .superRefine((t, ctx) => {
-    for (const [lang, tr] of Object.entries(t.translations ?? {})) {
-      if (tr && tr.segments.length !== t.segments.length) {
-        ctx.addIssue({ code: 'custom', path: ['translations', lang], message: 'not aligned' });
-      }
-    }
-  }) satisfies z.ZodType<Transcript>;
+export const TranscriptSchema = z.object({
+  segments: z.array(SegmentSchema),
+  text: z.string(),
+  translations: z.record(z.string().regex(/^[a-z]{2}$/), TranslationSchema).optional(),
+}) satisfies z.ZodType<Transcript>;
 
 export interface CallKeyContext {
   userId: string;

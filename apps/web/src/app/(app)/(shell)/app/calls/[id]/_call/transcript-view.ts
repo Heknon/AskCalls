@@ -1,7 +1,8 @@
 'use client';
 
 import type { DecryptedCall } from '@askcalls/client-core/calls';
-import { highlightRanges, locateChunk } from '@askcalls/client-core/search';
+import { locateChunk } from '@askcalls/client-core/locate';
+import { highlightRanges } from '@askcalls/client-core/search';
 import type { TranscriptSegment } from '@askcalls/domain';
 import { useMediaQuery } from '@askcalls/ui/lib/use-media-query';
 import { useCallback, useMemo, useState } from 'react';

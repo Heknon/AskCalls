@@ -15,6 +15,7 @@ export * from './inbox';
 export * from './ingest';
 export * from './intents';
 export * from './keys';
+export * from './locate';
 export * from './ports/index';
 export * from './reindex';
 export * from './search';
