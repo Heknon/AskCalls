@@ -122,6 +122,16 @@ describe.each(DEPLOY_ENVS)('AskCallsStorage-%s', (env: DeployEnv) => {
     });
   });
 
+  it('moves recordings to Intelligent-Tiering on upload', () => {
+    const bucket = Object.values(t.findResources('AWS::S3::Bucket'))[0]!;
+    const rules = bucket.Properties.LifecycleConfiguration.Rules as Record<string, unknown>[];
+    expect(rules).toContainEqual({
+      Id: 'intelligent-tiering',
+      Transitions: [{ StorageClass: 'INTELLIGENT_TIERING', TransitionInDays: 0 }],
+      Status: 'Enabled',
+    });
+  });
+
   it('aborts incomplete multipart uploads; dev also expires preview objects', () => {
     const bucket = Object.values(t.findResources('AWS::S3::Bucket'))[0]!;
     const rules = bucket.Properties.LifecycleConfiguration.Rules as Record<string, unknown>[];

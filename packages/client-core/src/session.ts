@@ -34,11 +34,14 @@ export class KeySession {
   #idleMs: number;
   #timers: Timers;
   #timer: unknown = null;
+  #now: () => number;
+  #lastActiveAt = 0;
 
-  constructor(opts: { idleTimeoutMs?: number | null; timers?: Timers } = {}) {
+  constructor(opts: { idleTimeoutMs?: number | null; timers?: Timers; now?: () => number } = {}) {
     this.#idleMs =
       opts.idleTimeoutMs === undefined ? DEFAULT_IDLE_TIMEOUT_MS : (opts.idleTimeoutMs ?? 0);
     this.#timers = opts.timers ?? systemTimers;
+    this.#now = opts.now ?? (() => Date.now());
   }
 
   get isUnlocked(): boolean {
@@ -60,6 +63,11 @@ export class KeySession {
   /** Idle timeout in ms; 0 disables auto-lock (the agent). Takes effect on the next touch. */
   get idleTimeoutMs(): number {
     return this.#idleMs;
+  }
+
+  /** When `touch()` last ran (unlock counts), on the session's clock. */
+  get lastActiveAt(): number {
+    return this.#lastActiveAt;
   }
 
   setIdleTimeout(ms: number): void {
@@ -88,6 +96,7 @@ export class KeySession {
   /** Records user activity: restarts the idle timer. */
   touch(): void {
     if (!this.#state) return;
+    this.#lastActiveAt = this.#now();
     if (this.#timer !== null) this.#timers.clearTimeout(this.#timer);
     this.#timer =
       this.#idleMs > 0 ? this.#timers.setTimeout(() => this.lock('idle'), this.#idleMs) : null;

@@ -26,7 +26,11 @@ const manualTimers = () => {
 async function setup(idleMs = 60_000) {
   let now = 0;
   const win = fakeWindow();
-  const session = new KeySession({ idleTimeoutMs: idleMs, timers: manualTimers() });
+  const session = new KeySession({
+    idleTimeoutMs: idleMs,
+    timers: manualTimers(),
+    now: () => now,
+  });
   const channel = new BroadcastChannel(`lock-test-${Math.random()}`);
   const off = installLockRules(session, { target: win, now: () => now, channel });
   await session.unlock({ userId: 'u', rootKey: randomBytes(32) });
@@ -63,6 +67,53 @@ describe('lock rules', () => {
     win.document.dispatchEvent(new Event('visibilitychange'));
     expect(session.isUnlocked).toBe(true);
     off();
+  });
+
+  it('pointer movement, scrolling and a playing recording count as activity', async () => {
+    const { win, session, advance, off } = await setup(60_000);
+    for (const ev of ['pointermove', 'scroll', 'timeupdate']) {
+      advance(50_000);
+      win.dispatchEvent(new Event(ev));
+    }
+    advance(50_000);
+    win.document.dispatchEvent(new Event('visibilitychange'));
+    expect(session.isUnlocked).toBe(true);
+    off();
+  });
+
+  it('a use case touching the session counts as activity', async () => {
+    const { win, session, advance, off } = await setup(60_000);
+    advance(50_000);
+    session.touch();
+    advance(50_000);
+    win.document.dispatchEvent(new Event('visibilitychange'));
+    expect(session.isUnlocked).toBe(true);
+    advance(60_000);
+    win.document.dispatchEvent(new Event('visibilitychange'));
+    expect(session.isUnlocked).toBe(false);
+    off();
+  });
+
+  it('activity in another tab keeps this tab unlocked, and activity here is shared', async () => {
+    const a = await setup(60_000);
+    const other = new BroadcastChannel(a.channel.name);
+    const shared = new Promise((r) =>
+      other.addEventListener('message', (e) => r(e.data), { once: true }),
+    );
+    a.advance(10_000);
+    a.win.dispatchEvent(new Event('keydown'));
+    expect(await shared).toEqual({ type: 'activity' });
+
+    a.advance(55_000);
+    const seen = new Promise((r) => a.channel.addEventListener('message', r, { once: true }));
+    other.postMessage({ type: 'activity' });
+    await seen;
+    a.advance(55_000);
+    a.win.document.dispatchEvent(new Event('visibilitychange'));
+    expect(a.session.isUnlocked).toBe(true);
+    other.close();
+    a.channel.close();
+    a.off();
   });
 
   it('a manual lock is broadcast to other tabs, and received locks lock here', async () => {

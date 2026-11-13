@@ -130,6 +130,7 @@
       "idleFor": "Lock after idle for",
       "minutes": "{n} minutes",
       "hours": "{n} hours",
+      "never": "Never",
       "saved": "Auto-lock saved"
     }
   },

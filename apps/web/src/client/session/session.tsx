@@ -48,6 +48,8 @@ export interface AppSession {
   error: 'offline' | 'server' | null;
   refreshMe(): Promise<void>;
   retry(): void;
+  /** Rereads `autoLockMinutes` from the session after the setting changed. */
+  refreshAutoLock(): void;
   /** Locks this tab and every other tab of AskCalls. */
   lock(): void;
   /** Removes this device's saved keys and the direct-access cookie, then signs out. */
@@ -208,6 +210,9 @@ export function AppSessionProvider({
   }, [client, notify, refreshMe, router]);
 
   const lock = useCallback(() => client?.session.lock('manual'), [client]);
+  const refreshAutoLock = useCallback(() => {
+    if (client) setAutoLockMinutes(Math.round(client.session.idleTimeoutMs / 60_000));
+  }, [client]);
 
   const signOut = useCallback(async () => {
     if (client) {
@@ -239,10 +244,22 @@ export function AppSessionProvider({
       error,
       refreshMe,
       retry: () => setAttempt((a) => a + 1),
+      refreshAutoLock,
       lock,
       signOut,
     }),
-    [status, me, client, autoLockMinutes, lastLock, error, refreshMe, lock, signOut],
+    [
+      status,
+      me,
+      client,
+      autoLockMinutes,
+      lastLock,
+      error,
+      refreshMe,
+      refreshAutoLock,
+      lock,
+      signOut,
+    ],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
