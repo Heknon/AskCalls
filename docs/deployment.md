@@ -17,8 +17,9 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
  master  ──push──▶ production full tests (fast checks + integration ∥ E2E)
                               → CDK AskCallsStorage-prod + AskCallsModels → publish the model (if new) → migrate main
                               → Vercel --prod
- v*.*.*  ──tag───▶ release    fast checks → client asset hashes → npm (agent) → Docker image (GHCR, amd64 + arm64)
-                              → offline bundles → GitHub release
+ master  ─deploy─▶ release    after a successful production deploy, when apps/agent/package.json has a
+                              version with no tag yet: fast checks → client asset hashes → tag v<version>
+                              → npm (agent) → Docker image (GHCR, amd64 + arm64) → offline bundles → GitHub release
 ```
 
 | Workflow | Trigger | What it does |
@@ -26,7 +27,7 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
 | `ci.yml` (Full tests) | before production (called by `deploy.yml`); the `full-tests` label on a pull request; Run workflow by hand | two parallel jobs: fast checks + integration tests (pgvector Postgres service, MinIO), and Playwright E2E on Chromium |
 | `preview.yml` | pull request opened / synchronized / reopened / closed (not for docs-only changes) | one job: per-PR database branch + migrations + preview deploy + PR comment, then the fast checks; cleanup on close |
 | `deploy.yml` | push to `dev` or `master` (docs-only changes skip it); Run workflow to re-deploy (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → `cdk deploy` (`AskCallsStorage-<env>`, plus `AskCallsModels` on production) through the OIDC deploy role → `models:publish` (a few HEAD requests when the pinned build is already there) → migrations → Vercel |
-| `release.yml` | a `v<major>.<minor>.<patch>` tag | one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
+| `release.yml` | a successful production deploy whose `apps/agent/package.json` version has no `v<version>` tag yet (bump the version in a PR to release) | tags the deployed commit, then one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
 | `codeql.yml` | weekly, pushes to `master`, by hand | CodeQL (JavaScript and TypeScript, security-extended) |
 
 `AskCallsGithubDeploy` (the OIDC roles the workflows assume) is the one stack no workflow
@@ -321,13 +322,16 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    longer needs the `S3_*` secrets the R2 setup used; delete them.
 4. npm: `release.yml` publishes the agent by trusted publishing (OIDC), so GitHub holds no npm
    token. npm can only trust a workflow for a package that exists, so once:
-   1. Publish the first version by hand, built the way `release.yml` builds it:
-      `bun scripts/release/agent-package.ts --version 0.1.0`, then in `apps/agent/dist/npm`
-      `npm login` and `npm publish --access public`. Tag that commit `v0.1.0` afterwards so the
-      GitHub release matches; the npm step skips a version that is already published.
+   1. Create the package once by hand (`npm publish` of a build from
+      `bun scripts/release/agent-package.ts --version <x.y.z>` in `apps/agent/dist/npm`). npm
+      stages a new package: it shows a `0.0.0-stage` placeholder until a maintainer approves it.
    2. On npmjs.com, `askcalls` → Settings → Trusted publishing → GitHub Actions: owner
-      `Heknon`, repository `AskCalls`, workflow `release.yml`, no environment.
+      `Heknon`, repository `AskCalls`, workflow `release.yml`, environment `production`. The
+      environment binds publishing to master: the `production` GitHub environment accepts no
+      other branch. npm drops the configuration unless a release validates it within two days;
+      add it again before the next release if it lapsed.
    3. Same page: Publishing access → require two-factor authentication and disallow tokens.
+   4. A release may land in npm's staged queue: approve it on the package's Staged Packages tab.
 
    Until the package exists a release skips the npm step and says so. The workflow publishes
    GHCR images with its own `GITHUB_TOKEN` (`packages: write`); make the package public under the

@@ -1,50 +1,86 @@
 name: Release
 
-# A version tag (v1.2.3) publishes a release (spec 14.1), in one job:
-#   build → client asset hashes → npm (agent) → Docker image to GHCR (multi-arch only here) →
-#   offline bundles → GitHub release with every checksum in its notes.
-# `bun run release:dry-run` does the same locally without publishing anything.
+# Every successful production deploy (deploy.yml on master) may publish a release (spec 14.1):
+# when the agent's version (apps/agent/package.json) has no `v<version>` tag yet, this tags the
+# deployed commit and publishes, in one job:
+#   build → client asset hashes → tag → npm (agent) → Docker image to GHCR (multi-arch only here)
+#   → offline bundles → GitHub release with every checksum in its notes.
+# A merge that doesn't change the version publishes nothing. To release, bump the version in a
+# pull request. `bun run release:dry-run` does the same locally without publishing anything.
 #
-# Tag a commit that is already on master and deployed: the full suite ran before production
-# (deploy.yml), so only the fast checks run here. The agent goes to npm by trusted publishing
-# (OIDC, no token): npm trusts this workflow for the `askcalls` package. Until that package
-# exists the npm step is skipped and the run says so (docs/deployment.md, npm).
+# The full suite ran before production, so only the fast checks run here. The agent goes to npm
+# by trusted publishing (OIDC, no token): npm trusts this workflow in the `production`
+# environment for the `askcalls` package (docs/deployment.md, npm).
 on:
-  push:
-    tags: ["v*.*.*"]
+  workflow_run:
+    workflows: [Deploy]
+    types: [completed]
+    branches: [master]
 
 # A release that started finishes: a half-published version is worse than a late one.
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  plan:
+    name: Version to release
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      release: ${{ steps.v.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Read the version
+        id: v
+        run: |
+          version=$(jq -r .version apps/agent/package.json)
+          if ! [[ "$version" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
+            echo "::error::apps/agent/package.json version $version is not <major>.<minor>.<patch>"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$version" = 0.0.0 ] || git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
+            echo "::notice::v$version is already released (or 0.0.0); nothing to publish."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
-    name: Release ${{ github.ref_name }}
+    name: Release v${{ needs.plan.outputs.version }}
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # npm's trusted publisher for `askcalls` names this environment; it only accepts master.
+    environment: production
     permissions:
       contents: write
       packages: write
       id-token: write
     env:
       DIST: dist/release
+      SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: ./.github/actions/setup
 
       - name: Read the version
         id: v
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Tag $GITHUB_REF_NAME is not v<major>.<minor>.<patch>"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       # Builds the web app (with the model, like production) and checks it.
@@ -56,6 +92,24 @@ jobs:
         run: |
           mkdir -p "$DIST/images"
           bun scripts/release/client-hashes.ts --out "$DIST/client-assets.sha256"
+
+      - name: Tag the deployed commit
+        env:
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # A re-run after a later step failed finds the tag already on this commit.
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            git fetch --quiet origin "refs/tags/$TAG:refs/tags/$TAG"
+            if [ "$(git rev-list -n 1 "$TAG")" != "$SHA" ]; then
+              echo "::error::$TAG already exists on another commit"
+              exit 1
+            fi
+          else
+            git tag -a "$TAG" -m "AskCalls $TAG" "$SHA"
+            git push origin "$TAG"
+          fi
 
       - name: Build the agent
         env:
@@ -105,7 +159,7 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          build-args: ASKCALLS_BUILD_ID=${{ github.sha }}
+          build-args: ASKCALLS_BUILD_ID=${{ env.SHA }}
           push: true
           provenance: mode=max
           tags: |
@@ -113,7 +167,7 @@ jobs:
             ${{ steps.v.outputs.image }}:latest
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ env.SHA }}
             org.opencontainers.image.version=${{ steps.v.outputs.version }}
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
@@ -124,7 +178,6 @@ jobs:
         env:
           VERSION: ${{ steps.v.outputs.version }}
           IMAGE: ${{ steps.v.outputs.image }}
-          SHA: ${{ github.sha }}
         run: |
           for arch in amd64 arm64; do
             docker buildx build -f docker/Dockerfile --platform "linux/$arch" \
@@ -142,9 +195,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.v.outputs.version }}
+          TAG: ${{ steps.v.outputs.tag }}
         run: |
           cd "$DIST"
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "AskCalls $VERSION" \
+          gh release create "$TAG" --verify-tag --title "AskCalls $VERSION" \
             --notes-file release-notes.md \
             askcalls-offline-"$VERSION"-*.tar.gz "askcalls-$VERSION.tgz" agent/askcalls-* \
             client-assets.sha256 SHA256SUMS
