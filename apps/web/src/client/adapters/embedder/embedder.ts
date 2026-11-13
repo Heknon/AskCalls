@@ -1,12 +1,12 @@
 import type { Embedder } from '@askcalls/client-core/ports/index';
 import { DomainError } from '@askcalls/domain';
-import { EMBEDDING_MODEL } from '../../assets';
+import { EMBEDDING_MODEL, EMBEDDING_MODEL_ID, modelDirectoryUrl } from '../../assets';
 import type { EmbedderDevice, EmbedderEvent, EmbedderRequest } from './protocol';
 
 export interface ModelLoadProgress {
   /** Bytes fetched so far across model files (from cache or network). */
   loaded: number;
-  /** Total bytes of the files seen so far; grows as each file starts. */
+  /** Total bytes of the model files (known up front from their pins). */
   total: number;
   files: Record<string, { loaded: number; total: number }>;
 }
@@ -15,12 +15,18 @@ export type EmbedderStatus =
   | { state: 'idle' }
   | { state: 'loading'; progress: ModelLoadProgress }
   | { state: 'ready'; device: EmbedderDevice; loadMs: number }
-  | { state: 'failed' };
+  /** `verification`: a downloaded file did not match its pinned hash and was refused. */
+  | { state: 'failed'; reason: 'verification' | 'other' };
 
 export interface WorkerEmbedderOptions {
   /** Texts per inference call. */
   batchSize?: number;
   prefer?: EmbedderDevice | 'auto';
+  /**
+   * The instance's model host (`EMBEDDING_MODEL_URL`, from the page's runtime config); null or
+   * absent: this origin's /models/.
+   */
+  modelBaseUrl?: string | null;
   createWorker?: () => Worker;
 }
 
@@ -32,13 +38,16 @@ interface Pending {
 
 const DIMS = EMBEDDING_MODEL.dimensions;
 
+const TOTAL_BYTES = EMBEDDING_MODEL.files.reduce((n, f) => n + f.bytes, 0);
+
 /**
  * The browser Embedder (spec 3.3): transformers.js and ONNX Runtime in a dedicated worker,
- * WebGPU when an adapter is available, WebAssembly otherwise. The worker starts on the first
- * `embed()` or `load()`; status listeners see the first-load download progress.
+ * WebGPU when an adapter is available, WebAssembly otherwise. Nothing is downloaded until the
+ * first `embed()` or `load()` (ingest, semantic search); keyword search and reading calls never
+ * start it. `status` and `onStatus` report the first-load download progress for the UI.
  */
 export class WorkerEmbedder implements Embedder {
-  readonly modelId = EMBEDDING_MODEL.id;
+  readonly modelId = EMBEDDING_MODEL_ID;
   readonly dimensions = 384 as const;
   #worker: Worker | null = null;
   #next = 1;
@@ -50,11 +59,13 @@ export class WorkerEmbedder implements Embedder {
   #readyReject: ((e: unknown) => void) | null = null;
   readonly #batchSize: number;
   readonly #prefer: EmbedderDevice | 'auto';
+  readonly #modelBaseUrl: string | null;
   readonly #createWorker: () => Worker;
 
   constructor(opts: WorkerEmbedderOptions = {}) {
     this.#batchSize = opts.batchSize ?? 8;
     this.#prefer = opts.prefer ?? 'auto';
+    this.#modelBaseUrl = opts.modelBaseUrl ?? null;
     this.#createWorker =
       opts.createWorker ??
       (() =>
@@ -139,7 +150,7 @@ export class WorkerEmbedder implements Embedder {
       this.#readyReject = reject;
     });
     this.#ready.catch(() => {});
-    const progress: ModelLoadProgress = { loaded: 0, total: 0, files: {} };
+    const progress: ModelLoadProgress = { loaded: 0, total: TOTAL_BYTES, files: {} };
     this.#setStatus({ state: 'loading', progress: { ...progress } });
     worker.onmessage = ({ data }: MessageEvent<EmbedderEvent>) => {
       switch (data.type) {
@@ -147,7 +158,6 @@ export class WorkerEmbedder implements Embedder {
           progress.files[data.file] = { loaded: data.loaded, total: data.total };
           const all = Object.values(progress.files);
           progress.loaded = all.reduce((n, f) => n + f.loaded, 0);
-          progress.total = all.reduce((n, f) => n + f.total, 0);
           this.#setStatus({
             state: 'loading',
             progress: { ...progress, files: { ...progress.files } },
@@ -159,8 +169,12 @@ export class WorkerEmbedder implements Embedder {
           this.#readyResolve?.(data.device);
           break;
         case 'load_failed':
-          this.#setStatus({ state: 'failed' });
-          this.#readyReject?.(new DomainError('unsupported', 'embedding model failed to load'));
+          this.#setStatus({ state: 'failed', reason: data.reason });
+          this.#readyReject?.(
+            data.reason === 'verification'
+              ? new DomainError('invalid', 'embedding model failed verification')
+              : new DomainError('unsupported', 'embedding model failed to load'),
+          );
           break;
         case 'result': {
           const vectors = Array.from({ length: data.count }, (_, i) =>
@@ -180,9 +194,13 @@ export class WorkerEmbedder implements Embedder {
     };
     worker.onerror = () => {
       this.dispose();
-      this.#setStatus({ state: 'failed' });
+      this.#setStatus({ state: 'failed', reason: 'other' });
     };
-    worker.postMessage({ type: 'load', prefer: this.#prefer } satisfies EmbedderRequest);
+    worker.postMessage({
+      type: 'load',
+      prefer: this.#prefer,
+      modelUrl: modelDirectoryUrl(this.#modelBaseUrl, globalThis.location.origin),
+    } satisfies EmbedderRequest);
     return worker;
   }
 }

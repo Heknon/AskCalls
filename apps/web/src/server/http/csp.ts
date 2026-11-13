@@ -28,6 +28,19 @@ export function blobOrigins(config: InstanceConfig): string[] {
   return out;
 }
 
+/**
+ * The instance's embedding model host, or null for this origin (unset, or offline mode, which
+ * always serves the model itself).
+ */
+export function embeddingModelUrl(config: InstanceConfig): string | null {
+  return config.offlineMode ? null : (config.embeddingModelUrl ?? null);
+}
+
+function embeddingModelOrigins(config: InstanceConfig): string[] {
+  const url = embeddingModelUrl(config);
+  return url ? [new URL(url).origin] : [];
+}
+
 export function newNonce(): string {
   const b = globalThis.crypto.getRandomValues(new Uint8Array(16));
   return btoa(String.fromCharCode(...b));
@@ -42,7 +55,7 @@ export function appCsp(
   nonce: string,
   environment: 'production' | 'development' | 'test',
 ): string {
-  const connect = ["'self'", ...blobOrigins(config)];
+  const connect = ["'self'", ...blobOrigins(config), ...embeddingModelOrigins(config)];
   if (!config.offlineMode) connect.push(...DIRECT_PROVIDER_ORIGINS);
   const script = ["'self'", `'nonce-${nonce}'`, "'wasm-unsafe-eval'", "'strict-dynamic'"];
   // React Refresh in `next dev` needs eval; never in production.

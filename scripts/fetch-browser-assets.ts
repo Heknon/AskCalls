@@ -1,18 +1,21 @@
 /**
- * Places the browser's self-hosted runtime assets under apps/web/public (spec 2.4):
+ * Places the browser's same-origin runtime assets under apps/web/public (spec 2.4):
  * - ONNX Runtime WebAssembly files, copied from the installed onnxruntime-web package;
  * - the ffmpeg.wasm core, copied from the installed @ffmpeg/core package;
- * - the multilingual-e5-small model, downloaded once from Hugging Face at a pinned revision.
- * Every model file is checked against its SHA-256; existing verified files are kept.
+ * - the pruned multilingual-e5-small build (scripts/models), at /models/e5-pruned/<build>/.
+ *   It is downloaded prebuilt from EMBEDDING_MODEL_URL when that is set, otherwise built
+ *   locally from the original model (downloaded once from Hugging Face) and the committed
+ *   keep-set. Every file must match its SHA-256 in assets.ts; verified files are kept.
  *
  * Runs from `predev` and `prebuild` in apps/web. Environment:
- * - ASKCALLS_MODEL_MIRROR: base URL to download model files from instead of huggingface.co
- *   (`<mirror>/<model id>/resolve/<revision>/<file>`), for air-gapped builds.
- * - ASKCALLS_SKIP_MODEL_DOWNLOAD=1: skip the model (CI jobs that never embed in a browser).
+ * - EMBEDDING_MODEL_URL: a model host with published builds (`bun run models:publish`).
+ * - ASKCALLS_MODEL_MIRROR: base URL to download the original model from instead of
+ *   huggingface.co (`<mirror>/<model id>/resolve/<revision>/<file>`), for air-gapped builds.
+ * - ASKCALLS_SKIP_MODEL_DOWNLOAD=1: skip the model (CI jobs that never embed in a browser, and
+ *   deployments whose browsers fetch it from EMBEDDING_MODEL_URL).
  */
-import { createHash } from 'node:crypto';
-import { createReadStream, existsSync } from 'node:fs';
-import { copyFile, mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { copyFile, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import {
@@ -20,13 +23,17 @@ import {
   FFMPEG_BASE_PATH,
   FFMPEG_CORE_VERSION,
   FFMPEG_FILES,
-  MODEL_BASE_PATH,
+  MODEL_BUILD_PATH,
   ORT_BASE_PATH,
   ORT_FILES,
   ORT_VERSION,
+  SAME_ORIGIN_MODEL_BASE,
 } from '../apps/web/src/client/assets';
+import { buildPruned } from './models/build-e5';
+import { download, verified } from './models/files';
+import { sha256 } from './models/prune-e5';
 
-const { ASKCALLS_MODEL_MIRROR: modelMirror, ASKCALLS_SKIP_MODEL_DOWNLOAD: skipModel } = Bun.env;
+const { EMBEDDING_MODEL_URL: prebuiltBase, ASKCALLS_SKIP_MODEL_DOWNLOAD: skipModel } = Bun.env;
 const webDir = join(import.meta.dir, '..', 'apps', 'web');
 const publicDir = join(webDir, 'public');
 const requireFromWeb = createRequire(join(webDir, 'package.json'));
@@ -58,57 +65,48 @@ async function copyAll(fromDir: string, files: readonly string[], toPath: string
   }
 }
 
-function sha256File(path: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const h = createHash('sha256');
-    createReadStream(path)
-      .on('data', (d) => h.update(d))
-      .on('error', reject)
-      .on('end', () => resolve(h.digest('hex')));
-  });
-}
-
-async function verified(path: string, bytes: number, sha256: string): Promise<boolean> {
-  const s = await stat(path).catch(() => null);
-  return !!s && s.size === bytes && (await sha256File(path)) === sha256;
-}
-
-async function download(url: string, target: string, bytes: number, sha256: string) {
-  const res = await fetch(url);
-  if (!res.ok || !res.body) throw new Error(`GET ${url}: HTTP ${res.status}`);
-  const tmp = `${target}.part`;
-  const h = createHash('sha256');
-  const writer = Bun.file(tmp).writer();
-  let n = 0;
-  let lastLog = 0;
-  for await (const part of res.body) {
-    h.update(part);
-    writer.write(part);
-    n += part.length;
-    if (bytes > 10_000_000 && n - lastLog > 20_000_000) {
-      lastLog = n;
-      console.log(`  ${Math.round((100 * n) / bytes)}%`);
+async function placeModel() {
+  const modelsDir = join(publicDir, SAME_ORIGIN_MODEL_BASE);
+  const dir = join(modelsDir, MODEL_BUILD_PATH);
+  await mkdir(modelsDir, { recursive: true });
+  for (const entry of await readdir(modelsDir)) {
+    if (entry !== 'e5-pruned') await rm(join(modelsDir, entry), { recursive: true, force: true });
+  }
+  for (const entry of await readdir(join(modelsDir, 'e5-pruned')).catch(() => [])) {
+    if (entry !== EMBEDDING_MODEL.build) {
+      await rm(join(modelsDir, 'e5-pruned', entry), { recursive: true, force: true });
     }
   }
-  await writer.end();
-  const digest = h.digest('hex');
-  if (n !== bytes || digest !== sha256) {
-    await rm(tmp, { force: true });
-    throw new Error(`${url}: got ${n} bytes sha256 ${digest}, expected ${bytes} ${sha256}`);
-  }
-  await rename(tmp, target);
-}
 
-async function fetchModel() {
-  const base = (modelMirror ?? 'https://huggingface.co').replace(/\/+$/, '');
-  const dir = join(publicDir, MODEL_BASE_PATH, EMBEDDING_MODEL.id);
+  const missing = [];
   for (const f of EMBEDDING_MODEL.files) {
-    const target = join(dir, f.path);
-    if (await verified(target, f.bytes, f.sha256)) continue;
-    await mkdir(dirname(target), { recursive: true });
-    const url = `${base}/${EMBEDDING_MODEL.id}/resolve/${EMBEDDING_MODEL.revision}/${f.path}`;
-    console.log(`fetch-browser-assets: downloading ${f.path} (${(f.bytes / 1e6).toFixed(1)} MB)`);
-    await download(url, target, f.bytes, f.sha256);
+    if (!(await verified(join(dir, f.path), f))) missing.push(f);
+  }
+  if (missing.length === 0) return;
+
+  if (prebuiltBase) {
+    const base = new URL(MODEL_BUILD_PATH, `${prebuiltBase.replace(/\/+$/, '')}/`).href;
+    for (const f of missing) {
+      console.log(`fetch-browser-assets: downloading ${f.path} (${(f.bytes / 1e6).toFixed(1)} MB)`);
+      await download(new URL(f.path, base).href, join(dir, f.path), f);
+    }
+    return;
+  }
+
+  console.log('fetch-browser-assets: building the pruned embedding model');
+  const { files, manifest } = await buildPruned();
+  if (manifest.build !== EMBEDDING_MODEL.build) {
+    throw new Error(
+      `pruned build ${manifest.build} does not match assets.ts (${EMBEDDING_MODEL.build}); run bun scripts/models/build-e5.ts and update the pins`,
+    );
+  }
+  for (const f of missing) {
+    const bytes = files.get(f.path)!;
+    if (bytes.length !== f.bytes || sha256(bytes) !== f.sha256) {
+      throw new Error(`${f.path}: built file does not match its pin`);
+    }
+    await mkdir(dirname(join(dir, f.path)), { recursive: true });
+    await Bun.write(join(dir, f.path), bytes);
   }
 }
 
@@ -128,7 +126,7 @@ async function main() {
       'fetch-browser-assets: skipping the embedding model (ASKCALLS_SKIP_MODEL_DOWNLOAD)',
     );
   } else {
-    await fetchModel();
+    await placeModel();
   }
 }
 

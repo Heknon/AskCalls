@@ -24,6 +24,7 @@ import {
   PROVIDER_ORIGINS,
 } from './direct-origins';
 import { BlobUrls, installLockRules } from './lock';
+import { readEmbeddingModelUrl } from './runtime-config';
 
 export interface BrowserClient {
   /** client-core's context: pass it to every use case (ingest, search, calls, …). */
@@ -100,7 +101,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     opts.idleTimeoutMs === undefined ? {} : { idleTimeoutMs: opts.idleTimeoutMs },
   );
   const db = new DeviceDb(opts.dbName);
-  const embedder = new WorkerEmbedder();
+  const embedder = new WorkerEmbedder({ modelBaseUrl: readEmbeddingModelUrl() });
   const audio = new BrowserAudioCodec();
   const blobUrls = new BlobUrls();
   let ctx: ClientContext | null = null;

@@ -84,7 +84,8 @@ export type FeatureExtractor = (
  */
 const WORKER = `import { env, pipeline } from '@huggingface/transformers';
 import { createInterface } from 'node:readline';
-env.cacheDir = process.argv[2];
+env.allowRemoteModels = false;
+env.localModelPath = process.argv[2];
 const extract = await pipeline('feature-extraction', process.argv[3], { dtype: process.argv[4] });
 let queue = Promise.resolve();
 const send = (m) => process.stdout.write(JSON.stringify(m) + '\\n');
@@ -105,7 +106,8 @@ send({ ready: true });
 
 export async function workerExtractor(opts: {
   runtimeDir: string;
-  modelsDir: string;
+  /** Verified model files (model-files.ts), as transformers.js's `localModelPath`. */
+  localModelPath: string;
   model: string;
   dtype: string;
   log: (line: string) => void;
@@ -113,7 +115,7 @@ export async function workerExtractor(opts: {
   await ensureRuntime(opts.runtimeDir, opts.log);
   const script = join(opts.runtimeDir, 'embed-worker.mjs');
   await writeFile(script, WORKER);
-  const child = spawn(process.execPath, [script, opts.modelsDir, opts.model, opts.dtype], {
+  const child = spawn(process.execPath, [script, opts.localModelPath, opts.model, opts.dtype], {
     cwd: opts.runtimeDir,
     env: asBun,
     stdio: ['pipe', 'pipe', 'ignore'],

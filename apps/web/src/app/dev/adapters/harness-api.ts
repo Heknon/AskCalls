@@ -18,13 +18,14 @@ import { DeviceDb } from '@/client/adapters/idb';
 import { WebAuthnPasskeyAuthenticator } from '@/client/adapters/passkey';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from '@/client/adapters/stores';
 import { createBrowserClient } from '@/client/browser-client';
+import { readEmbeddingModelUrl } from '@/client/runtime-config';
 
 /**
  * Functions the Playwright driver calls with `page.evaluate`. Inputs and outputs are plain
  * JSON; audio crosses as base64. Development only.
  */
 
-const embedder = new WorkerEmbedder();
+const embedder = new WorkerEmbedder({ modelBaseUrl: readEmbeddingModelUrl() });
 const codec = new BrowserAudioCodec();
 const db = new DeviceDb('askcalls-dev-harness');
 
