@@ -57,6 +57,16 @@ export async function embedPairs(texts: string[]) {
   return { dims: vectors.map((v) => v.length), norms: vectors.map(norm), sim };
 }
 
+/**
+ * One text per call (the q8 model's activation quantization is per batch), as plain arrays,
+ * for comparing with the agent's vectors.
+ */
+export async function embedEach(texts: string[]) {
+  const out: number[][] = [];
+  for (const t of texts) out.push(Array.from((await embedder.embed([t]))[0]!));
+  return out;
+}
+
 /** Embeds `count` passages of ~120 words in batches; returns ms per passage. */
 export async function embedBenchmark(count: number, words = 120) {
   const vocab =

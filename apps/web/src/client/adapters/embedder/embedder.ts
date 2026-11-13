@@ -19,7 +19,10 @@ export type EmbedderStatus =
   | { state: 'failed'; reason: 'verification' | 'other' };
 
 export interface WorkerEmbedderOptions {
-  /** Texts per inference call. */
+  /**
+   * Texts per inference call. Default 1: the q8 model quantizes activations per batch, so with
+   * larger batches a vector depends on its neighbours and no longer matches the agent's.
+   */
   batchSize?: number;
   prefer?: EmbedderDevice | 'auto';
   /**
@@ -63,7 +66,7 @@ export class WorkerEmbedder implements Embedder {
   readonly #createWorker: () => Worker;
 
   constructor(opts: WorkerEmbedderOptions = {}) {
-    this.#batchSize = opts.batchSize ?? 8;
+    this.#batchSize = opts.batchSize ?? 1;
     this.#prefer = opts.prefer ?? 'auto';
     this.#modelBaseUrl = opts.modelBaseUrl ?? null;
     this.#createWorker =

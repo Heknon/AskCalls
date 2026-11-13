@@ -4,22 +4,30 @@
  * embeddings (Hebrew and English), WAV/MP3/M4A decoding to 16 kHz mono (WebAudio and the
  * ffmpeg.wasm fallback), Opus encode → decode, chunking, passkey registration + PRF unlock with
  * a CDP virtual authenticator, IndexedDB persistence across a reload with no plaintext, the lock
- * rules, and that no request leaves the app's origin. Prints measurements as JSON.
+ * rules, that no request leaves the app's origin (and the model host), and that the agent's Node
+ * embedder gives the same vectors as the browser. Prints measurements as JSON.
  *
  *   node scripts/test-browser-adapters.mjs        (from the repo root, after bun install)
+ *   MODEL_HOST=1 node scripts/test-browser-adapters.mjs
+ *
+ * MODEL_HOST=1 serves the model from a second origin (gzip-encoded, CORS, immutable, like the
+ * R2 bucket) and starts the app with EMBEDDING_MODEL_URL pointing at it.
  */
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { createReadStream, readFileSync, statSync } from 'node:fs';
+import { createServer as createHttpServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createGzip } from 'node:zlib';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const web = join(root, 'apps', 'web');
 const { chromium } = createRequire(join(web, 'package.json'))('playwright');
 
-const { BASE_URL: baseUrl } = process.env;
+const { BASE_URL: baseUrl, MODEL_HOST: modelHost } = process.env;
 const failures = [];
 const results = {};
 function check(name, ok, detail) {
@@ -36,13 +44,46 @@ const freePort = () =>
     });
   });
 
-async function startServer() {
+/** Serves apps/web/public/models/** the way the published bucket does. */
+async function startModelHost() {
+  const port = await freePort();
+  const server = createHttpServer((req, res) => {
+    const path = new URL(req.url, 'http://x').pathname;
+    const file = join(web, 'public', path);
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    };
+    if (!path.startsWith('/models/e5-pruned/') || path.includes('..')) {
+      res.writeHead(404, headers).end();
+      return;
+    }
+    try {
+      statSync(file);
+    } catch {
+      res.writeHead(404, headers).end();
+      return;
+    }
+    res.writeHead(200, {
+      ...headers,
+      'Content-Type': path.endsWith('.json') ? 'application/json' : 'application/octet-stream',
+      'Content-Encoding': 'gzip',
+    });
+    createReadStream(file)
+      .pipe(createGzip({ level: 9 }))
+      .pipe(res);
+  });
+  await new Promise((r) => server.listen(port, '127.0.0.1', r));
+  return { origin: `http://localhost:${port}`, stop: () => server.close() };
+}
+
+async function startServer(env) {
   if (baseUrl) return { base: baseUrl, stop: () => {} };
   const port = await freePort();
   const child = spawn(join(web, 'node_modules', '.bin', 'next'), ['dev', '-p', String(port)], {
     cwd: web,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+    env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1', ...env },
   });
   let log = '';
   child.stdout.on('data', (d) => (log += d));
@@ -60,7 +101,7 @@ async function startServer() {
 }
 
 /** The app's CSP for /app/** in development (server/http/csp.ts), without own-key origins. */
-const csp = (nonce) =>
+const csp = (nonce, extraConnect = []) =>
   [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'wasm-unsafe-eval' 'strict-dynamic' 'unsafe-eval'`,
@@ -68,7 +109,7 @@ const csp = (nonce) =>
     "img-src 'self' blob: data:",
     "media-src 'self' blob:",
     "font-src 'self'",
-    "connect-src 'self'",
+    ["connect-src 'self'", ...extraConnect].join(' '),
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",
     "base-uri 'none'",
@@ -99,9 +140,31 @@ function wav(seconds, rate, freq) {
 
 const fixture = (name) => readFileSync(join(root, 'scripts', 'fixtures', name)).toString('base64');
 
+/** The agent's vectors for `texts`, downloading the pinned model from `modelUrl`. */
+function agentVectors(texts, modelUrl) {
+  return new Promise((resolve, reject) => {
+    const dir = join(tmpdir(), `askcalls-agent-models-${process.pid}`);
+    const child = spawn('bun', [join(root, 'scripts', 'embed-with-agent.ts'), dir], {
+      cwd: root,
+      stdio: ['pipe', 'pipe', 'inherit'],
+      env: { ...process.env, ASKCALLS_MODEL_URL: modelUrl },
+    });
+    let out = '';
+    child.stdout.on('data', (d) => (out += d));
+    child.once('error', reject);
+    child.once('close', (code) =>
+      code === 0 ? resolve(JSON.parse(out)) : reject(new Error(`agent embedder exited ${code}`)),
+    );
+    child.stdin.end(JSON.stringify(texts));
+  });
+}
+
 async function main() {
-  const server = await startServer();
+  const host = modelHost === '1' ? await startModelHost() : null;
+  const server = await startServer(host ? { EMBEDDING_MODEL_URL: `${host.origin}/models` } : {});
   const origin = new URL(server.base).origin;
+  const allowed = new Set([origin, ...(host ? [host.origin] : [])]);
+  results.modelHost = host ? host.origin : 'same origin';
   const browser = await chromium.launch();
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -112,9 +175,24 @@ async function main() {
     const url = req.url();
     requests.push({ url, resourceType: req.resourceType() });
     const u = new URL(url);
-    if (u.protocol !== 'data:' && u.protocol !== 'blob:' && u.origin !== origin) foreign.push(url);
+    if (u.protocol !== 'data:' && u.protocol !== 'blob:' && !allowed.has(u.origin)) {
+      foreign.push(url);
+    }
   };
   context.on('request', record);
+  const transferred = {};
+  context.on('requestfinished', async (req) => {
+    const u = new URL(req.url());
+    if (!/^\/(models|ort)\//.test(u.pathname)) return;
+    const sizes = await req.sizes().catch(() => null);
+    const res = await req.response().catch(() => null);
+    if (sizes && res) {
+      transferred[`${u.origin === origin ? '' : u.origin}${u.pathname}`] = {
+        bytes: sizes.responseBodySize,
+        encoding: res.headers()['content-encoding'] ?? null,
+      };
+    }
+  });
   const violations = [];
   page.on('console', (m) => {
     if (m.type() === 'error' && /Content Security Policy/i.test(m.text()))
@@ -128,7 +206,10 @@ async function main() {
     await route.fulfill({
       response: res,
       body,
-      headers: { ...res.headers(), 'content-security-policy': csp(nonce) },
+      headers: {
+        ...res.headers(),
+        'content-security-policy': csp(nonce, host ? [host.origin] : []),
+      },
     });
   });
 
@@ -193,6 +274,38 @@ async function main() {
       queryVsEnglishUnrelated: q[4],
     };
     results.embedBenchmark = await call('embedBenchmark', 32);
+    results.embedQueryMs = await page.evaluate(async () => {
+      const t = performance.now();
+      await window.adapters.embedEach(['query: when is the next meeting with the client']);
+      return Math.round(performance.now() - t);
+    });
+
+    // The agent's Node embedder, on the same pinned files, gives the same vectors.
+    const corpus = JSON.parse(
+      readFileSync(
+        join(web, 'src', 'client', 'adapters', 'embedder', 'validation-corpus.json'),
+        'utf8',
+      ),
+    );
+    const corpusTexts = Object.values(corpus).flat();
+    const browserVectors = await call('embedEach', corpusTexts);
+    const agent = await agentVectors(
+      corpusTexts,
+      host ? `${host.origin}/models` : `${origin}/models`,
+    );
+    const cos = browserVectors.map((v, i) => v.reduce((s, x, k) => s + x * agent.vectors[i][k], 0));
+    results.agentVsBrowser = {
+      texts: cos.length,
+      minCosine: Math.min(...cos),
+      meanCosine: cos.reduce((s, x) => s + x, 0) / cos.length,
+      agentModelId: agent.modelId,
+      agentFirstRunMs: agent.ms,
+    };
+    check(
+      'agent and browser vectors match (same pinned model files)',
+      Math.min(...cos) >= 0.9999,
+      results.agentVsBrowser,
+    );
     check('cancellation rejects with AbortError', (await call('embedCancel')).cancelled, null);
 
     // AudioCodec: decode.
@@ -273,6 +386,12 @@ async function main() {
     // IndexedDB persistence across a reload, and no plaintext in it.
     await call('persistWrite');
     await open();
+    results.embedderCachedLoad = await call('loadEmbedder');
+    check(
+      'second load comes from Cache Storage',
+      results.embedderCachedLoad.device === load.device,
+      results.embedderCachedLoad,
+    );
     const p = await call('persistRead');
     results.persist = p;
     check(
@@ -329,9 +448,11 @@ async function main() {
       if (/^\/(models|ort|ffmpeg)\//.test(path)) sizes[path] = true;
     }
     results.selfHostedAssetsRequested = Object.keys(sizes);
+    results.transferred = transferred;
   } finally {
     await browser.close();
     server.stop();
+    host?.stop();
   }
   console.log(JSON.stringify(results, null, 2));
   if (failures.length) {
