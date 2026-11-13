@@ -17,10 +17,18 @@ export function validEmail(email: string): boolean {
   return EMAIL.test(email);
 }
 
-/** Ten attempts per address per 15 minutes, counted before the hash is checked. */
-async function throttle(ports: LocalPorts, email: string): Promise<boolean> {
-  const r = await ports.rateLimiter.hit(`rl:password:${email}`, 10, 15 * 60_000);
-  return r.allowed;
+const WINDOW_MS = 15 * 60_000;
+const MAX_FAILURES = 10;
+const failureKey = (email: string) => `password-failures:${email}`;
+const windowStart = () => new Date(Math.floor(Date.now() / WINDOW_MS) * WINDOW_MS);
+
+/** Ten failed attempts per address per 15 minutes; successful sign-ins don't count. */
+async function locked(ports: LocalPorts, email: string): Promise<boolean> {
+  return (await ports.rateLimiter.usage(failureKey(email), windowStart())) >= MAX_FAILURES;
+}
+
+async function recordFailure(ports: LocalPorts, email: string): Promise<void> {
+  await ports.rateLimiter.consume(failureKey(email), windowStart(), 1, null);
 }
 
 async function attachPassword(ports: LocalPorts, user: User, email: string, password: string) {
@@ -43,8 +51,11 @@ export async function passwordSignUp(
 ): Promise<User | null> {
   const email = normalizeEmail(rawEmail);
   if (!validEmail(email) || !acceptablePassword(password)) return null;
-  if (!(await throttle(ports, email))) return null;
-  if (await ports.users.findByEmail(email)) return null;
+  if (await locked(ports, email)) return null;
+  if (await ports.users.findByEmail(email)) {
+    await recordFailure(ports, email);
+    return null;
+  }
   const user = await createUserWithRole(ports, { email });
   await attachPassword(ports, user, email, password);
   return user;
@@ -57,11 +68,13 @@ export async function passwordSignIn(
 ): Promise<User | null> {
   const email = normalizeEmail(rawEmail);
   if (!validEmail(email) || password.length > 256) return null;
-  if (!(await throttle(ports, email))) return null;
+  if (await locked(ports, email)) return null;
   const user = await ports.users.findByEmail(email);
   const live = user && !user.deletedAt ? user : null;
   const hash = live ? await ports.localCredentials.getPasswordHash(live.id) : null;
-  return (await verifyPassword(password, hash)) ? live : null;
+  if (await verifyPassword(password, hash)) return live;
+  await recordFailure(ports, email);
+  return null;
 }
 
 /**

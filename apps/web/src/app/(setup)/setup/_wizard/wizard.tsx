@@ -41,6 +41,16 @@ type TestResult = ResponseFor<typeof testSetupConnection>;
 type Port = 'database' | 'blob' | 'transcription' | 'llm';
 type Json = Record<string, unknown>;
 
+const PROVIDER_IDS = new Set([
+  'elevenlabs',
+  'openai',
+  'deepgram',
+  'soniox',
+  'anthropic',
+  'google',
+  'openai-compatible',
+  'mock',
+]);
 const STEPS = ['database', 'storage', 'signIn', 'ai', 'offline', 'admin'] as const;
 const api = createApiClient();
 
@@ -106,6 +116,7 @@ export function SetupWizard() {
   const ts = useTranslations('admin.setup');
   const tc = useTranslations('common');
   const tt = useTranslations('admin.test');
+  const tp = useTranslations('admin.provider');
   const [state, setState] = useState<SetupState | null>(null);
   const [token, setToken] = useState('');
   const [tokenError, setTokenError] = useState(false);
@@ -515,7 +526,14 @@ export function SetupWizard() {
                   {textInput(`auth.${id}.id`, t('field.clientId'))}
                   {textInput(`auth.${id}.secret`, t('field.clientSecret'), { secret: true })}
                 </div>
-                <EnvLockedField label={ts('signIn.callback')} value={callback(id)} caption="" />
+                <div className="flex flex-col gap-1.5">
+                  <span className="font-medium text-sm">{ts('signIn.callback')}</span>
+                  <CopyableCode
+                    language="url"
+                    code={callback(id)}
+                    labels={{ copy: tc('copy'), copied: tc('copied') }}
+                  />
+                </div>
               </div>
             ),
           })),
@@ -690,7 +708,9 @@ export function SetupWizard() {
                 onEnabledChange={(on) => set('offlineMode', on)}
                 blockers={blockers.map((b) => ({
                   key: b.id,
-                  what: t(`offline.what.${b.id}` as 'offline.what.llm', { adapter: b.adapter }),
+                  what: t(`offline.what.${b.id}` as 'offline.what.llm', {
+                    adapter: PROVIDER_IDS.has(b.adapter) ? tp(b.adapter as 'none') : b.adapter,
+                  }),
                   host: b.host,
                   fixes: b.fixes.map((fix) => ({
                     label: t(

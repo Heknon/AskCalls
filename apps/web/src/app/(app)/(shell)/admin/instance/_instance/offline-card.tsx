@@ -9,6 +9,16 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useInstance } from './form';
 
+const PROVIDER_IDS = new Set([
+  'elevenlabs',
+  'openai',
+  'deepgram',
+  'soniox',
+  'anthropic',
+  'google',
+  'openai-compatible',
+  'mock',
+]);
 const SIGN_IN = new Set(['sign-in-google', 'sign-in-github', 'sign-in-email']);
 
 /** A2: the offline switch with every setting that would reach the internet and its fixes. */
@@ -37,11 +47,7 @@ export function OfflineCard() {
   };
   const setOffline = (on: boolean) =>
     run(() => api.request(updateInstance, { body: { patch: { offlineMode: on } } }));
-  const adapterName = (a: string) =>
-    ['google', 'github', 'email', 'local', 's3', 'postgres', 'redirect-proxy'].includes(a) ||
-    a.startsWith('otel')
-      ? a
-      : tp(a as 'none');
+  const adapterName = (a: string) => (PROVIDER_IDS.has(a) ? tp(a as 'none') : a);
 
   return (
     <div className="flex flex-col gap-2 md:col-span-2" data-offline={enabled ? 'on' : 'off'}>

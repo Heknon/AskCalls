@@ -37,11 +37,17 @@ describe('local accounts: password', () => {
     expect(await passwordSignIn(ports, 'nobody@example.test', 'correct horse battery')).toBeNull();
   });
 
-  it('throttles guesses per address', async () => {
+  it('throttles failed guesses per address, not successful sign-ins', async () => {
     const ports = makeTestPorts();
     await passwordSignUp(ports, 'ana@example.test', 'correct horse battery');
-    for (let i = 0; i < 9; i++)
+    for (let i = 0; i < 12; i++) {
+      expect(
+        await passwordSignIn(ports, 'ana@example.test', 'correct horse battery'),
+      ).not.toBeNull();
+    }
+    for (let i = 0; i < 10; i++) {
       await passwordSignIn(ports, 'ana@example.test', `guess-${i}-xxxxxx`);
+    }
     expect(await passwordSignIn(ports, 'ana@example.test', 'correct horse battery')).toBeNull();
   });
 });
