@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { Button } from '../primitives/button';
 import { Checkbox } from '../primitives/checkbox';
 
 export type ImportGroupProps = {
@@ -17,6 +18,8 @@ export type ImportGroupProps = {
   selectLabel: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Opens the `ImportEditDialog` for the group's calls. `label`: "Edit calls with Dana Levi". */
+  edit?: { label: string; onEdit: () => void };
   /** Columns of the table it sits in. */
   columns: number;
   /** `QueueRow`s with `select`, shown when open. */
@@ -35,6 +38,7 @@ export function ImportGroup({
   selectLabel,
   open,
   onOpenChange,
+  edit,
   columns,
   children,
 }: ImportGroupProps) {
@@ -66,6 +70,11 @@ export function ImportGroup({
                 aria-hidden
               />
             </button>
+            {edit ? (
+              <Button variant="ghost" size="icon-sm" aria-label={edit.label} onClick={edit.onEdit}>
+                <Pencil className="size-4" aria-hidden />
+              </Button>
+            ) : null}
           </div>
         </td>
       </tr>

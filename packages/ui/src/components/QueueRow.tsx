@@ -16,6 +16,11 @@ export type QueueRowProps = {
   duplicateOf?: ReactNode;
   retry?: { label: string; onRetry: () => void };
   /**
+   * Before an import starts: the button that opens the `ImportEditDialog`, passed in like
+   * `select.control` so the queue view doesn't load it.
+   */
+  edit?: ReactNode;
+  /**
    * Before an import starts: whether this call is in it, and the `Checkbox` that changes it
    * (passed in, so the queue view doesn't load it). Left-out rows are dimmed.
    */
@@ -30,6 +35,7 @@ export function QueueRow({
   status,
   duplicateOf,
   retry,
+  edit,
   select,
 }: QueueRowProps) {
   const name = (
@@ -82,6 +88,7 @@ export function QueueRow({
             {retry.label}
           </Button>
         ) : null}
+        {edit}
       </td>
     </tr>
   );

@@ -53,6 +53,7 @@ export default function UploadPage() {
                   flow={flow}
                   translation={translation}
                   settings={settings}
+                  contacts={contacts}
                   recordingsOff={recordingsOff}
                 />
               </TabsContent>

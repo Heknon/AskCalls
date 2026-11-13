@@ -79,6 +79,17 @@ export interface IngestMeta {
   tags?: readonly string[];
 }
 
+/**
+ * Metadata a user set by hand for a planned call. A present key replaces what the file name or
+ * manifest gave, `null` included; an absent key keeps it. Persisted, so times are ISO strings.
+ */
+export interface MetaEdits {
+  phone?: string | null;
+  startedAt?: string | null;
+  direction?: CallDirection | null;
+  contactName?: string | null;
+}
+
 export type TranscriptInput =
   | string
   | Uint8Array

@@ -3,7 +3,7 @@ import { contentToken } from '@askcalls/crypto';
 import { contentText, DEFAULT_PHONE_REGION, isPhoneRegion } from '@askcalls/indexing';
 import { parseTranscript } from '@askcalls/transcript-formats';
 import type { ClientContext } from '../context';
-import { type IngestMeta, ingestCall } from '../ingest';
+import { type IngestMeta, ingestCall, type MetaEdits } from '../ingest';
 import type { AudioSource } from '../ports/index';
 import { parseRecordingFileName } from './filenames';
 import { type Manifest, parseManifest } from './manifest';
@@ -30,9 +30,12 @@ export interface MetaOptions {
   utcOffsetMinutes?: number;
 }
 
-/** File-name metadata (Samsung, iPhone), overridden field by field by the manifest row. */
+/**
+ * File-name metadata (Samsung, iPhone), overridden field by field by the manifest row, then by
+ * the user's edits.
+ */
 export function itemMeta(
-  item: Pick<PlannedItem, 'audio' | 'transcript'>,
+  item: Pick<PlannedItem, 'audio' | 'transcript'> & { edits?: MetaEdits },
   opts: MetaOptions,
 ): IngestMeta {
   const region = opts.region && isPhoneRegion(opts.region) ? opts.region : DEFAULT_PHONE_REGION;
@@ -47,6 +50,7 @@ export function itemMeta(
     direction: row?.direction ?? null,
     contactName: row?.contactName ?? fromName?.contactName ?? null,
     tags: row?.tags ?? [],
+    ...item.edits,
   };
 }
 

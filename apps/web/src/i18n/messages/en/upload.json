@@ -163,7 +163,14 @@
       "filter": "Filter groups",
       "noMatch": "No group matches.",
       "noneSelected": "Select calls to import.",
-      "moreGroups": "Show {n} more groups"
+      "moreGroups": "Show {n} more groups",
+      "editGroup": "Edit {name}",
+      "editCall": "Edit {name}",
+      "editCalls": "{n, plural, one {Edit # call} other {Edit # calls}}",
+      "editHint": "Fields you leave unchanged keep each call's value.",
+      "mixed": "Mixed",
+      "save": "Save",
+      "revert": "Undo edits"
     },
     "guide": {
       "title": "Folder layout and manifest.csv",
