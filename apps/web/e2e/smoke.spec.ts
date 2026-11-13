@@ -18,12 +18,13 @@ test('health check reports the database and storage up', async ({ request }) => 
 test('the app requires a session and the test provider signs in', async ({ page }) => {
   await page.goto('/app');
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fapp$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in to AskCalls');
 
   await page.getByLabel('Test account email').fill('e2e-smoke@example.test');
   await page.getByRole('button', { name: 'Sign in (test)' }).click();
-  await expect(page).toHaveURL(/\/app$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Calls');
+  // A new account has no unlock method yet, so the app sends it to onboarding.
+  await expect(page).toHaveURL(/\/app\/welcome$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to AskCalls');
 
   // Signed in, /app renders under the per-request nonce CSP (CLAUDE.md, security rule 4).
   const res = await page.reload();
