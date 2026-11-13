@@ -28,7 +28,9 @@ export const API_TOKEN_SECRET = 'api-token';
 
 export class NotLoggedInError extends Error {
   constructor() {
-    super('not logged in. Run: bunx askcalls login --url <your AskCalls server>');
+    super(
+      'not logged in. Run: bunx askcalls login --url <your AskCalls server>. With AskCalls on this computer, start askcalls local and unlock in the browser instead.',
+    );
     this.name = 'NotLoggedInError';
   }
 }

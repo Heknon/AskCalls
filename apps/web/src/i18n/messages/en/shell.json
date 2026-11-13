@@ -31,6 +31,10 @@
       "view": "View",
       "failed": "{n, plural, one {Couldn't add 1 inbox item. It'll be retried next time you unlock.} other {Couldn't add # inbox items. They'll be retried next time you unlock.}}",
       "unreachable": "Couldn't check the inbox. It'll be retried next time you unlock."
+    },
+    "agent": {
+      "linked": "askcalls mcp on this computer can now search your calls.",
+      "failed": "Couldn't connect askcalls mcp on this computer. Restart askcalls local to try again."
     }
   },
   "banner": {

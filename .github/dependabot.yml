@@ -1,5 +1,7 @@
-# Weekly, one grouped pull request per ecosystem (spec 14.1). Each opens a preview with the fast
-# checks; add the `full-tests` label to run integration and E2E tests on it.
+# Weekly, one grouped pull request per ecosystem (spec 14.1) for minor and patch updates. Major
+# versions come as their own pull requests, since each needs a migration (the spec pins Next 15).
+# Each opens a preview with the fast checks; add the `full-tests` label to run integration and
+# E2E tests on it.
 version: 2
 updates:
   # Bun workspaces: one update covers every package.json and bun.lock.
@@ -15,6 +17,11 @@ updates:
     groups:
       bun:
         patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # Playwright must match the browser build CI caches; it moves deliberately.
+      - dependency-name: "@playwright/test"
+      - dependency-name: playwright
     commit-message:
       prefix: Update
 
@@ -41,6 +48,11 @@ updates:
     groups:
       docker:
         patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # The runtime image stays on Node LTS (even majors); odd majors are short-lived.
+      - dependency-name: node
+        versions: ["23.x", "25.x", "27.x", "29.x"]
     commit-message:
       prefix: Update
 
@@ -54,5 +66,6 @@ updates:
     groups:
       docker-compose:
         patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: Update

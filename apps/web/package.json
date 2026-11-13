@@ -11,6 +11,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit -p .",
     "test:e2e": "next build && playwright test --trace off",
+    "test:e2e:local": "next build && bun ../../scripts/package-local-web.ts && E2E_TARGET=local bun ../../scripts/without-network.ts -- playwright test --trace off",
+    "test:local-mode": "next build && bun ../../scripts/package-local-web.ts && playwright test -c playwright.local-mode.config.ts",
     "test:adapters": "node ../../scripts/test-browser-adapters.mjs"
   },
   "dependencies": {

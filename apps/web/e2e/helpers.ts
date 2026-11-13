@@ -55,3 +55,10 @@ export async function lockFromSidebar(page: Page) {
   await page.getByRole('button', { name: 'Lock', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Unlock your calls' })).toBeVisible();
 }
+
+/** The sign-in page's heading. Local mode (E2E_TARGET=local) signs in from `askcalls local`. */
+export function loginHeading(locale: 'en' | 'he'): string {
+  const local = process.env.E2E_TARGET === 'local';
+  if (locale === 'he') return local ? 'פותחים את AskCalls מהטרמינל' : 'כניסה ל-AskCalls';
+  return local ? 'Open AskCalls from your terminal' : 'Sign in to AskCalls';
+}

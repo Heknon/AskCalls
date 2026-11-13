@@ -6,6 +6,7 @@ import { makeTestPorts } from '../testing/ports';
 import { createAuthAdapter, findOrCreateUser } from './adapter';
 import { buildAuthConfig, enabledProviders, testProviderEnabled } from './config';
 import { verifyGoogleIdToken } from './google-one-tap';
+import { localKeyMatches, localUser } from './local-mode';
 import { authSecret, readSessionUserId } from './secret';
 
 const resolve = (env: Record<string, string>) =>
@@ -216,5 +217,56 @@ describe('sign-in configuration', () => {
     const headers = new Headers({ cookie: `authjs.session-token=${jwt}` });
     expect(await readSessionUserId(headers, dev)).toBe('u1');
     expect(await readSessionUserId(headers, prod)).toBeNull();
+  });
+});
+
+describe('local mode sign-in (spec 11.2c)', () => {
+  const KEY = 'k'.repeat(43);
+  const local = (env: Record<string, string> = {}) =>
+    resolve({ NODE_ENV: 'production', APP_MODE: 'local', ASKCALLS_LOCAL_KEY: KEY, ...env });
+
+  it('offers only the local sign-in, plus the test sign-in under NODE_ENV=test', () => {
+    expect(enabledProviders(local()).map((p) => p.id)).toEqual(['local']);
+    expect(enabledProviders(local({ AUTH_LOCAL_ACCOUNTS: 'true' })).map((p) => p.id)).toEqual([
+      'local',
+    ]);
+    expect(enabledProviders(local({ NODE_ENV: 'test' })).map((p) => p.id)).toEqual([
+      'local',
+      'test',
+    ]);
+  });
+
+  it('accepts only this start key, in server mode never', () => {
+    expect(localKeyMatches(local(), KEY)).toBe(true);
+    expect(localKeyMatches(local(), `${KEY.slice(1)}x`)).toBe(false);
+    expect(localKeyMatches(local(), KEY.slice(1))).toBe(false);
+    expect(localKeyMatches(local(), undefined)).toBe(false);
+    expect(localKeyMatches(resolve({ NODE_ENV: 'production' }), KEY)).toBe(false);
+  });
+
+  it('signs in as one local user, the admin, created once', async () => {
+    const ports = makeTestPorts();
+    const other = await ports.users.create({ email: 'first@example.test' });
+    const auth = buildAuthConfig({
+      config: local(),
+      ports,
+      restartRequired: [],
+      close: async () => {},
+    });
+    const provider = auth.providers[0] as unknown as {
+      options: {
+        id: string;
+        authorize: (c: Record<string, unknown>) => Promise<{ id: string } | null>;
+      };
+    };
+    expect(provider.options.id).toBe('local');
+    expect(await provider.options.authorize({ key: 'wrong' })).toBeNull();
+    const a = await provider.options.authorize({ key: KEY });
+    const b = await provider.options.authorize({ key: KEY });
+    expect(a?.id).toBe(b?.id);
+    expect(a?.id).not.toBe(other.id);
+    expect((await ports.users.findById(a!.id))?.role).toBe('admin');
+    expect(await ports.users.count()).toBe(2);
+    expect((await localUser(ports)).id).toBe(a!.id);
   });
 });

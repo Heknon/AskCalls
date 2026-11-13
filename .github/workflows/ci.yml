@@ -58,7 +58,7 @@ jobs:
           -e MINIO_ROOT_USER="$S3_TEST_ACCESS_KEY_ID"
           -e MINIO_ROOT_PASSWORD="$S3_TEST_SECRET_ACCESS_KEY"
           minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - uses: ./.github/actions/checks
       - name: Wait for MinIO
@@ -79,11 +79,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Cache Playwright browsers
         id: browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -106,7 +106,7 @@ jobs:
           # The smoke tests never embed, so the 118 MB model download is skipped.
           ASKCALLS_SKIP_MODEL_DOWNLOAD: "1"
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report

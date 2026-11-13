@@ -25,6 +25,7 @@
     "test": "bun --bun vitest run --project unit",
     "test:integration": "bun --bun vitest run --project integration",
     "test:e2e": "bun run --cwd apps/web test:e2e",
+    "test:e2e:local": "bun run --cwd apps/web test:e2e:local",
     "release:hashes": "bun scripts/release/client-hashes.ts",
     "release:dry-run": "bun scripts/release/dry-run.ts",
     "models:derive": "bun scripts/models/derive-keep-set.ts",

@@ -89,12 +89,14 @@ Sign up at [askcalls.com](https://askcalls.com). It's free during beta.
 bunx askcalls local
 ```
 
-This runs the whole product on your machine, with no server, no Docker and no account: an embedded Postgres (PGlite with pgvector), local file storage, and the app bound to `127.0.0.1`. Your data stays encrypted on disk, and you still unlock it with a passkey, recovery code or passphrase.
+This runs the whole product on your machine, with no server, no Docker and no account: an embedded Postgres (PGlite with pgvector), local file storage, and the app bound to `127.0.0.1`. Your data stays encrypted on disk in `~/.askcalls`, and you still unlock it with a passkey, recovery code or passphrase. The first time you unlock, the browser connects `askcalls mcp` on this computer to it, so your AI client needs no `login` or `link`.
 
 ```sh
-askcalls backup ./askcalls-backup.tar   # encrypted, useless without your keys
+askcalls backup ./askcalls-backup.tar   # encrypted, useless without your keys; stop askcalls local first
 askcalls restore ./askcalls-backup.tar
 ```
+
+See [docs/self-hosting.md](docs/self-hosting.md#on-your-own-computer-local-mode) for how sign-in, the loopback guard and backups work.
 
 ### Self-host
 

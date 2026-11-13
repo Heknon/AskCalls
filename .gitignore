@@ -22,3 +22,6 @@ infra/cdk.out/
 apps/web/public/models/
 apps/web/public/ort/
 apps/web/public/ffmpeg/
+
+# The askcalls local web bundle, built by scripts/package-local-web.ts
+apps/agent/web/
