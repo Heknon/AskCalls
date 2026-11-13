@@ -112,9 +112,10 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   await seed(page);
 
   // Keyword with a typo, and the variants it also matched.
+  // The Hebrew call says it too: new accounts translate Hebrew calls into English.
   await search(page).fill('pirce');
-  await expect(rows(page)).toHaveCount(1);
-  await expect(rows(page).first()).toContainText('Daniel Brooks');
+  await expect(rows(page)).toHaveCount(2);
+  await expect(rows(page).filter({ hasText: 'Daniel Brooks' })).toHaveCount(1);
   await expect(page.locator('[data-component="ResultLine"]')).toContainText('price');
   await expect(rows(page).first().locator('mark').first()).toHaveText(/price/i);
 

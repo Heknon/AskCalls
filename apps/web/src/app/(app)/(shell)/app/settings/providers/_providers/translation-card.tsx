@@ -225,7 +225,7 @@ export function TranslationCard({
       {failed ? <ErrorState scope="inline" title={ts('saveFailed')} /> : null}
       {available ? (
         <ReindexJob
-          key={JSON.stringify(rules)}
+          key={JSON.stringify(value.translation.rules)}
           mode="translate"
           ns="settings.prov.backfill"
           icon={Languages}
