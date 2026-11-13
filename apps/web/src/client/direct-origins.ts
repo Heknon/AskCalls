@@ -3,9 +3,10 @@
  * (which records what the user enabled) and the middleware (which builds `connect-src`).
  *
  * The provider choice and the own bucket's endpoint live in the encrypted providers document,
- * which the server cannot read. After unlock the client mirrors only the origins into the
- * `askcalls-direct` cookie: provider ids and bucket/endpoint origins, never keys, never content.
- * Without the cookie, `connect-src` carries no provider origins at all.
+ * which the server cannot read. After unlock the client sends only the origins to
+ * PUT /api/settings/direct-access, which sets the `askcalls-direct` cookie (provider ids and
+ * bucket/endpoint origins, never keys, never content) HttpOnly and signed for the user.
+ * Without a validly signed cookie, `connect-src` carries no provider origins at all.
  */
 
 export const DIRECT_COOKIE = 'askcalls-direct';

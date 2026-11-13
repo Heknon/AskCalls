@@ -21,6 +21,7 @@ import * as keyringById from '../../app/api/keyring/[id]/route';
 import * as keyring from '../../app/api/keyring/route';
 import * as me from '../../app/api/me/route';
 import * as search from '../../app/api/search/route';
+import * as directAccess from '../../app/api/settings/direct-access/route';
 import * as retention from '../../app/api/settings/retention/route';
 import * as setupComplete from '../../app/api/setup/complete/route';
 import * as setupPasskey from '../../app/api/setup/passkey/route';
@@ -64,6 +65,7 @@ export const ROUTES: Array<[string, Module]> = [
   ['/api/tokens', tokens],
   ['/api/audit', audit],
   ['/api/settings/retention', retention],
+  ['/api/settings/direct-access', directAccess],
   ['/api/cron/retention', cron],
   ['/api/admin/instance', adminInstance],
   ['/api/admin/instance/test', adminInstanceTest],
