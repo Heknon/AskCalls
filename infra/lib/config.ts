@@ -30,6 +30,12 @@ export const MODELS_STACK = 'AskCallsModels';
 export interface InfraConfig {
   region: string;
   githubRepo: string;
+  /**
+   * The OIDC `sub` before `:environment:<name>`. GitHub sends `repo:<owner>/<name>` by default
+   * and `repo:<owner>@<owner-id>/<name>@<repo-id>` once the repository uses immutable subjects
+   * (`gh api repos/<owner>/<name>/actions/oidc/customization/sub`).
+   */
+  githubSubjectPrefix: string;
   buckets: Record<DeployEnv, string>;
   modelsBucket: string;
   /** Origins the browser PUTs and GETs recordings from, per environment (bucket CORS). */
@@ -54,9 +60,11 @@ function optional(app: App, key: string): string | undefined {
 
 /** Reads `askcalls:*` context (cdk.json, or `-c askcalls:<key>=…` for the optional strings). */
 export function readConfig(app: App): InfraConfig {
+  const githubRepo = required<string>(app, 'githubRepo');
   const config: InfraConfig = {
     region: required(app, 'region'),
-    githubRepo: required(app, 'githubRepo'),
+    githubRepo,
+    githubSubjectPrefix: optional(app, 'githubSubjectPrefix') ?? `repo:${githubRepo}`,
     buckets: required(app, 'buckets'),
     modelsBucket: required(app, 'modelsBucket'),
     appOrigins: required(app, 'appOrigins'),
