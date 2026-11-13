@@ -1,5 +1,6 @@
 import type { RouteDef } from '@askcalls/api-contract';
 import type { ResponseFor } from '@askcalls/api-contract/client';
+import { RATE_LIMITS } from '@askcalls/api-contract/rate-limits';
 import { type ApiScope, DomainError, isDomainError, type Ports } from '@askcalls/domain';
 import { type Actor, constantTimeEqual, requireUser } from '@askcalls/domain/use-cases/context';
 import { authenticateApiToken } from '@askcalls/domain/use-cases/tokens';
@@ -46,11 +47,7 @@ export type NextHandler = (
 ) => Promise<Response>;
 
 /** Baseline limits for every authenticated request. */
-export const RATE_LIMITS = {
-  perUser: { limit: 600, windowMs: 60_000 },
-  perToken: { limit: 300, windowMs: 60_000 },
-  perIp: { limit: 60, windowMs: 60_000 },
-} as const;
+export { RATE_LIMITS };
 
 const DEFAULT_MAX_BODY = 1024 * 1024;
 

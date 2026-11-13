@@ -230,7 +230,7 @@ Mock: [`unlock.html`](mocks/unlock.html).
 
 **Purpose:** turn a user gesture into the root key. Shown after sign-in when this browser holds no unwrapped keys, after lock, and on any deep link while locked (returns to the requested route after unlock).
 
-**Layout:** centred 432 px column: lock icon tile, H1, one line, "Unlock with passkey" (primary, focused on load), "Use recovery code", "Use passphrase" (only if one is set), account row with Sign out, footnote. Recovery code and passphrase replace the buttons in place with a back link ("Other ways to unlock"). Mobile: same column.
+**Layout:** centred 432 px column: lock icon tile, H1, one line, "Unlock with passkey" (primary, focused on load), "Use passphrase" (only if one is set; primary when there is no passkey), "Use recovery code" (primary only when it is the sole method), account row with Sign out, footnote. Recovery code and passphrase replace the buttons in place with a back link ("Other ways to unlock"). Mobile: same column.
 
 **States:** waiting for the OS dialog; passkey failed ("Couldn't unlock with this passkey. Try again or use your recovery code."); wrong recovery code; wrong passphrase; processing (spinner "Unlocking…"); offline (callout "You're offline. Unlocking needs a connection to fetch your keys." when the wrapped key isn't cached); inbox items found after unlock (toast X2).
 
@@ -339,7 +339,7 @@ Mocks: [`calls.html`](mocks/calls.html) (text and two filters set), [`calls-sugg
 
 English, nothing set:
 
-> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[exact words]**
+> Showing **[all calls]** · with **[anyone]** · tagged **[any tag]** · about **[any intent]** · from **[any time]** · **[in and out]** · matching **[meaning]**
 
 English, filters set:
 
@@ -363,7 +363,7 @@ Blanks and their pickers (`FilterPicker`):
 | about | Which intent? / איזו כוונה? | built-in and custom intents | several |
 | from | When? / מתי? | Today · Last 7 days · Last 30 days · This year · Custom range (calendar) | one |
 | direction | Which direction? / איזה כיוון? | In and out · Incoming only · Outgoing only | one |
-| matching | Match by / התאמה לפי | Exact words · Meaning | one |
+| matching | Match by / התאמה לפי | Exact words · Meaning (default) | one |
 
 "Matching [meaning]" is the semantic search: the text is embedded on the device and results sort by best match. The first time it is chosen, the blank shows a spinner and the result line says "Loading the meaning model (34 MB, once)"; keyword results stay until it is ready. With no text typed, the blank has no effect and reads in muted style.
 
@@ -563,9 +563,13 @@ Tabs: Single, Bulk. The active transcription provider and its `DataFlowNote` app
 
 Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 
-**Flow:** pick (folder picker, files, or ZIP; optional `manifest.csv`) → pre-flight summary → queue.
+**Flow:** pick (folder picker, files, or ZIP; optional `manifest.csv`) → review and pre-flight summary → queue.
 
-**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), `DataFlowNote`, "Back up recordings" switch, primary "Start import", secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
+**Pick:** under the drop zone, `ImportFormatGuide` ("Folder layout and manifest.csv", closed): how recordings and transcripts pair, an example folder, an example `manifest.csv` to copy or download, and what each column takes.
+
+**Review:** the planned calls in `ImportGroup`s, by Contact (default; the number, else the name; "No contact" last), Folder ("Top folder" first) or Month (newest first; "No date" last). A group's checkbox puts all its calls in or leaves them out; open a group to include or leave out single calls (`QueueRow` with `select`, status "Queued" or "Left out"). The toolbar has "All calls" with "{n} of {total} selected", the group-by toggle and, at 12 groups or more, "Filter groups". Groups are collapsed unless there is one. Only the selected calls are queued; the summary counts and minutes are of the selected calls.
+
+**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), `DataFlowNote`, "Back up recordings" switch, primary "Import {n} calls" (disabled with "Select calls to import." when none is selected), secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
 
 **Queue:** `JobProgress` ("{done} of {total} files done. {active} in progress, {failed} failed, {dup} duplicates skipped. About {t} left.") with Pause; hint "You can close this tab and resume later."; filter tabs All / In progress / Failed / Duplicates; table rows (`QueueRow`): file name (mono, LTR, truncates with the full name in a tooltip), kind badges, contact (from manifest, file name or metadata), `QueueItemStatus` with a thin progress bar for transcription, Retry for failed rows, a link to the existing call for duplicates. "Retry all failed". Desktop: the summary stays in a 320 px side column. Mobile: the table becomes stacked cards; the summary moves above the queue and collapses to one line.
 
@@ -583,7 +587,19 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 | `bulk.usage` | Transcription this month, after this import | תמלול החודש, אחרי הייבוא |
 | `bulk.manifestApplied` | manifest.csv set names and dates for {n} files. | manifest.csv קבע שמות ותאריכים ל-{n} קבצים. |
 | `bulk.overQuota` | This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key. | הייבוא דורש כ-{n} דקות ונותרו {m}. קבצים מעבר למגבלה יחכו בתור עד החודש הבא או עד שיתווסף מפתח משלך. |
-| `bulk.start` / `change` | Start import / Choose different files | התחלת ייבוא / בחירת קבצים אחרים |
+| `bulk.start` / `change` | Import {n} calls / Choose different files | ייבוא {n} שיחות / בחירת קבצים אחרים |
+| `bulk.review.all` / `selected` | All calls / {n} of {total} selected | כל השיחות / {n} מתוך {total} נבחרו |
+| `bulk.review.groupBy` / `by.*` | Group by: Contact · Folder · Month | קיבוץ לפי: איש קשר · תיקייה · חודש |
+| `bulk.review.count` / `countOf` | {n} calls / {n} of {total} | {n} שיחות / {n} מתוך {total} |
+| `bulk.review.include` | Include {name} | לכלול את {name} |
+| `bulk.review.noContact` / `topFolder` / `noDate` | No contact / Top folder / No date | ללא איש קשר / תיקייה ראשית / ללא תאריך |
+| `bulk.review.filter` / `noMatch` | Filter groups / No group matches. | סינון קבוצות / אין קבוצה תואמת. |
+| `bulk.review.noneSelected` | Select calls to import. | יש לבחור שיחות לייבוא. |
+| `queue.excluded` | Left out | לא נכלל |
+| `bulk.guide.title` | Folder layout and manifest.csv | מבנה התיקייה ו-manifest.csv |
+| `bulk.guide.pairing` | A recording and a transcript with the same name in the same folder are one call. The transcript name may end in .transcript or _tx. | הקלטה ותמלול עם אותו שם באותה תיקייה הם שיחה אחת. שם קובץ התמלול יכול להסתיים ב-.transcript או ב-_tx. |
+| `bulk.guide.manifest` | manifest.csv is optional and sets each call's number, date, direction, contact and tags. Only the file column is required. | הקובץ manifest.csv אינו חובה, והוא קובע לכל שיחה מספר, תאריך, כיוון, איש קשר ותגיות. רק העמודה file נדרשת. |
+| `bulk.guide.download` | Download example | הורדת דוגמה |
 | `bulk.progress` | {done} of {total} files done. {active} in progress, {failed} failed, {dup} duplicates skipped. About {t} left. | {done} מתוך {total} קבצים הושלמו. {active} בתהליך, {failed} נכשלו, {dup} כפילויות דולגו. נותרו כ-{t}. |
 | `bulk.closeHint` | You can close this tab and resume later. | אפשר לסגור את הלשונית ולהמשיך אחר כך. |
 | `bulk.pause` / `pausing` / `resume` | Pause / Pausing… / Resume | השהיה / משהה… / המשך |
@@ -713,7 +729,7 @@ Mock: [`settings-security.html`](mocks/settings-security.html).
 - **Passkeys:** `UnlockMethodRow` per passkey (device · provider, created, last used and OS, "This device" badge), Remove; "Add passkey".
 - **Recovery code and passphrase:** recovery code (created date, Regenerate: requires an unlock, then shows O3/O4 again and revokes the old code on confirm), passphrase (Not set → Set passphrase; set → Change, Remove).
 - **Linked devices:** browsers and agents (`UnlockMethodRow` kind="device") with Revoke; "Link a device" opens D1.
-- **Auto-lock:** "Lock after idle for" select: 5, 15 (default), 30, 60 minutes, 4 hours.
+- **Auto-lock:** "Lock after idle for" select: 5, 15 (default), 30, 60 minutes, 4, 8, 24 hours, Never. Idle means no input (clicks, typing, pointer movement, scrolling) and no recording playing in any AskCalls tab; closing the tab still locks.
 
 **States:** removing the last passkey when no passphrase exists: allowed only with a confirmed recovery code ("Remove your only passkey? You'll need your recovery code to unlock on this device."); revoke confirm ("Revoke {device}? It loses access at its next request. Keys it already holds aren't rotated in this version."); passkey add cancelled (inline).
 
@@ -732,7 +748,7 @@ Mock: [`settings-security.html`](mocks/settings-security.html).
 | `sec.devices` / `link` / `revoke` | Linked devices / Link a device / Revoke | מכשירים מקושרים / קישור מכשיר / ביטול |
 | `sec.revoke.title` | Revoke {device}? | לבטל את {device}? |
 | `sec.revoke.body` | It loses access at its next request. Keys it already holds aren't rotated in this version. | הגישה שלו תיחסם בבקשה הבאה. מפתחות שכבר נמצאים אצלו לא מוחלפים בגרסה הזאת. |
-| `sec.autolock` / `idleFor` | Auto-lock / Lock after idle for | נעילה אוטומטית / נעילה אחרי חוסר פעילות של |
+| `sec.autolock` / `idleFor` / `never` | Auto-lock / Lock after idle for / Never | נעילה אוטומטית / נעילה אחרי חוסר פעילות של / אף פעם |
 
 ### D1 Device linking dialog
 
@@ -933,6 +949,37 @@ Mock: [`admin-instance.html`](mocks/admin-instance.html).
 | `offline.fix.off` | Turn off | כיבוי |
 | `offline.fix.google` | Turn off Google sign-in | כיבוי כניסה עם Google |
 | `offline.confirm` | Turn on offline mode? AskCalls will block every request to hosts outside your network. | להפעיל מצב לא מקוון? AskCalls תחסום כל בקשה לשרתים מחוץ לרשת שלך. |
+
+### A3 Admin accounts `/admin/accounts`
+
+**Purpose:** find an account and see how much of its limits it uses. Admin role only; counts, sizes, emails, names, dates, plan and role, never call data or tag names.
+
+**Layout:** title "Accounts"; `SearchBox` (email substring, debounced 250 ms, no suggestions); a table of `AccountRow`s, newest first, 50 per page with "Load more". Columns: Account (email, name below), Plan (plan, Admin and Custom limits badges), Created, Calls, Recordings, Transcription (this month), Asks today, Translation (characters this month), Tokens. A row opens A4. Mobile: the table scrolls sideways.
+
+**States:** loading (panel skeleton), error (`ErrorState` panel with Try again), no match (`EmptyState` "No accounts match." + Clear search).
+
+| Key | English | Hebrew |
+| --- | --- | --- |
+| `admin.accounts.title` | Accounts | חשבונות |
+| `admin.accounts.search` | Search by email | חיפוש לפי אימייל |
+| `admin.accounts.custom` | Custom limits | מגבלות מותאמות |
+| `admin.accounts.empty` | No accounts match. | אין חשבונות תואמים. |
+| `admin.accounts.loadMore` | Load more | טעינת עוד |
+
+### A4 Admin account `/admin/accounts/[id]`
+
+**Purpose:** see one account's usage against its effective limits and give it higher or lower limits.
+
+**Layout:** the account's email as the title, back to A3 on phones; one line with plan and join date (Admin badge, name). `SettingsSection` "Usage this period" with a `UsageMeter` per limited resource against the account's effective limit. `SettingsSection` "Limits" with a `LimitOverrideField` per field of `Limits`: empty uses the instance limit (shown as the placeholder and "Instance limit: …"), a number overrides it, the clear button removes the override. Save limits sends only the changed fields; Discard restores the saved values. Changes are audited on both accounts with field names only.
+
+**States:** loading, not found ("No account with this id."), invalid value (inline, Save disabled), saving, saved ("Saved"), save failed.
+
+| Key | English | Hebrew |
+| --- | --- | --- |
+| `admin.accounts.limits` | Limits | מגבלות |
+| `admin.accounts.instanceLimit` | Instance limit: {value} | מגבלת המופע: {value} |
+| `admin.accounts.invalid` | Enter a whole number from 0, or leave empty for the instance limit. | הזינו מספר שלם מ-0, או השאירו ריק כדי להשתמש במגבלת המופע. |
+| `admin.accounts.save` | Save limits | שמירת המגבלות |
 
 ### W1 First-run wizard `/setup`
 

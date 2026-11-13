@@ -31,6 +31,7 @@ export const INSTANCE_SECRET_PATHS = [
   'auth.secret',
   'auth.google.secret',
   'auth.github.secret',
+  'storage.google.secret',
   'auth.email.server',
   'cronSecret',
   'local.key',

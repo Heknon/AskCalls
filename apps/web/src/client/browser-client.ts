@@ -9,22 +9,30 @@ import type {
   SecretStore,
   Translator,
 } from '@askcalls/client-core/ports/index';
+import { knownStores } from '@askcalls/client-core/recording-stores/refs';
+import { RecordingStores } from '@askcalls/client-core/recording-stores/router';
+import { bucketOrigin } from '@askcalls/client-core/recording-stores/s3-compatible';
 import { KeySession } from '@askcalls/client-core/session';
 import { managedTranscriber } from '@askcalls/client-core/transcription';
 import type { Providers } from '@askcalls/client-core/userdata';
-import { DomainError } from '@askcalls/domain';
 import { BrowserAudioCodec } from './adapters/audio/codec';
 import { BrowserBulkFiles } from './adapters/bulk-files';
 import { type EmbedderStatus, WorkerEmbedder } from './adapters/embedder/embedder';
 import { DeviceDb } from './adapters/idb';
-import { bucketOrigin, SigV4BucketStore } from './adapters/own-bucket';
 import { SettingsTranscriber } from './adapters/own-key-transcriber';
 import { WebAuthnPasskeyAuthenticator } from './adapters/passkey';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from './adapters/stores';
 import { FetchBlobFetcher, FetchRecordingUploader } from './adapters/transfer';
-import { type DirectAccess, normalizeOrigin, PROVIDER_ORIGINS } from './direct-origins';
+import {
+  type DirectAccess,
+  directOrigins,
+  encodeDirectCookie,
+  GOOGLE_DRIVE_PROVIDER,
+  normalizeOrigin,
+  PROVIDER_ORIGINS,
+} from './direct-origins';
 import { BlobUrls, installLockRules } from './lock';
-import { readEmbeddingModelUrl } from './runtime-config';
+import { readConnectSrc, readEmbeddingModelUrl } from './runtime-config';
 
 export interface BrowserClient {
   /** client-core's context: pass it to every use case (ingest, search, calls, …). */
@@ -44,16 +52,17 @@ export interface BrowserClient {
   embedderStatus(): EmbedderStatus | null;
   onEmbedderStatus(listener: (s: EmbedderStatus) => void): () => void;
   audio: BrowserAudioCodec;
-  ownBuckets: SigV4BucketStore;
+  /** The user's own recording stores (S3-compatible buckets, Google Drive). */
+  ownStores: RecordingStores;
   /** Object URLs for decrypted media; revoked on lock. */
   blobUrls: BlobUrls;
   /**
    * Registers the own-key providers and bucket with the server, which sets the signed
    * `askcalls-direct` cookie so the next page load's CSP allows them. Runs after every unlock;
-   * call it after saving Settings → Providers. `changed: true` means the current page's CSP is
-   * stale: reload to apply it.
+   * call it after saving Settings → Providers. `stale: true` means this page's CSP blocks an
+   * origin the providers now need: reload to apply it. Removed origins need no reload.
    */
-  syncDirectAccess(): Promise<{ changed: boolean }>;
+  syncDirectAccess(): Promise<{ stale: boolean }>;
   /** Removes the cookie (sign-out). */
   clearDirectAccess(): Promise<void>;
   /** Removes listeners, stops workers and locks. */
@@ -66,7 +75,7 @@ export interface BrowserClientOptions {
   fetch?: FetchLike;
   /** IndexedDB database name (tests use their own). */
   dbName?: string;
-  /** Called when `syncDirectAccess` changed the cookie after an unlock. */
+  /** Called when the sync after an unlock finds this page's CSP stale. */
   onDirectAccessChange?: () => void;
   /** Keep the embedding worker (and model) loaded across locks. Default false. */
   keepEmbedderOnLock?: boolean;
@@ -86,8 +95,21 @@ export function directAccessFor(p: Providers): DirectAccess {
       if (o) origins.push(o);
     }
   }
-  if (p.recordings.mode === 'own') origins.push(bucketOrigin(p.recordings.bucket));
+  for (const s of knownStores(p)) {
+    if (s.kind === 's3-compatible') origins.push(bucketOrigin(s.config));
+    else if (!providers.includes(GOOGLE_DRIVE_PROVIDER)) providers.push(GOOGLE_DRIVE_PROVIDER);
+  }
   return { providers, origins };
+}
+
+/**
+ * After unlock: deletes recordings the server queued for the user's own stores (retention,
+ * deleted calls), which it can't reach itself. Loads only when an own store is configured.
+ */
+async function sweepOwnStores(ctx: ClientContext, secrets: SecretStore): Promise<void> {
+  if (knownStores(await ctx.userData.get('providers')).length === 0) return;
+  const { sweepAtUnlock } = await import('@askcalls/client-core/recording-stores/lazy');
+  await sweepAtUnlock(ctx, secrets);
 }
 
 /** Translation code loads on the first upload that needs it, not with every page. */
@@ -128,12 +150,11 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
   let ctx: ClientContext | null = null;
   const context = () => ctx!;
 
-  const ownBuckets = new SigV4BucketStore(async (bucketRef) => {
-    const p = await context().userData.get('providers');
-    if (p.recordings.mode !== 'own' || p.recordings.bucket.id !== bucketRef) {
-      throw new DomainError('not_found', 'this bucket is not configured');
-    }
-    return p.recordings.bucket;
+  const ownStores = new RecordingStores({
+    api,
+    providers: () => context().userData.get('providers'),
+    updateProviders: (mutate) => context().userData.update('providers', mutate),
+    ...(opts.fetch && { fetch: opts.fetch }),
   });
   ctx = createClientContext({
     api,
@@ -156,23 +177,32 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     ),
     uploader: new FetchRecordingUploader(),
     fetcher: new FetchBlobFetcher(),
-    ownBuckets,
+    ownStores,
   });
 
   const putDirect = (access: DirectAccess) => api.request(putDirectAccess, { body: access });
-  const syncDirectAccess = async () =>
-    putDirect(directAccessFor(await context().userData.get('providers')));
+  // The CSP is fixed per document, so read what this one allows once, before any refresh.
+  const allowed = readConnectSrc();
+  const syncDirectAccess = async () => {
+    const access = directAccessFor(await context().userData.get('providers'));
+    const { changed } = await putDirect(access);
+    if (!allowed) return { stale: changed };
+    return { stale: directOrigins(encodeDirectCookie(access)).some((o) => !allowed.includes(o)) };
+  };
 
+  const secrets = new IdbSecretStore(db);
   const unsubscribe = session.subscribe((e) => {
     if (e.type === 'unlocked') {
       void syncDirectAccess().then(
-        (r) => r.changed && opts.onDirectAccessChange?.(),
+        (r) => r.stale && opts.onDirectAccessChange?.(),
         () => {},
       );
+      void sweepOwnStores(context(), secrets).catch(() => {});
     }
   });
   const unwipe = session.onWipe(() => {
     blobUrls.revokeAll();
+    ownStores.clear();
     audio.dispose();
     if (!opts.keepEmbedderOnLock) worker?.dispose();
   });
@@ -182,7 +212,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     ctx,
     api,
     session,
-    secrets: new IdbSecretStore(db),
+    secrets,
     deviceKeys: new IdbDeviceKeyStore(db),
     passkeys: new WebAuthnPasskeyAuthenticator(),
     bulkState: new IdbBulkStateStore(db, session),
@@ -191,7 +221,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     embedderStatus: () => worker?.status ?? null,
     onEmbedderStatus: (listener) => worker?.onStatus(listener) ?? (() => {}),
     audio,
-    ownBuckets,
+    ownStores,
     blobUrls,
     syncDirectAccess,
     clearDirectAccess: async () => {

@@ -58,7 +58,13 @@ describe('direct origins', () => {
         v: 1,
         transcription: {
           mode: 'own',
-          key: { provider: 'elevenlabs', apiKey: 'k', baseUrl: null, model: null },
+          key: {
+            provider: 'elevenlabs',
+            apiKey: 'k',
+            baseUrl: null,
+            model: null,
+            zeroRetention: false,
+          },
         },
         translation: { rules: [] },
         llm: {
@@ -68,6 +74,7 @@ describe('direct origins', () => {
             apiKey: 'k',
             baseUrl: 'http://localhost:11434/v1',
             model: 'llama',
+            zeroRetention: false,
           },
         },
         recordings: {
@@ -81,6 +88,7 @@ describe('direct origins', () => {
             secretAccessKey: 'SK',
           },
         },
+        previousStores: [],
       }),
     ).toEqual({
       providers: ['elevenlabs'],
@@ -93,7 +101,41 @@ describe('direct origins', () => {
         llm: { mode: 'off' },
         translation: { rules: [] },
         recordings: { mode: 'managed' },
+        previousStores: [],
       }),
     ).toEqual({ providers: [], origins: [] });
+  });
+
+  it('allows Google Drive by provider id, for the active store or one switched away from', () => {
+    const drive = { id: 'd1', refreshToken: 'rt', folderId: null };
+    const doc = {
+      v: 1 as const,
+      transcription: { mode: 'managed' as const },
+      llm: { mode: 'off' as const },
+      translation: { rules: [] },
+    };
+    const active = directAccessFor({
+      ...doc,
+      recordings: { mode: 'drive', drive },
+      previousStores: [],
+    });
+    expect(active).toEqual({ providers: ['google-drive'], origins: [] });
+    expect(directOrigins(encodeDirectCookie(active))).toEqual(['https://www.googleapis.com']);
+    expect(
+      directAccessFor({
+        ...doc,
+        recordings: { mode: 'managed' },
+        previousStores: [drive],
+      }).providers,
+    ).toEqual(['google-drive']);
+  });
+
+  it('registers only known provider origins by id', () => {
+    const v = encodeDirectCookie({
+      providers: ['google-drive', 'googleapis', 'www.googleapis.com'],
+      origins: [],
+    });
+    expect(directOrigins(v)).toEqual(['https://www.googleapis.com']);
+    expect(parseDirectCookie('p=google-drive.evil').providers).toEqual(['google-drive']);
   });
 });

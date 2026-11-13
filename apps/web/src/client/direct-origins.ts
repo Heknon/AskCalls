@@ -24,7 +24,13 @@ export function readDirectCookie(
   return get(DIRECT_COOKIE_SECURE) ?? (secureRequest ? undefined : get(DIRECT_COOKIE));
 }
 
-/** Fixed origins of the providers whose adapters call the API from the browser. */
+/** Google Drive as a recording store: metadata, resumable uploads and ranged downloads. */
+export const GOOGLE_DRIVE_PROVIDER = 'google-drive';
+
+/**
+ * Fixed origins of the providers whose adapters call the API from the browser. Only these
+ * known origins enter `connect-src` by provider id; user-typed origins go through `origins`.
+ */
 export const PROVIDER_ORIGINS: Readonly<Record<string, readonly string[]>> = {
   elevenlabs: ['https://api.elevenlabs.io'],
   openai: ['https://api.openai.com'],
@@ -32,6 +38,7 @@ export const PROVIDER_ORIGINS: Readonly<Record<string, readonly string[]>> = {
   soniox: ['https://api.soniox.com'],
   anthropic: ['https://api.anthropic.com'],
   google: ['https://generativelanguage.googleapis.com'],
+  [GOOGLE_DRIVE_PROVIDER]: ['https://www.googleapis.com'],
 };
 
 const MAX_CUSTOM_ORIGINS = 4;

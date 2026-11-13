@@ -299,8 +299,8 @@ export function FilterSentenceBlock({
         },
         <FilterBlank
           facet="match"
-          empty={t('filters.match.words')}
-          value={filters.match === 'meaning' ? t('filters.match.meaning') : undefined}
+          empty={t('filters.match.meaning')}
+          value={filters.match === 'words' ? t('filters.match.words') : undefined}
           inactive={!hasText}
           busy={meaningBusy}
         />,

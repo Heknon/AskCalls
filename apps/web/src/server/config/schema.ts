@@ -31,6 +31,11 @@ export const InstanceConfigSchema = z.object({
       redirectProxyUrl: z.string().url().optional(),
       /** Test-only sign-in provider for e2e. Never active when NODE_ENV=production. */
       testProvider: z.boolean().default(false),
+      /**
+       * Sign-in emails that are the instance admins. Set: exactly these accounts are admins and
+       * the first-user rule is off. Empty: the first user becomes admin and admins can promote.
+       */
+      adminEmails: z.array(z.string().email()).default([]),
     })
     .default({
       providers: ['google'],
@@ -39,7 +44,26 @@ export const InstanceConfigSchema = z.object({
       github: {},
       email: {},
       testProvider: false,
+      adminEmails: [],
     }),
+
+  /** Recording stores linked by OAuth (spec 11.2a). */
+  storage: z
+    .object({
+      /**
+       * The Google OAuth client for Drive (scope drive.file). Unset: the sign-in client
+       * (`auth.google`) is used, with the Drive callback added to its redirect URIs.
+       */
+      google: z
+        .object({
+          id: z.string().optional(),
+          secret,
+          /** E2E only: a fake Google token endpoint. Honoured only when NODE_ENV=test. */
+          testOAuthUrl: z.string().url().optional(),
+        })
+        .default({}),
+    })
+    .default({ google: {} }),
 
   db: z
     .object({
@@ -83,8 +107,15 @@ export const InstanceConfigSchema = z.object({
         .default({}),
       baseUrl: z.string().url().optional(),
       allowByoKey: z.boolean().default(true),
+      /** ElevenLabs Zero Retention Mode (`enable_logging=false`): Enterprise and trial plans only. */
+      elevenlabsZeroRetention: z.boolean().default(false),
     })
-    .default({ provider: 'elevenlabs', keys: {}, allowByoKey: true }),
+    .default({
+      provider: 'elevenlabs',
+      keys: {},
+      allowByoKey: true,
+      elevenlabsZeroRetention: false,
+    }),
 
   llm: z
     .object({
@@ -167,6 +198,7 @@ export const SECRET_PATHS = new Set([
   'auth.secret',
   'auth.google.secret',
   'auth.github.secret',
+  'storage.google.secret',
   'auth.email.server',
   'cronSecret',
   'local.key',
@@ -218,6 +250,10 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['AUTH_EMAIL_FROM', 'auth.email.from', str],
   ['AUTH_REDIRECT_PROXY_URL', 'auth.redirectProxyUrl', str],
   ['AUTH_TEST_PROVIDER', 'auth.testProvider', bool],
+  ['ADMIN_EMAILS', 'auth.adminEmails', list],
+  ['STORAGE_GOOGLE_ID', 'storage.google.id', str],
+  ['STORAGE_GOOGLE_SECRET', 'storage.google.secret', str],
+  ['STORAGE_GOOGLE_TEST_OAUTH_URL', 'storage.google.testOAuthUrl', str],
   ['DB_DRIVER', 'db.driver', str],
   ['DATABASE_URL', 'db.url', str],
   ['PGLITE_DATA_DIR', 'db.pgliteDir', str],
@@ -238,6 +274,7 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['SONIOX_API_KEY', 'transcription.keys.soniox', str],
   ['TRANSCRIPTION_BASE_URL', 'transcription.baseUrl', str],
   ['ALLOW_BYO_TRANSCRIPTION_KEY', 'transcription.allowByoKey', bool],
+  ['ELEVENLABS_ZERO_RETENTION', 'transcription.elevenlabsZeroRetention', bool],
   ['LLM_PROVIDER', 'llm.provider', str],
   ['LLM_MODEL', 'llm.model', str],
   ['ANTHROPIC_API_KEY', 'llm.apiKey', str],

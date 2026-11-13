@@ -27,7 +27,8 @@ export type ProviderCapability =
   | 'email'
   | 'provider';
 
-export type ProviderChoice = 'managed' | 'own' | 'off' | 'local';
+/** `drive`: recording backups in the user's Google Drive. */
+export type ProviderChoice = 'managed' | 'own' | 'drive' | 'off' | 'local';
 
 export type ProviderCardProps = {
   capability: ProviderCapability;

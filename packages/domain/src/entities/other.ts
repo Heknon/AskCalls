@@ -74,6 +74,8 @@ export type AuditAction =
   | 'recording.upload'
   | 'recording.read'
   | 'recording.orphaned'
+  | 'storage.link'
+  | 'storage.unlink'
   | 'keyring.add'
   | 'keyring.revoke'
   | 'keyring.read'
@@ -95,6 +97,7 @@ export type AuditAction =
   | 'account.delete'
   | 'role.grant'
   | 'instance.update'
+  | 'limits.update'
   | 'ingest';
 
 export interface AuditEvent {

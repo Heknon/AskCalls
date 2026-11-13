@@ -52,6 +52,8 @@ export const MeSchema = z.object({
       model: z.string().nullable(),
     }),
     translation: z.object({ enabled: z.boolean() }),
+    /** Recording stores this instance can link by OAuth (spec 11.2a). */
+    storage: z.object({ googleDrive: z.boolean() }),
   }),
 });
 

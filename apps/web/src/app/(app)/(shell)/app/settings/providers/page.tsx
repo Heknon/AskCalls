@@ -128,7 +128,7 @@ export default function ProvidersSettingsPage() {
               <Suspense fallback={null}>
                 <TranslationCard key={p.llm.mode} value={p} onSaved={setDoc} />
               </Suspense>
-              <BucketCard value={p.recordings} onSaved={setDoc} />
+              <BucketCard doc={p} googleDrive={me.features.storage.googleDrive} onSaved={setDoc} />
             </div>
           );
         }}

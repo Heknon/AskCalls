@@ -136,23 +136,12 @@ export function UnlockGate() {
               {failure === 'passkey' ? (
                 <ErrorState scope="inline" title={t('passkeyFailed')} />
               ) : null}
-              <Button
-                variant={hasPasskey ? 'outline' : 'primary'}
-                size="lg"
-                className="w-full"
-                autoFocus={!hasPasskey}
-                onClick={() => {
-                  setView('recovery');
-                  setFailure(null);
-                }}
-              >
-                {t('recovery')}
-              </Button>
               {hasPassphrase ? (
                 <Button
-                  variant="ghost"
+                  variant={hasPasskey ? 'outline' : 'primary'}
                   size="lg"
                   className="w-full"
+                  autoFocus={!hasPasskey}
                   onClick={() => {
                     setView('passphrase');
                     setFailure(null);
@@ -161,6 +150,18 @@ export function UnlockGate() {
                   {t('passphrase')}
                 </Button>
               ) : null}
+              <Button
+                variant={hasPasskey || hasPassphrase ? 'ghost' : 'primary'}
+                size="lg"
+                className="w-full"
+                autoFocus={!hasPasskey && !hasPassphrase}
+                onClick={() => {
+                  setView('recovery');
+                  setFailure(null);
+                }}
+              >
+                {t('recovery')}
+              </Button>
             </div>
             <GateAccount
               initials={initials(me)}

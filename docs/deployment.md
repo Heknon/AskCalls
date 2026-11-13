@@ -270,7 +270,9 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    | `ASKCALLS_HOSTED` | `true` | — | — |
    | `AUTH_SECRET` | prod secret | non-prod secret | **same** non-prod secret |
    | `AUTH_PROVIDERS` | `google` (plus `github` if used) | same as dev | `google` (plus `github`) |
+   | `ADMIN_EMAILS` | the admin accounts (`oeharel@gmail.com`) | same | same |
    | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | prod OAuth client | non-prod OAuth client | non-prod OAuth client |
+   | `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET` | optional: prod Drive client | optional: non-prod Drive client | optional: non-prod Drive client |
    | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | prod OAuth app (if used) | non-prod OAuth app | non-prod OAuth app |
    | `AUTH_REDIRECT_PROXY_URL` | — (unset) | `https://<DEV_DOMAIN>/api/auth` | `https://<DEV_DOMAIN>/api/auth` |
    | `DB_DRIVER` | `postgres` | — (set per deploy) | `postgres` |
@@ -321,8 +323,17 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    names matter: `askcalls-github-deploy` trusts only `dev` and `production` (either
    capitalization), `askcalls-github-preview-cleanup` only `preview`. The preview environment no
    longer needs the `S3_*` secrets the R2 setup used; delete them.
-4. Repository secret `NPM_TOKEN`: an npm automation token for the `askcalls` package, used by
-   `release.yml`. Without it a release skips the npm publish and says so. The workflow publishes
+4. npm: `release.yml` publishes the agent by trusted publishing (OIDC), so GitHub holds no npm
+   token. npm can only trust a workflow for a package that exists, so once:
+   1. Publish the first version by hand, built the way `release.yml` builds it:
+      `bun scripts/release/agent-package.ts --version 0.1.0`, then in `apps/agent/dist/npm`
+      `npm login` and `npm publish --access public`. Tag that commit `v0.1.0` afterwards so the
+      GitHub release matches; the npm step skips a version that is already published.
+   2. On npmjs.com, `askcalls` → Settings → Trusted publishing → GitHub Actions: owner
+      `Heknon`, repository `AskCalls`, workflow `release.yml`, no environment.
+   3. Same page: Publishing access → require two-factor authentication and disallow tokens.
+
+   Until the package exists a release skips the npm step and says so. The workflow publishes
    GHCR images with its own `GITHUB_TOKEN` (`packages: write`); make the package public under the
    repository's Packages settings after the first release.
 5. Labels: `full-tests` (runs `ci.yml` on the PR) and `real-providers` (previews use the
@@ -359,6 +370,36 @@ Google Cloud (one project, APIs & Services → Credentials → OAuth client IDs,
 - **Non-prod client:** redirect URIs `https://<DEV_DOMAIN>/api/auth/callback/google` and
   `http://localhost:3000/api/auth/callback/google`; origins `https://<DEV_DOMAIN>` and
   `http://localhost:3000`.
+
+### Google Drive as a recording store
+
+Users can keep recording backups in their own Google Drive (Settings → Providers → Recording
+backups). The device uploads ciphertext to Drive itself; the server only runs the OAuth code
+exchange and trades refresh tokens for access tokens, because the client secret can't live in
+the browser or the agent. It never stores the tokens.
+
+The Drive OAuth client is `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET`. Unset, the sign-in
+client (`AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`) is used, so one client per environment is
+enough. Set a dedicated pair to keep the Drive consent screen and its quota apart from sign-in.
+Without either, or in offline mode, the Google Drive choice is hidden. Previews can't connect
+Drive (the callback must be a registered redirect URI); dev and production can.
+
+In the same Google Cloud project:
+
+1. **APIs & Services → Library:** enable the **Google Drive API**.
+2. **OAuth consent screen → Data access:** add the scope
+   `https://www.googleapis.com/auth/drive.file` (non-sensitive: the app sees only files it
+   created). No other Drive scope.
+3. **Credentials → the OAuth client (Web application):** add the redirect URIs
+   - prod client: `https://askcalls.com/api/storage/callback/google`
+   - non-prod client: `https://<DEV_DOMAIN>/api/storage/callback/google` and
+     `http://localhost:3000/api/storage/callback/google`
+   No JavaScript origin is needed: the browser never loads Google's script and calls Drive at
+   `https://www.googleapis.com` with a bearer token.
+4. With a dedicated client, set `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET` per environment
+   (prod client for Production, non-prod client for Preview).
+
+Self-hosters register `https://<your origin>/api/storage/callback/google` the same way.
 
 GitHub OAuth apps allow one callback URL each: prod `https://askcalls.com/api/auth/callback/github`,
 non-prod `https://<DEV_DOMAIN>/api/auth/callback/github` (local development uses a third app or

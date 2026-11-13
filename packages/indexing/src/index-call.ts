@@ -76,7 +76,10 @@ export interface PreparedChunk {
   text: string;
   /** `passage: ` + redacted text: what gets embedded. */
   embedText: string;
-  /** Redacted text cut to 300 characters: what gets encrypted into `snippetCt`. */
+  /**
+   * The original text cut to 300 characters: what gets encrypted into `snippetCt`. Only the
+   * embedding needs redaction, since the server stores vectors in the clear.
+   */
   snippet: string;
   startSec: number;
   endSec: number;
@@ -224,19 +227,19 @@ export function analyzeCall(input: AnalyzeCallInput): AnalyzedCall {
   >;
   const chunks: PreparedChunk[] = [];
   for (const t of texts) {
-    const redactedSegments = t.segments.map((s) => {
+    for (const s of t.segments) {
       const r = redactor.redact(s.text);
       for (const k of REDACTION_KINDS) redactionCounts[k] += r.counts[k];
-      return { start: s.start, end: s.end, text: r.text };
-    });
+    }
     const base = chunks.length;
-    for (const c of chunkSegments(redactedSegments, input.chunking)) {
+    for (const c of chunkSegments(t.segments, input.chunking)) {
+      const redacted = redactor.redact(c.text).text;
       chunks.push({
         ord: base + c.ord,
         lang: t.lang,
         translated: t.translated,
-        text: c.text,
-        embedText: EMBEDDING_PASSAGE_PREFIX + c.text,
+        text: redacted,
+        embedText: EMBEDDING_PASSAGE_PREFIX + redacted,
         snippet: makeSnippet(c.text),
         startSec: c.startSec,
         endSec: c.endSec,

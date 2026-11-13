@@ -6,6 +6,7 @@ import {
   type BlobFetcher,
   type Clock,
   type Embedder,
+  type RecordingStore,
   type RecordingUploader,
   systemClock,
   type Transcriber,
@@ -15,12 +16,6 @@ import type { KeySession } from './session';
 import { knownIntentIds, TagDirectory } from './tags';
 import { UserDataStore } from './userdata';
 import { VocabularySync } from './vocabulary';
-
-/** Own-bucket recordings (spec 11.2a): the device signs requests itself, so this is an adapter. */
-export interface OwnBucketStore {
-  put(bucketRef: string, objectKey: string, body: Uint8Array): Promise<void>;
-  get(bucketRef: string, objectKey: string): Promise<Uint8Array>;
-}
 
 export interface ClientDeps {
   api: ApiClient;
@@ -34,7 +29,8 @@ export interface ClientDeps {
   translator?: Translator;
   uploader?: RecordingUploader;
   fetcher?: BlobFetcher;
-  ownBuckets?: OwnBucketStore;
+  /** The user's own recording stores (S3-compatible buckets, Google Drive). */
+  ownStores?: RecordingStore;
 }
 
 export interface DeviceInfo {
@@ -52,7 +48,7 @@ export interface ClientContext extends Required<Pick<ClientDeps, 'api' | 'sessio
   translator: Translator | null;
   uploader: RecordingUploader | null;
   fetcher: BlobFetcher | null;
-  ownBuckets: OwnBucketStore | null;
+  ownStores: RecordingStore | null;
   userData: UserDataStore;
   vocabulary: VocabularySync;
   intents: IntentCache;
@@ -78,7 +74,7 @@ export function createClientContext(deps: ClientDeps): ClientContext {
     translator: deps.translator ?? null,
     uploader: deps.uploader ?? null,
     fetcher: deps.fetcher ?? null,
-    ownBuckets: deps.ownBuckets ?? null,
+    ownStores: deps.ownStores ?? null,
     userData,
     vocabulary: new VocabularySync(api, session),
     intents: new IntentCache(deps.embedder, session),

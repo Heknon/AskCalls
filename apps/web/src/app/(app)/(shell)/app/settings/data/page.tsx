@@ -2,7 +2,7 @@
 
 import { deleteAccount } from '@askcalls/api-contract/routes/account';
 import { exportAll } from '@askcalls/client-core/export';
-import type { Providers } from '@askcalls/client-core/userdata';
+import { isDriveRef, knownStores } from '@askcalls/client-core/recording-stores/refs';
 import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { JobProgress } from '@askcalls/ui/components/JobProgress';
@@ -11,7 +11,6 @@ import { Button } from '@askcalls/ui/primitives/button';
 import { Download, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { SigV4BucketStore } from '../../../../../../client/adapters/own-bucket';
 import { useNotify } from '../../../../../../client/notices/notices';
 import { useAppSession, useUnlocked } from '../../../../../../client/session/session';
 import { useAsync } from '../../../_shell/states';
@@ -82,25 +81,32 @@ function ExportSection() {
 function DeleteSection() {
   const t = useTranslations('settings.data');
   const tc = useTranslations('common');
-  const { ctx, me } = useUnlocked();
+  const { ctx, me, client } = useUnlocked();
   const { signOut } = useAppSession();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<{ done: number; total: number } | null>(null);
   const [failed, setFailed] = useState(false);
   const email = me.user.email ?? ACCOUNT_CONFIRM;
   const ownBucket = useAsync(
-    () => ctx.userData.get('providers').then((p) => p.recordings.mode === 'own'),
+    () => ctx.userData.get('providers').then((p) => knownStores(p).length > 0),
     [ctx],
   );
 
   const run = async () => {
     setFailed(false);
     setDeleting({ done: 0, total: 0 });
-    let bucket: Providers['recordings'];
+    // Read the stores and fetch Drive access tokens now: once the account is gone, neither the
+    // providers document nor the token pass-through answers. Both stay cached in memory.
+    const stores = client.ownStores;
+    let known = new Set<string>();
     try {
-      bucket = (await ctx.userData.get('providers', { fresh: true })).recordings;
+      const providers = await ctx.userData.get('providers', { fresh: true });
+      known = new Set(knownStores(providers).map((s) => s.ref));
     } catch {
-      bucket = { mode: 'managed' };
+      // No readable stores: nothing to delete on this device.
+    }
+    for (const ref of known) {
+      if (isDriveRef(ref)) await stores.describe(ref).catch(() => {});
     }
     let left: Array<{ bucketRef: string; objectKey: string }>;
     try {
@@ -111,13 +117,12 @@ function DeleteSection() {
       setFailed(true);
       return;
     }
-    if (bucket.mode === 'own' && left.length > 0) {
-      const own = bucket.bucket;
-      const store = new SigV4BucketStore(async () => own);
-      setDeleting({ done: 0, total: left.length });
-      for (const [i, r] of left.entries()) {
-        if (r.bucketRef === own.id) await store.delete(r.bucketRef, r.objectKey).catch(() => {});
-        setDeleting({ done: i + 1, total: left.length });
+    const mine = left.filter((r) => known.has(r.bucketRef));
+    if (mine.length > 0) {
+      setDeleting({ done: 0, total: mine.length });
+      for (const [i, r] of mine.entries()) {
+        await stores.delete(r.bucketRef, r.objectKey).catch(() => {});
+        setDeleting({ done: i + 1, total: mine.length });
       }
     }
     await signOut();

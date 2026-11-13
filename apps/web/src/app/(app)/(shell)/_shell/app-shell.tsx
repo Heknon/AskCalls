@@ -146,6 +146,7 @@ export function AppShell({
     contacts: t('nav.contacts'),
     settings: t('nav.settings'),
     admin: t('nav.admin'),
+    accounts: t('nav.accounts'),
   };
   const detail = t(me.user.plan === 'pro' ? 'account.pro' : 'account.free', {
     calls: me.usage.calls,

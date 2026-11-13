@@ -1,12 +1,9 @@
 'use client';
 
-import type { Pairing } from '@askcalls/client-core/bulk/pairing';
 import type { BulkItemState } from '@askcalls/client-core/bulk/queue';
 import { getCall } from '@askcalls/client-core/calls';
-import type { IngestMeta } from '@askcalls/client-core/ingest';
 import type { Settings } from '@askcalls/client-core/userdata';
 import { dateFromDay } from '@askcalls/domain';
-import { DEFAULT_PHONE_REGION, isPhoneRegion, parsePhone } from '@askcalls/indexing';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { FileDropZone } from '@askcalls/ui/components/FileDropZone';
 import { JobProgress } from '@askcalls/ui/components/JobProgress';
@@ -19,16 +16,23 @@ import { Badge } from '@askcalls/ui/primitives/badge';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Card } from '@askcalls/ui/primitives/card';
 import { Spinner } from '@askcalls/ui/primitives/spinner';
-import { TableHead } from '@askcalls/ui/primitives/table';
 import { Tabs, TabsList, TabsTrigger } from '@askcalls/ui/primitives/tabs';
 import { ChevronDown, FileSpreadsheet, Info, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { supportsDirectoryPicker } from '../../../../../../client/adapters/bulk-files';
 import { type Me, useAppSession } from '../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../i18n/locales';
-import { type BulkController, bulkController, type Plan, type QueueView } from './bulk-controller';
+import { type BulkController, bulkController, type QueueView } from './bulk-controller';
 import {
   failureKey,
   minutesLeft,
@@ -36,9 +40,13 @@ import {
   type TranscriptionFlow,
   type TranslationFlow,
 } from './plan';
+import { contactOf, PAGE, parts, QueueTable, ShowMore } from './queue-parts';
+import { selectionSummary } from './selection';
 import { TranscriptionNote, TranslationNote } from './transcription-note';
 
-const PAGE = 100;
+/** Loaded with the screen that shows them: neither is needed at first paint. */
+const ReviewTable = lazy(() => import('./review-table').then((m) => ({ default: m.ReviewTable })));
+const Guide = lazy(() => import('./format-guide').then((m) => ({ default: m.Guide })));
 
 /** The session's bulk import, created on first use and kept across screens until lock. */
 export function useBulk(): BulkController {
@@ -97,12 +105,16 @@ export function BulkUpload({ flow, translation, settings, recordingsOff }: BulkU
       <div className="flex flex-col gap-4">
         {drop}
         {snap.error ? <ErrorState scope="inline" title={t(snap.error)} /> : null}
+        <Suspense fallback={null}>
+          <Guide />
+        </Suspense>
       </div>
     );
   }
   if (snap.phase === 'planning') return <PlanningState />;
   if (snap.phase === 'preflight') {
-    const { plan } = snap;
+    const { plan, excluded } = snap;
+    const sel = selectionSummary(plan.pairing.items, plan.summary, plan.manifestKeys, excluded);
     return (
       <Layout
         side={
@@ -110,16 +122,23 @@ export function BulkUpload({ flow, translation, settings, recordingsOff }: BulkU
             me={me}
             flow={flow}
             translation={translation}
-            counts={summaryCounts(plan)}
-            minutes={plan.summary.estimatedMinutes}
-            manifestCovered={plan.manifestCovered}
-            unreadable={plan.summary.unreadable.length}
+            counts={sel}
+            minutes={sel.minutes}
+            manifestCovered={sel.manifestCovered}
+            unreadable={sel.unreadable}
             backup={recordingsOff ? undefined : { checked: backup, onChange: setBackup }}
             footer={
               <div className="flex flex-col gap-2">
-                <Button variant="primary" onClick={() => void controller.start(backup)}>
-                  {t('start')}
+                <Button
+                  variant="primary"
+                  disabled={sel.selected === 0}
+                  onClick={() => void controller.start(backup)}
+                >
+                  {t('start', { n: sel.selected })}
                 </Button>
+                {sel.selected === 0 ? (
+                  <p className="text-muted-foreground text-sm">{t('review.noneSelected')}</p>
+                ) : null}
                 <Button variant="outline" onClick={() => controller.reset()}>
                   {t('change')}
                 </Button>
@@ -130,7 +149,15 @@ export function BulkUpload({ flow, translation, settings, recordingsOff }: BulkU
         }
       >
         {snap.error ? <ErrorState scope="inline" title={t(snap.error)} /> : null}
-        <PlannedTable pairing={plan.pairing} meta={plan.meta} region={settings.phoneRegion} />
+        <Suspense fallback={<PlanningState />}>
+          <ReviewTable
+            controller={controller}
+            pairing={plan.pairing}
+            meta={plan.meta}
+            excluded={excluded}
+            region={settings.phoneRegion}
+          />
+        </Suspense>
       </Layout>
     );
   }
@@ -191,15 +218,6 @@ function ManifestButton({ controller }: { controller: BulkController }) {
 }
 
 type Counts = { audioOnly: number; paired: number; transcriptOnly: number; duplicates: number };
-
-function summaryCounts(plan: Plan): Counts {
-  return {
-    audioOnly: plan.summary.audioOnly,
-    paired: plan.summary.paired,
-    transcriptOnly: plan.summary.transcriptOnly,
-    duplicates: plan.summary.likelyDuplicates,
-  };
-}
 
 function queueCounts(items: readonly BulkItemState[]): Counts {
   const c: Counts = { audioOnly: 0, paired: 0, transcriptOnly: 0, duplicates: 0 };
@@ -331,85 +349,6 @@ function Summary({
       )}
       {footer}
     </>
-  );
-}
-
-function contactOf(meta: IngestMeta | undefined, region: string) {
-  const phone = meta?.phone
-    ? parsePhone(meta.phone, isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION)
-    : null;
-  if (!meta?.contactName && !phone) return undefined;
-  return { ...(meta?.contactName && { name: meta.contactName }), ...(phone && { phone }) };
-}
-
-function PlannedTable({
-  pairing,
-  meta,
-  region,
-}: {
-  pairing: Pairing;
-  meta: ReadonlyMap<string, IngestMeta>;
-  region: string;
-}) {
-  const t = useTranslations('upload');
-  const [shown, setShown] = useState(PAGE);
-  const items = pairing.items.slice(0, shown);
-  return (
-    <Card className="overflow-hidden">
-      <QueueTable>
-        {items.map((p) => (
-          <QueueRow
-            key={p.key}
-            fileName={(p.audio ?? p.transcript)!.name}
-            parts={parts(p, t)}
-            contact={contactOf(meta.get(p.key), region)}
-            status={{ state: 'queued', label: t('queue.queued') }}
-          />
-        ))}
-      </QueueTable>
-      <ShowMore total={pairing.items.length} shown={shown} onMore={() => setShown(shown + PAGE)} />
-    </Card>
-  );
-}
-
-function parts(
-  i: { audio: unknown; transcript: unknown },
-  t: ReturnType<typeof useTranslations<'upload'>>,
-) {
-  return [i.audio ? t('parts.audio') : null, i.transcript ? t('parts.transcript') : null].filter(
-    (p): p is string => p !== null,
-  );
-}
-
-function QueueTable({ children }: { children: ReactNode }) {
-  const t = useTranslations('upload.bulk.col');
-  const tb = useTranslations('upload.bulk');
-  return (
-    <table className="w-full border-collapse">
-      <thead className="max-md:hidden">
-        <tr>
-          <TableHead>{t('file')}</TableHead>
-          <TableHead>{t('contact')}</TableHead>
-          <TableHead>{t('status')}</TableHead>
-          <TableHead>
-            <span className="sr-only">{tb('retry')}</span>
-          </TableHead>
-        </tr>
-      </thead>
-      <tbody>{children}</tbody>
-    </table>
-  );
-}
-
-function ShowMore({ total, shown, onMore }: { total: number; shown: number; onMore: () => void }) {
-  const t = useTranslations('upload.bulk');
-  if (total <= shown) return null;
-  return (
-    <div className="flex justify-center p-3">
-      <Button variant="ghost" onClick={onMore}>
-        {t('showMore', { n: Math.min(PAGE, total - shown) })}
-      </Button>
-    </div>
   );
 }
 

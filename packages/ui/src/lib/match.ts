@@ -22,7 +22,11 @@ export function matchRange(text: string, query: string): [number, number] | null
 
 /** Text split into plain and matched parts, every case-insensitive occurrence of each hit. */
 export function splitHits(text: string, hits: readonly string[]) {
-  const terms = hits.map((h) => h.trim()).filter(Boolean);
+  // Longest first, so a marked phrase wins over a word inside it.
+  const terms = hits
+    .map((h) => h.trim())
+    .filter(Boolean)
+    .sort((x, y) => y.length - x.length);
   if (terms.length === 0) return [{ text, hit: false }];
   const escaped = terms.map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const re = new RegExp(`(${escaped.join('|')})`, 'giu');

@@ -126,6 +126,40 @@ export interface BlobFetcher {
   get(request: { url: string; headers?: Record<string, string> }): Promise<Uint8Array>;
 }
 
+/** What Settings shows for a connected store: the account and how much of its space is used. */
+export interface RecordingStoreInfo {
+  account: string | null;
+  /** The folder or bucket recordings go to. */
+  location: string | null;
+  usedBytes: number | null;
+  /** Null when the store reports no limit. */
+  limitBytes: number | null;
+}
+
+export type RecordingStoreProbe =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: 'cors_or_network' | 'unauthorized' | 'not_found' | 'http';
+      status?: number;
+    };
+
+/**
+ * A store the user brings for recording backups (spec 11.2a): an S3-compatible bucket or Google
+ * Drive. The device talks to it directly with credentials from the providers document, so only
+ * ciphertext reaches it and nothing passes through our server. `ref` is the call's `bucketRef`.
+ */
+export interface RecordingStore {
+  /** Stores `body` under a name derived from `name`; returns the key to keep on the call. */
+  put(ref: string, name: string, body: Uint8Array): Promise<{ objectKey: string }>;
+  /** Streams the stored ciphertext. */
+  get(ref: string, objectKey: string): AsyncIterable<Uint8Array>;
+  /** Succeeds when the object is already gone. */
+  delete(ref: string, objectKey: string): Promise<void>;
+  probe(ref: string): Promise<RecordingStoreProbe>;
+  describe(ref: string): Promise<RecordingStoreInfo>;
+}
+
 export interface Clock {
   now(): Date;
 }

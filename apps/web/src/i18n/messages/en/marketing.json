@@ -284,7 +284,7 @@
     "fetches": "MCP fetches an hour, per token",
     "callsDetail": "A call is one transcript, with or without a recording. Deleting a call frees its place.",
     "minutesDetail": "Counted by audio length. Transcripts you upload ready-made don't count.",
-    "storageDetail": "Encrypted and compressed on your device. With your own bucket, there is no limit from us.",
+    "storageDetail": "Encrypted and compressed on your device. With your own bucket or Google Drive, there is no limit from us.",
     "asksDetail": "One question about one call. Resets at midnight UTC.",
     "tokensDetail": "For the local agent, remote MCP and scripts. Each token has its own scopes.",
     "fetchesDetail": "Ciphertext fetches over remote MCP. The local agent decrypts on your machine."
@@ -304,7 +304,7 @@
     },
     "where": {
       "q": "Where is my data stored?",
-      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Amazon S3 (AWS, eu-central-1), encrypted on your device before upload. Recording backups can go to your own bucket instead."
+      "a": "On askcalls.com, in Frankfurt: Postgres on Neon and storage on Amazon S3 (AWS, eu-central-1), encrypted on your device before upload. Recording backups can go to your own bucket or Google Drive instead."
     },
     "selfHost": {
       "q": "Can I self-host?",
@@ -424,7 +424,7 @@
       "retentionBody": "The terms each adapter works under, as documented in its README in the repository.",
       "provider": "Provider",
       "terms": "Retention",
-      "elevenlabs": "Requests carry <code>enable_logging=false</code>, which ElevenLabs honours only for workspaces with Zero Retention Mode, an Enterprise feature. Until that is in place, ElevenLabs may keep request logs under its standard policy.",
+      "elevenlabs": "With zero retention turned on, requests carry <code>enable_logging=false</code>. ElevenLabs accepts it only on Enterprise plans; with it off, ElevenLabs keeps request logs under its standard policy.",
       "deepgram": "Requests carry <code>mip_opt_out=true</code>, opting out of Deepgram's Model Improvement Program; Deepgram then keeps the data only as long as needed to process the request.",
       "openaiStt": "No per-request retention flag. API inputs aren't used for training by default; zero data retention is an account-level agreement with OpenAI.",
       "soniox": "No no-retention flag. The adapter deletes the uploaded file and the transcription as soon as it has the transcript; Soniox's 30-day expiry is the backstop.",
