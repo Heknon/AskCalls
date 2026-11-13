@@ -40,7 +40,7 @@
     "@electric-sql/pglite-pgvector": "0.0.17",
     "@huggingface/transformers": "4.3.2",
     "@modelcontextprotocol/sdk": "1.32.2",
-    "@simplewebauthn/browser": "9.0.1",
+    "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "9.0.3",
     "hash-wasm": "4.13.0",
     "jose": "6.2.17",
