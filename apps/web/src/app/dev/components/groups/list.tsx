@@ -56,8 +56,7 @@ export function ListGroup() {
     posInSet: i + 1,
     setSize: calls.length,
     onStarredChange: (v: boolean) => setStarred((s) => ({ ...s, [call.id]: v })),
-    a11yLabel: a11y(
-      call.name ?? call.phone ?? k.hiddenNumber,
+    a11yDetail: a11y(
       k.direction[call.direction],
       formatWhen(call.startedAt, locale, now),
       formatDuration(call.durationSec, locale, true),

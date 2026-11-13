@@ -14,7 +14,7 @@ export type LockStatusProps = {
   labels: {
     /** "Lock". */
     lock: string;
-    /** Accessible name: "Lock now". */
+    /** The icon variant's accessible name: "Lock now". The sidebar variant reads its label. */
     lockNow: string;
     /** Tooltip: "Locks after 15 min idle". */
     autoLock: string;
@@ -77,7 +77,6 @@ export function LockStatus({
       <Button
         data-component="LockStatus"
         variant="ghost"
-        aria-label={labels.lockNow}
         aria-keyshortcuts="Shift+L"
         onClick={onLock}
         className={cn(
@@ -86,8 +85,10 @@ export function LockStatus({
         )}
       >
         <Lock className="size-4 text-muted-foreground" aria-hidden />
-        <span className="max-lg:hidden">{labels.lock}</span>
-        <Kbd className="ms-auto max-lg:hidden">⇧L</Kbd>
+        <span className="max-lg:sr-only">{labels.lock}</span>
+        <Kbd aria-hidden className="ms-auto max-lg:hidden">
+          ⇧L
+        </Kbd>
       </Button>
     </Tooltip>
   );

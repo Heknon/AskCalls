@@ -14,9 +14,19 @@ function Chevron({ orientation }: { orientation?: 'left' | 'right' | 'up' | 'dow
   );
 }
 
+/** Day names that start with the visible number, so the button's name contains its text. */
+function labelDayButton(date: Date, _modifiers: unknown, options?: { locale?: { code?: string } }) {
+  return new Intl.DateTimeFormat(options?.locale?.code ?? 'en', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
 export function Calendar({ className, classNames, ...props }: ComponentProps<typeof DayPicker>) {
   return (
     <DayPicker
+      labels={{ labelDayButton }}
       showOutsideDays
       className={cn('p-1 text-sm', className)}
       classNames={{

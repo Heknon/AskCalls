@@ -65,7 +65,6 @@ export function AppSidebar({
         <Link
           href={hrefs[route]}
           aria-current={current ? 'page' : undefined}
-          aria-label={labels[route]}
           className={cn(
             'flex h-9 items-center gap-2.5 rounded-md px-2.5 font-medium text-sidebar-foreground no-underline hover:bg-accent max-lg:w-11 max-lg:justify-center max-lg:px-0',
             current && 'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
@@ -78,7 +77,7 @@ export function AppSidebar({
             )}
             aria-hidden
           />
-          <span className="max-lg:hidden">{labels[route]}</span>
+          <span className="max-lg:sr-only">{labels[route]}</span>
           {route === 'calls' && callCount !== undefined ? (
             <span className="tabular ms-auto text-muted-foreground text-xs max-lg:hidden">
               {callCount}

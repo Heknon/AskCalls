@@ -28,7 +28,7 @@ const copy = {
     steps: [
       [
         'Upload your calls',
-        'Drop recordings or transcripts. Audio is transcribed once, then encrypted on your device.',
+        'Drop recordings or transcripts. Audio is transcribed once; transcripts can come along too.',
       ],
       [
         'Search like you remember',
@@ -97,7 +97,7 @@ const copy = {
     menu: 'תפריט',
     language: 'שפה',
     steps: [
-      ['מעלים את השיחות', 'גוררים הקלטות או תמלולים. השמע מתומלל פעם אחת ומוצפן במכשיר שלך.'],
+      ['מעלים את השיחות', 'גוררים הקלטות או תמלולים. השמע מתומלל פעם אחת; אפשר לצרף גם תמלולים.'],
       ['מחפשים כמו שזוכרים', 'שמות, מספרים, מילים בעברית או באנגלית, או על מה דיברו.'],
       ['שואלים על שיחה אחת', 'ההבטחה, המחיר או הצעד הבא, עם חותמות זמן שאפשר לנגן.'],
     ],
@@ -184,7 +184,13 @@ export function MarketingGroup() {
         </div>
       </Specimen>
       <Specimen name="DemoFrame" note="poster and play button under reduced motion" wide>
-        <DemoFrame poster={POSTER} description={c.demo} labels={{ play: c.play, pause: c.pause }} />
+        <div className="max-w-3xl">
+          <DemoFrame
+            poster={POSTER}
+            description={c.demo}
+            labels={{ play: c.play, pause: c.pause }}
+          />
+        </div>
       </Specimen>
       <Specimen name="StepList" wide>
         <StepList steps={c.steps.map(([title, body]) => ({ key: title!, title: title!, body }))} />

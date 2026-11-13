@@ -21,7 +21,7 @@ const copy = {
     alsoTried: 'Also tried: מחירים, price',
     clear: 'Clear filters',
     noMatchAll: 'No calls match all of these.',
-    clearSearch: 'Clear the search “מחיר”',
+    clearSearch: ['Clear the search “', '”'],
     anyIntent: 'Any intent',
     noTags: 'No tags yet',
     addTag: 'Add a tag',
@@ -71,7 +71,7 @@ const copy = {
     alsoTried: 'נוסו גם: מחירים, price',
     clear: 'ניקוי מסננים',
     noMatchAll: 'אין שיחות שמתאימות לכל אלה.',
-    clearSearch: 'ניקוי החיפוש „מחיר”',
+    clearSearch: ['ניקוי החיפוש „', '”'],
     anyIntent: 'כוונה כלשהי',
     noTags: 'אין עדיין תגיות',
     addTag: 'הוספת תגית',
@@ -158,7 +158,11 @@ export function FeedbackGroup() {
               action={
                 <>
                   <Button variant="outline" className="rounded-full">
-                    {c.clearSearch}
+                    <span>
+                      {c.clearSearch[0]}
+                      <bdi>מחיר</bdi>
+                      {c.clearSearch[1]}
+                    </span>
                   </Button>
                   <Button variant="outline" className="rounded-full">
                     {c.anyIntent}
@@ -214,7 +218,11 @@ export function FeedbackGroup() {
               title={c.pageTitle}
               description={c.pageBody}
               retry={{ label: c.retry, onRetry: () => {} }}
-              actions={<Button variant="ghost">{c.goCalls}</Button>}
+              actions={
+                <Button variant="ghost" size="sm">
+                  {c.goCalls}
+                </Button>
+              }
             />
           </Card>
         </State>

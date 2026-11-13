@@ -44,9 +44,8 @@ export const common = {
   },
 };
 
+/** Read after the contact in a call row's link: ", incoming, Today, 14:32, 8 minutes". */
 export const rowA11y = {
-  en: (contact: string, dir: string, when: string, dur: string) =>
-    `${contact}, ${dir}, ${when}, ${dur}`,
-  he: (contact: string, dir: string, when: string, dur: string) =>
-    `${contact}, ${dir}, ${when}, ${dur}`,
+  en: (dir: string, when: string, dur: string) => `, ${dir}, ${when}, ${dur}`,
+  he: (dir: string, when: string, dur: string) => `, ${dir}, ${when}, ${dur}`,
 };

@@ -29,7 +29,7 @@ export function ChoiceCard({
   return (
     <div
       data-component="ChoiceCard"
-      className="group/choice relative flex cursor-pointer gap-3 rounded-lg border border-border bg-card px-4 py-3.5 has-disabled:cursor-not-allowed has-disabled:opacity-60 has-data-[state=checked]:border-primary has-data-[state=checked]:ring-1 has-data-[state=checked]:ring-primary"
+      className="group/choice relative flex cursor-pointer gap-3 rounded-lg border border-border bg-card px-4 py-3.5 has-disabled:cursor-not-allowed has-disabled:bg-muted has-data-[state=checked]:border-primary has-data-[state=checked]:ring-1 has-data-[state=checked]:ring-primary"
     >
       <RadioGroupItem
         id={id}

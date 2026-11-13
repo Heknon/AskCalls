@@ -60,8 +60,11 @@ export type CallRowProps = {
   href: string;
   /** The router's link component; a plain anchor by default. */
   linkAs?: ElementType;
-  /** "Dana Levi, incoming, today 14:32, 8 minutes". */
-  a11yLabel?: string;
+  /**
+   * Read after the contact, so the link is named "Dana Levi, incoming, today 14:32, 8 minutes":
+   * ", incoming, today 14:32, 8 minutes".
+   */
+  a11yDetail?: string;
   locale: string;
   now?: Date;
   onStarredChange?: (starred: boolean) => void;
@@ -88,7 +91,7 @@ export function CallRow({
   selected = false,
   href,
   linkAs: Link = 'a',
-  a11yLabel,
+  a11yDetail,
   locale,
   now,
   onStarredChange,
@@ -156,7 +159,6 @@ export function CallRow({
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Link
           href={href}
-          aria-label={a11yLabel}
           className="min-w-0 rounded-xs text-foreground no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-xs focus-visible:after:outline-2 focus-visible:after:outline-ring focus-visible:after:-outline-offset-2"
         >
           <ContactLabel
@@ -166,6 +168,7 @@ export function CallRow({
             hiddenLabel={labels.hiddenNumber}
             className="[&_[data-part=number]]:max-md:hidden"
           />
+          {a11yDetail ? <span className="sr-only">{a11yDetail}</span> : null}
         </Link>
         <CallDirection direction={call.direction} label={labels.direction[call.direction]} />
       </div>

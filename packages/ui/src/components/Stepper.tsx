@@ -38,7 +38,7 @@ export function Stepper({
             className={cn(
               'relative flex min-w-0 items-center gap-2 text-muted-foreground text-sm',
               cur && 'font-medium text-foreground',
-              vertical ? 'py-2' : 'flex-1',
+              vertical ? 'py-2' : 'flex-auto',
               !vertical && last && 'flex-none',
               !vertical &&
                 !last &&

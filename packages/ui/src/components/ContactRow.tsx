@@ -35,12 +35,16 @@ export function ContactRow({
       className="relative flex items-center gap-3 border-border border-b px-4 py-3 last:border-b-0 hover:bg-accent/60"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <Link
-          href={href}
-          className="min-w-0 text-foreground no-underline after:absolute after:inset-0 after:content-['']"
-        >
-          <ContactLabel name={name} show="name" locked={locked} />
-        </Link>
+        {locked ? (
+          <ContactLabel name={name} show="name" locked />
+        ) : (
+          <Link
+            href={href}
+            className="min-w-0 text-foreground no-underline after:absolute after:inset-0 after:content-['']"
+          >
+            <ContactLabel name={name} show="name" />
+          </Link>
+        )}
         {locked ? null : (
           <span className="flex flex-wrap gap-x-3 text-muted-foreground text-sm">
             {phones.map((p) => (

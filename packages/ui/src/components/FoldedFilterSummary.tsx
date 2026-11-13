@@ -37,12 +37,14 @@ export function FoldedFilterSummary({ summary, total, label, onShow }: FoldedFil
     <button
       type="button"
       data-component="FoldedFilterSummary"
-      aria-label={label}
       onClick={onShow}
       className="fixed inset-x-0 top-0 z-20 flex w-full cursor-pointer items-center gap-2 border-border border-b bg-background/95 px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 text-foreground text-sm shadow-sm backdrop-blur-sm md:hidden"
     >
       <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="min-w-0 flex-1 truncate text-start">{summary}</span>
+      <span className="min-w-0 flex-1 truncate text-start">
+        <span className="sr-only">{label}: </span>
+        {summary}
+      </span>
       {total !== undefined ? <span className="tabular text-muted-foreground">{total}</span> : null}
       <SlidersHorizontal className="size-4 shrink-0 text-muted-foreground" aria-hidden />
     </button>
