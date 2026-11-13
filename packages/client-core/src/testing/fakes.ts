@@ -8,7 +8,9 @@ import type {
   DeviceKeyStore,
   Embedder,
   EncodedAudio,
+  NoPrfReason,
   PasskeyAuthenticator,
+  PasskeyCredentialRef,
   SecretStore,
 } from '../ports/index';
 
@@ -156,8 +158,11 @@ export class MemoryBulkStateStore implements BulkStateStore {
 /** A passkey authenticator with PRF: one random secret per credential. */
 export class FakePasskeys implements PasskeyAuthenticator {
   readonly credentials = new Map<string, Uint8Array>();
+  /** The `allowCredentials` of the last assertion. */
+  lastAllowed: PasskeyCredentialRef[] = [];
   #n = 0;
-  constructor(readonly prf = true) {}
+  /** `true` evaluates PRF; otherwise the reason `create` reports for its absence. */
+  constructor(readonly prf: true | NoPrfReason = true) {}
 
   async #evaluate(secret: Uint8Array, salt: Uint8Array) {
     const key = await crypto.subtle.importKey(
@@ -174,14 +179,14 @@ export class FakePasskeys implements PasskeyAuthenticator {
     const credentialId = `cred-${++this.#n}`;
     const secret = crypto.getRandomValues(new Uint8Array(32));
     this.credentials.set(credentialId, secret);
-    return {
-      credentialId,
-      prfOutput: this.prf ? await this.#evaluate(secret, opts.prfSalt) : null,
-    };
+    const transports = ['internal', 'hybrid'];
+    if (this.prf !== true) return { credentialId, transports, prfOutput: null, noPrf: this.prf };
+    return { credentialId, transports, prfOutput: await this.#evaluate(secret, opts.prfSalt) };
   }
 
-  async assert(opts: { credentialIds: string[]; prfSalt: Uint8Array }) {
-    const credentialId = opts.credentialIds.find((id) => this.credentials.has(id));
+  async assert(opts: { credentials: PasskeyCredentialRef[]; prfSalt: Uint8Array }) {
+    this.lastAllowed = opts.credentials;
+    const credentialId = opts.credentials.map((c) => c.id).find((id) => this.credentials.has(id));
     if (!credentialId) throw new DomainError('not_found', 'no matching passkey');
     return {
       credentialId,

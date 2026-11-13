@@ -55,6 +55,7 @@
     "passkeyWaiting": "Waiting for your device…",
     "passkeyCancelled": "Passkey wasn't created. Try again or use a passphrase.",
     "noPrf": "This browser can't unlock AskCalls with a passkey. Set a passphrase instead.",
+    "passwordManager": "Your password manager can't unlock AskCalls with a passkey. Try again and save the passkey in this browser or on a security key.",
     "hasPassphrase": "This browser can't unlock AskCalls with a passkey. Use your passphrase to unlock here.",
     "usePassphrase": "Use a passphrase instead",
     "passTitle": "Create a passphrase",

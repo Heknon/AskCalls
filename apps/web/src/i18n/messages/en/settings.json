@@ -41,6 +41,7 @@
       "cancelled": "Passkey not added.",
       "exists": "This device already has a passkey for AskCalls.",
       "noPrf": "This browser's passkeys can't unlock AskCalls. Set a passphrase instead.",
+      "passwordManager": "Your password manager can't unlock AskCalls with a passkey. Try again and save the passkey in this browser or on a security key.",
       "failed": "Couldn't add the passkey. Try again.",
       "added": "Passkey added",
       "removed": "Passkey removed",

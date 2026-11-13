@@ -43,6 +43,8 @@ export interface PasskeyKdfParams {
   kdf: 'webauthn-prf+hkdf';
   /** base64url of the PRF salt (always PRF_SALT in v1). */
   prfSalt: string;
+  /** WebAuthn transports the credential reported; not used by the KDF. */
+  transports?: string[];
 }
 export interface RecoveryKdfParams {
   v: 1;

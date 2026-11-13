@@ -201,7 +201,7 @@ export function LinkFlow({ client, me }: { client: BrowserClient; me: Me }) {
   );
 }
 
-type Protection = 'idle' | 'waiting' | 'cancelled' | 'noPrf' | 'passphrase';
+type Protection = 'idle' | 'waiting' | 'cancelled' | 'noPrf' | 'passwordManager' | 'passphrase';
 
 /** RK is in memory only: keep it with a new passkey, or a passphrase. */
 function Protect({
@@ -231,14 +231,14 @@ function Protect({
   const createPasskey = async () => {
     setMode('waiting');
     try {
-      const { added } = await addUnlockMethod(opts, {
+      const result = await addUnlockMethod(opts, {
         method: 'passkey',
         authenticator: client.passkeys,
         userName: me.user.email ?? me.user.name ?? deviceLabel,
         label: deviceLabel,
       });
-      if (added) return finish();
-      setMode('noPrf');
+      if (result.added) return finish();
+      setMode(result.reason === 'passwordManager' ? 'passwordManager' : 'noPrf');
     } catch (e) {
       setMode(isDomainError(e) && e.code === 'unsupported' ? 'noPrf' : 'cancelled');
     }
@@ -331,6 +331,12 @@ function Protect({
         description={<p>{t('protectBody')}</p>}
       />
       {mode === 'cancelled' ? <ErrorState scope="inline" title={t('passkeyCancelled')} /> : null}
+      {mode === 'passwordManager' ? (
+        <Alert tone="warning" role="alert">
+          <TriangleAlert aria-hidden />
+          <span>{t('passwordManager')}</span>
+        </Alert>
+      ) : null}
       <div className="flex flex-col gap-2.5">
         <Button
           variant="primary"

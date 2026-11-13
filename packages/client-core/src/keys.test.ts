@@ -10,9 +10,9 @@ import { FakePasskeys, MemoryDeviceKeyStore } from './testing/fakes';
 describe('Onboarding', () => {
   it('offers the passphrase fallback when PRF is missing and requires both groups', async () => {
     const o = await Onboarding.begin('user-1');
-    expect(await o.addPasskey(new FakePasskeys(false), { userName: 'u', label: 'Key' })).toBe(
-      false,
-    );
+    expect(
+      await o.addPasskey(new FakePasskeys('unsupported'), { userName: 'u', label: 'Key' }),
+    ).toEqual({ added: false, reason: 'unsupported' });
     await expect(o.addPassphrase('too short')).rejects.toMatchObject({ reason: 'weak_passphrase' });
     await o.addPassphrase('twelve chars or more');
 

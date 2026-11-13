@@ -4,9 +4,11 @@ import { revokeKeyring } from '@askcalls/api-contract/routes/keyring';
 import { createRecoveryCode, type UnlockInput, verifyUnlock } from '@askcalls/client-core/keys';
 import {
   checkConfirmationGroups,
+  isCryptoError,
   pickConfirmationGroups,
   recoveryCodeGroups,
 } from '@askcalls/crypto';
+import { isDomainError } from '@askcalls/domain';
 import { CodeGroupInput } from '@askcalls/ui/components/CodeGroupInput';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { PassphraseField } from '@askcalls/ui/components/PassphraseField';
@@ -101,11 +103,17 @@ export function RegenerateDialog({
     setBusy(true);
     setError(null);
     try {
-      await verifyUnlock(input, opts);
+      try {
+        await verifyUnlock(input, opts);
+      } catch (e) {
+        // A request that failed says nothing about what the user typed: don't ask again.
+        setError(isCryptoError(e) || isDomainError(e) ? t('wrong') : t('failed'));
+        return;
+      }
       const created = await createRecoveryCode(opts);
       setStep({ name: 'show', ...created, groups: pickConfirmationGroups() });
     } catch {
-      setError(t('wrong'));
+      setError(t('failed'));
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,10 @@
-import type { PasskeyAuthenticator } from '@askcalls/client-core/ports/index';
+import type {
+  NoPrfReason,
+  PasskeyAuthenticator,
+  PasskeyCredentialRef,
+} from '@askcalls/client-core/ports/index';
 import { fromBase64Url, toBase64Url } from '@askcalls/crypto';
-import { DomainError } from '@askcalls/domain';
+import { DomainError, isDomainError } from '@askcalls/domain';
 
 /**
  * WebAuthn passkeys used only for the PRF extension (spec 6.2): the PRF output unwraps the root
@@ -22,8 +26,21 @@ function prfOutput(cred: PublicKeyCredential): Uint8Array | null {
   return new Uint8Array(view);
 }
 
-function prfEnabled(cred: PublicKeyCredential): boolean | undefined {
-  return (cred.getClientExtensionResults() as { prf?: PrfResults }).prf?.enabled;
+function prfResult(cred: PublicKeyCredential): PrfResults | undefined {
+  return (cred.getClientExtensionResults() as { prf?: PrfResults }).prf;
+}
+
+function isTransports(t: unknown): t is AuthenticatorTransport[] {
+  return Array.isArray(t) && t.length > 0 && t.every((x) => typeof x === 'string');
+}
+
+function transportsOf(cred: PublicKeyCredential): string[] {
+  const response = cred.response as Partial<AuthenticatorAttestationResponse>;
+  try {
+    return response.getTransports?.() ?? [];
+  } catch {
+    return [];
+  }
 }
 
 function asCredential(c: Credential | null): PublicKeyCredential {
@@ -49,7 +66,7 @@ export type PrfSupport = 'supported' | 'unsupported' | 'unknown';
 
 /**
  * Whether this browser can evaluate PRF, to decide between offering a passkey and the
- * passphrase fallback. `unknown` means try: `create()` then reports `prfOutput: null` if not.
+ * passphrase fallback. `unknown` means try: `create()` then reports `noPrf` if not.
  */
 export async function detectPrfSupport(): Promise<PrfSupport> {
   if (typeof PublicKeyCredential === 'undefined' || !navigator.credentials) return 'unsupported';
@@ -77,6 +94,16 @@ export interface WebAuthnPasskeyOptions {
   credentials?: CredentialsContainer;
 }
 
+/**
+ * A browser that knows PRF always answers a PRF request with a `prf` result, even
+ * `{ enabled: false }`. No `prf` result there means a password-manager extension replaced
+ * `navigator.credentials` and dropped the request.
+ */
+async function noPrfReason(cred: PublicKeyCredential): Promise<NoPrfReason> {
+  if (prfResult(cred) !== undefined) return 'unsupported';
+  return (await detectPrfSupport()) === 'supported' ? 'passwordManager' : 'unsupported';
+}
+
 export class WebAuthnPasskeyAuthenticator implements PasskeyAuthenticator {
   readonly rpId: string;
   private readonly rpName: string;
@@ -90,10 +117,7 @@ export class WebAuthnPasskeyAuthenticator implements PasskeyAuthenticator {
     this.container = () => opts.credentials ?? navigator.credentials;
   }
 
-  async create(opts: {
-    userName: string;
-    prfSalt: Uint8Array;
-  }): Promise<{ credentialId: string; prfOutput: Uint8Array | null }> {
+  async create(opts: { userName: string; prfSalt: Uint8Array }) {
     const salt = new Uint8Array(opts.prfSalt);
     let cred: PublicKeyCredential;
     try {
@@ -120,16 +144,26 @@ export class WebAuthnPasskeyAuthenticator implements PasskeyAuthenticator {
       mapError(e);
     }
     const credentialId = toBase64Url(new Uint8Array(cred.rawId));
+    const transports = transportsOf(cred);
     let output = prfOutput(cred);
     // Some authenticators only evaluate PRF on assertion; `enabled: true` says it will work.
-    if (!output && prfEnabled(cred) === true) {
-      output = (await this.assert({ credentialIds: [credentialId], prfSalt: salt })).prfOutput;
+    if (!output && prfResult(cred)?.enabled === true) {
+      try {
+        const asserted = await this.assert({
+          credentials: [{ id: credentialId, transports }],
+          prfSalt: salt,
+        });
+        output = asserted.prfOutput;
+      } catch (e) {
+        if (!(isDomainError(e) && e.code === 'unsupported')) throw e;
+      }
     }
-    return { credentialId, prfOutput: output };
+    if (output) return { credentialId, transports, prfOutput: output };
+    return { credentialId, transports, prfOutput: null, noPrf: await noPrfReason(cred) };
   }
 
   async assert(opts: {
-    credentialIds: string[];
+    credentials: PasskeyCredentialRef[];
     prfSalt: Uint8Array;
   }): Promise<{ credentialId: string; prfOutput: Uint8Array }> {
     let cred: PublicKeyCredential;
@@ -139,9 +173,12 @@ export class WebAuthnPasskeyAuthenticator implements PasskeyAuthenticator {
           publicKey: {
             rpId: this.rpId,
             challenge: random(32),
-            allowCredentials: opts.credentialIds.map((id) => ({
+            // Transports let a password-manager extension see that a security key or phone
+            // holds the credential and hand the prompt back to the browser.
+            allowCredentials: opts.credentials.map((c) => ({
               type: 'public-key' as const,
-              id: fromBase64Url(id),
+              id: fromBase64Url(c.id),
+              ...(isTransports(c.transports) && { transports: c.transports }),
             })),
             userVerification: 'required',
             timeout: this.timeout,
