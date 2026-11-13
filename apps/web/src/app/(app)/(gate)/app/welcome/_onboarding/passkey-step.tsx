@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
 import type { BrowserClient } from '../../../../../../client/browser-client';
 
-type State = 'idle' | 'waiting' | 'done' | 'cancelled' | 'noPrf';
+type State = 'idle' | 'waiting' | 'done' | 'cancelled' | 'noPrf' | 'passwordManager';
 
 /** O2 and O2b: a passkey with PRF, or the passphrase when the browser can't. */
 export function PasskeyStep({
@@ -41,9 +41,9 @@ export function PasskeyStep({
   const create = async () => {
     setState('waiting');
     try {
-      const ok = await onboarding.addPasskey(client.passkeys, { userName, label: deviceLabel });
-      if (!ok) {
-        setState('noPrf');
+      const result = await onboarding.addPasskey(client.passkeys, { userName, label: deviceLabel });
+      if (!result.added) {
+        setState(result.reason === 'passwordManager' ? 'passwordManager' : 'noPrf');
         return;
       }
       setState('done');
@@ -138,6 +138,21 @@ export function PasskeyStep({
           <div>
             <Button variant="primary" size="lg" autoFocus onClick={() => setMode('passphrase')}>
               {t('passkey.usePassphrase')}
+            </Button>
+          </div>
+        </>
+      ) : state === 'passwordManager' ? (
+        <>
+          <Alert tone="warning" role="alert">
+            <TriangleAlert aria-hidden />
+            <span>{t('passkey.passwordManager')}</span>
+          </Alert>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" size="lg" autoFocus onClick={create}>
+              {tc('retry')}
+            </Button>
+            <Button variant="ghost" size="lg" onClick={() => setMode('passphrase')}>
+              {t('passkey.alt')}
             </Button>
           </div>
         </>

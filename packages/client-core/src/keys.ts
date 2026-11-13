@@ -22,8 +22,51 @@ import {
   wipeBytes,
 } from '@askcalls/crypto';
 import { DomainError } from '@askcalls/domain';
-import type { DeviceKeyStore, PasskeyAuthenticator, SecretStore } from './ports/index';
+import type {
+  DeviceKeyStore,
+  NoPrfReason,
+  PasskeyAuthenticator,
+  PasskeyCredentialRef,
+  SecretStore,
+} from './ports/index';
 import type { KeySession } from './session';
+
+/** Whether a new passkey became an unlock method, and why not. */
+export type PasskeyAdded = { added: true } | { added: false; reason: NoPrfReason };
+
+/** The passkey entry for a credential that produced PRF output. */
+async function passkeyEntry(
+  userId: string,
+  rootKey: Uint8Array,
+  label: string,
+  created: { credentialId: string; transports: string[]; prfOutput: Uint8Array },
+): Promise<PendingEntry> {
+  try {
+    const e = await createPasskeyEntry({ userId, rootKey, prfOutput: created.prfOutput });
+    const transports = created.transports.length > 0 ? { transports: created.transports } : {};
+    return {
+      kind: 'passkey',
+      label,
+      credentialId: created.credentialId,
+      wrappedRootKey: e.wrappedRootKey,
+      kdfParams: { ...e.kdfParams, ...transports },
+    };
+  } finally {
+    wipeBytes(created.prfOutput);
+  }
+}
+
+/** The credential and its stored transports, for `allowCredentials`. */
+function credentialRef(entry: {
+  credentialId: string | null;
+  kdfParams: Record<string, unknown>;
+}): PasskeyCredentialRef | null {
+  if (entry.credentialId === null) return null;
+  const t = entry.kdfParams.transports;
+  const transports =
+    Array.isArray(t) && t.length > 0 && t.every((x) => typeof x === 'string') ? t : undefined;
+  return transports ? { id: entry.credentialId, transports } : { id: entry.credentialId };
+}
 
 /** Inbox key pair version written at onboarding. */
 export const INBOX_KEY_VERSION = 1;
@@ -102,28 +145,16 @@ export class Onboarding {
     return this.#confirmed;
   }
 
-  /** Creates a passkey with PRF. Returns false (and adds nothing) when PRF is unsupported. */
-  async addPasskey(authenticator: PasskeyAuthenticator, opts: { userName: string; label: string }) {
+  /** Creates a passkey with PRF. Adds nothing and says why when PRF is missing. */
+  async addPasskey(
+    authenticator: PasskeyAuthenticator,
+    opts: { userName: string; label: string },
+  ): Promise<PasskeyAdded> {
     this.#assertOpen();
     const created = await authenticator.create({ userName: opts.userName, prfSalt: PRF_SALT });
-    if (!created.prfOutput) return false;
-    try {
-      const e = await createPasskeyEntry({
-        userId: this.userId,
-        rootKey: this.#rootKey,
-        prfOutput: created.prfOutput,
-      });
-      this.#entries.push({
-        kind: 'passkey',
-        label: opts.label,
-        credentialId: created.credentialId,
-        wrappedRootKey: e.wrappedRootKey,
-        kdfParams: e.kdfParams,
-      });
-      return true;
-    } finally {
-      wipeBytes(created.prfOutput);
-    }
+    if (!created.prfOutput) return { added: false, reason: created.noPrf };
+    this.#entries.push(await passkeyEntry(this.userId, this.#rootKey, opts.label, created));
+    return { added: true };
   }
 
   /** The fallback when PRF is missing (Argon2id; throws `weak_passphrase` under 12 characters). */
@@ -260,8 +291,10 @@ async function unwrapRootKey(
   if (active.length === 0) throw new DomainError('not_found', 'no such unlock method');
 
   if (input.method === 'passkey') {
-    const ids = active.map((e) => e.credentialId).filter((c): c is string => c !== null);
-    const assertion = await input.authenticator.assert({ credentialIds: ids, prfSalt: PRF_SALT });
+    const credentials = active
+      .map(credentialRef)
+      .filter((c): c is PasskeyCredentialRef => c !== null);
+    const assertion = await input.authenticator.assert({ credentials, prfSalt: PRF_SALT });
     const entry = active.find((e) => e.credentialId === assertion.credentialId);
     if (!entry) throw new DomainError('not_found', 'passkey is not registered');
     const full = await opts.api.request(getKeyringEntry, { params: { id: entry.id } });
@@ -364,7 +397,7 @@ export async function addUnlockMethod(
   input:
     | { method: 'passkey'; authenticator: PasskeyAuthenticator; userName: string; label: string }
     | { method: 'passphrase'; passphrase: string; label?: string },
-): Promise<{ added: boolean }> {
+): Promise<PasskeyAdded> {
   const { userId } = opts.session;
   const rootKey = opts.session.keys.rootKey;
   let entry: PendingEntry;
@@ -373,13 +406,8 @@ export async function addUnlockMethod(
       userName: input.userName,
       prfSalt: PRF_SALT,
     });
-    if (!created.prfOutput) return { added: false };
-    try {
-      const e = await createPasskeyEntry({ userId, rootKey, prfOutput: created.prfOutput });
-      entry = { kind: 'passkey', label: input.label, credentialId: created.credentialId, ...e };
-    } finally {
-      wipeBytes(created.prfOutput);
-    }
+    if (!created.prfOutput) return { added: false, reason: created.noPrf };
+    entry = await passkeyEntry(userId, rootKey, input.label, created);
   } else {
     const e = await createPassphraseEntry({ userId, rootKey, passphrase: input.passphrase });
     entry = { kind: 'passphrase', label: input.label ?? 'Passphrase', credentialId: null, ...e };

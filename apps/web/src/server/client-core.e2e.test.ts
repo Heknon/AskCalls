@@ -33,7 +33,7 @@ import {
   updateCallMeta,
   updateCallTags,
 } from '@askcalls/client-core';
-import { fakeAudio, MemoryBulkStateStore } from '@askcalls/client-core/testing/fakes';
+import { FakePasskeys, fakeAudio, MemoryBulkStateStore } from '@askcalls/client-core/testing/fakes';
 import { unzipSync } from 'fflate';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ClientDevice, type ClientHarness, startClientHarness } from './testing/client';
@@ -47,7 +47,9 @@ const ids = { en: '', he: '', inbox: '', audio: '' };
 async function onboard(device: ClientDevice) {
   const o = await Onboarding.begin(h.userId);
   expect(o.recoveryGroups).toHaveLength(8);
-  expect(await o.addPasskey(h.passkeys, { userName: 'owner', label: 'Laptop passkey' })).toBe(true);
+  expect(await o.addPasskey(h.passkeys, { userName: 'owner', label: 'Laptop passkey' })).toEqual({
+    added: true,
+  });
   const [g1, g2] = o.confirmationGroups;
   expect(o.confirmRecovery({ [g1]: 'XXXX', [g2]: o.recoveryGroups[g2]! })).toBe(false);
   await expect(
@@ -231,9 +233,29 @@ describe('client-core end to end against the route handlers', () => {
     ).toBe(true);
     session.lock();
     await unlock({ method: 'passkey', authenticator: h.passkeys }, opts);
+    expect(h.passkeys.lastAllowed).toEqual([
+      { id: expect.any(String), transports: ['internal', 'hybrid'] },
+    ]);
     session.lock();
     await unlock({ method: 'passphrase', passphrase: 'correct horse battery staple' }, opts);
     expect(sortedIds(await searchCalls(ctx, { text: 'ולמקררים' }))).toEqual([ids.he]);
+  });
+
+  it('adds no passkey when a password manager drops PRF, and says so', async () => {
+    const { ctx, session } = browser;
+    const before = (await ctx.api.request(listKeyring, {})).entries.length;
+    expect(
+      await addUnlockMethod(
+        { api: ctx.api, session },
+        {
+          method: 'passkey',
+          authenticator: new FakePasskeys('passwordManager'),
+          userName: 'owner',
+          label: 'Vault',
+        },
+      ),
+    ).toEqual({ added: false, reason: 'passwordManager' });
+    expect((await ctx.api.request(listKeyring, {})).entries.length).toBe(before);
   });
 
   it('applies the auto-lock setting to the session', async () => {

@@ -275,7 +275,10 @@ async function storeLinkedRootKey(
         label: storage.label,
         credentialId: created.credentialId,
         wrappedRootKey: entry.wrappedRootKey,
-        kdfParams: { ...entry.kdfParams },
+        kdfParams: {
+          ...entry.kdfParams,
+          ...(created.transports.length > 0 && { transports: created.transports }),
+        },
       },
     });
   } finally {

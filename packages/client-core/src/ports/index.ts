@@ -60,16 +60,31 @@ export interface DeviceKeyStore {
   clear(): Promise<void>;
 }
 
+/**
+ * Why a new passkey can't unlock: the browser or authenticator lacks PRF, or a password-manager
+ * extension answered the prompt and dropped the PRF request.
+ */
+export type NoPrfReason = 'unsupported' | 'passwordManager';
+
+/** A registered credential and the transports it reported, sent back as `allowCredentials`. */
+export interface PasskeyCredentialRef {
+  id: string;
+  transports?: string[];
+}
+
 /** WebAuthn with the PRF extension (browser only). The PRF salt is `PRF_SALT` from crypto. */
 export interface PasskeyAuthenticator {
-  /** Registers a passkey and evaluates PRF on it. `prfOutput` is null when PRF is unsupported. */
+  /** Registers a passkey and evaluates PRF on it. `prfOutput` is null when PRF is missing. */
   create(opts: {
     userName: string;
     prfSalt: Uint8Array;
-  }): Promise<{ credentialId: string; prfOutput: Uint8Array | null }>;
-  /** Asks for one of `credentialIds` and evaluates PRF. */
+  }): Promise<
+    | { credentialId: string; transports: string[]; prfOutput: Uint8Array }
+    | { credentialId: string; transports: string[]; prfOutput: null; noPrf: NoPrfReason }
+  >;
+  /** Asks for one of `credentials` and evaluates PRF. */
   assert(opts: {
-    credentialIds: string[];
+    credentials: PasskeyCredentialRef[];
     prfSalt: Uint8Array;
   }): Promise<{ credentialId: string; prfOutput: Uint8Array }>;
 }
