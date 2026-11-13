@@ -27,7 +27,7 @@ const ROOT = join(import.meta.dirname, '../..');
 const sha256 = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
 function sums(dir: string, files: string[]): string {
-  return files.map((f) => `${sha256(join(dir, f))}  ${f}`).join('\n') + '\n';
+  return `${files.map((f) => `${sha256(join(dir, f))}  ${f}`).join('\n')}\n`;
 }
 
 function listFiles(dir: string, prefix = ''): string[] {
@@ -105,14 +105,15 @@ export function assemble(version: string, dist: string): string[] {
     'client-assets.sha256',
   ];
   writeFileSync(join(dist, 'SHA256SUMS'), sums(dist, releaseFiles));
+  const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const clientAssets = readFileSync(join(dist, 'client-assets.sha256'), 'utf8').trim();
   const count = clientAssets.split('\n').length;
   writeFileSync(
     join(dist, 'release-notes.md'),
     [
-      `## Verify this release`,
+      '## Verify this release',
       '',
-      `Built from \`${process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim()}\`. How to check these against a build of your own, or against what askcalls.com serves: [docs/reproducible-builds.md](https://github.com/Heknon/AskCalls/blob/master/docs/reproducible-builds.md).`,
+      `Built from \`${commit}\`. How to check these against a build of your own, or against what askcalls.com serves: [docs/reproducible-builds.md](https://github.com/Heknon/AskCalls/blob/master/docs/reproducible-builds.md).`,
       '',
       '### Release files',
       '',
