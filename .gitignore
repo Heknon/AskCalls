@@ -15,3 +15,8 @@ test-results/
 .DS_Store
 .claude/worktrees/
 .vercel/
+
+# Self-hosted browser assets, fetched by scripts/fetch-browser-assets.ts
+apps/web/public/models/
+apps/web/public/ort/
+apps/web/public/ffmpeg/

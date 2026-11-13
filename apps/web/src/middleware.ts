@@ -1,11 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { directOrigins, readDirectCookie, rewriteConnectSrc } from './client/direct-origins';
 import { readSessionUserId } from './server/auth/secret';
 import { getContainer } from './server/container';
-import { appCsp, newNonce } from './server/http/csp';
+import { appCsp, DIRECT_PROVIDER_ORIGINS, newNonce } from './server/http/csp';
 
 /**
  * - /app/** and /admin/**: require a session (redirect to /login), /admin/** also the admin role;
- *   a per-request CSP nonce replaces the static header (spec 2.4).
+ *   a per-request CSP nonce replaces the static header (spec 2.4). `connect-src` lists provider
+ *   and own-bucket origins only when the user enabled own-key mode (the `askcalls-direct`
+ *   cookie, see client/direct-origins.ts), and none in offline mode.
  * - /api/**: `Cache-Control: no-store` (route handlers set it too).
  * Runs on the Node.js runtime so it can use the container like route handlers do.
  */
@@ -39,7 +42,16 @@ export async function middleware(req: NextRequest) {
   }
 
   const nonce = newNonce();
-  const csp = appCsp(container.config.config, nonce, container.config.environment);
+  const direct = container.config.config.offlineMode
+    ? []
+    : directOrigins(
+        readDirectCookie((n) => req.cookies.get(n)?.value, req.nextUrl.protocol === 'https:'),
+      );
+  const csp = rewriteConnectSrc(
+    appCsp(container.config.config, nonce, container.config.environment),
+    DIRECT_PROVIDER_ORIGINS,
+    direct,
+  );
   const headers = new Headers(req.headers);
   headers.set('x-nonce', nonce);
   headers.set('Content-Security-Policy', csp);
