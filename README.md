@@ -119,13 +119,20 @@ bunx askcalls login --url https://askcalls.com
 bunx askcalls link
 ```
 
+Then add it to your client.
+
 **Claude Code**
 
 ```sh
-claude mcp add askcalls -- bunx askcalls mcp
+claude mcp add --scope user askcalls -- bunx askcalls mcp
 ```
 
-**Claude Desktop, Cursor and other clients**
+**Claude Desktop**
+
+Open Settings → Developer → Edit Config, or edit the file directly:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -137,6 +144,70 @@ claude mcp add askcalls -- bunx askcalls mcp
   }
 }
 ```
+
+Restart Claude Desktop after saving.
+
+**Cursor**
+
+`~/.cursor/mcp.json` for all projects, or `.cursor/mcp.json` for one:
+
+```json
+{
+  "mcpServers": {
+    "askcalls": {
+      "command": "bunx",
+      "args": ["askcalls", "mcp"]
+    }
+  }
+}
+```
+
+**VS Code**
+
+`.vscode/mcp.json` in your workspace:
+
+```json
+{
+  "servers": {
+    "askcalls": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": ["askcalls", "mcp"]
+    }
+  }
+}
+```
+
+**Windsurf**
+
+`~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "askcalls": {
+      "command": "bunx",
+      "args": ["askcalls", "mcp"]
+    }
+  }
+}
+```
+
+**Codex CLI**
+
+```sh
+codex mcp add askcalls -- bunx askcalls mcp
+```
+
+Or in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.askcalls]
+command = "bunx"
+args = ["askcalls", "mcp"]
+```
+
+Desktop apps don't always inherit your shell's `PATH`. If a client can't start the server, replace `bunx` with its full path from `which bunx`.
 
 | Tool | What it does |
 | --- | --- |
@@ -155,7 +226,29 @@ Bulk import from the command line uses the same pipeline:
 askcalls ingest ./calls --manifest manifest.csv --backup-recordings
 ```
 
-A remote MCP endpoint at `/api/mcp` serves clients that can't run a local process. It has no keys, so it offers only `inbox_upload`, `list_recent_calls` (ids, days and durations) and `account_status`. Inbox uploads are visible to the server in transit, encrypted to your inbox public key on arrival, and indexed the next time one of your devices unlocks.
+### Remote MCP
+
+A remote MCP endpoint serves clients that can't run a local process. It has no keys, so it offers only `inbox_upload`, `list_recent_calls` (ids, days and durations) and `account_status`. Inbox uploads are visible to the server in transit, encrypted to your inbox public key on arrival, and indexed the next time one of your devices unlocks.
+
+Create a personal access token in **Settings → API and MCP**, then:
+
+```sh
+claude mcp add --transport http askcalls-remote https://askcalls.com/api/mcp/mcp \
+  --header "Authorization: Bearer ac_..."
+```
+
+For clients configured with JSON:
+
+```json
+{
+  "mcpServers": {
+    "askcalls-remote": {
+      "url": "https://askcalls.com/api/mcp/mcp",
+      "headers": { "Authorization": "Bearer ac_..." }
+    }
+  }
+}
+```
 
 ## Providers
 
