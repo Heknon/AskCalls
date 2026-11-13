@@ -219,7 +219,8 @@ Desktop apps don't always inherit your shell's `PATH`. If a client can't start t
 | `search_calls` | Keyword, contact, tag, intent, date and semantic search, with decrypted results |
 | `get_call` | Full transcript and metadata, within a per-session decrypt budget |
 | `list_recent_calls` | Recent calls with decrypted metadata |
-| `ingest_call`, `ingest_batch` | Import a single call or a whole folder |
+| `ingest_call`, `ingest_batch` | Import a single call or a whole folder; `dry_run: true` lists how the files pair and the manifest's problems without importing |
+| `import_format` | The folder layout and every `manifest.csv` column, with an example, for an agent preparing a folder from another layout |
 | `star_call`, `tag_call` | Update stars and tags |
 | `list_tags`, `list_contacts` | Your decrypted catalogs |
 
@@ -229,6 +230,12 @@ Bulk import from the command line uses the same pipeline:
 
 ```sh
 askcalls ingest ./calls --manifest manifest.csv --backup-recordings
+```
+
+If your recordings and transcripts are laid out differently, ask your AI to read `import_format` (or `askcalls ingest --help`), write a `manifest.csv` for your folder and check it with a dry run before importing:
+
+```sh
+askcalls ingest ./calls --dry-run
 ```
 
 ### Remote MCP

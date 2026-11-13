@@ -52,9 +52,13 @@ test('bulk upload of a mixed folder with a manifest and duplicates', async ({ pa
   await expect(summary(page).locator('[data-component="DataFlowNote"]').first()).toContainText(
     'Audio passes through AskCalls to Mock transcriber',
   );
-  await expect(page.locator('[data-component="QueueRow"]')).toHaveCount(5);
+  const groups = page.locator('[data-component="ImportGroup"]');
+  await expect(groups).toHaveCount(3);
+  await expect(groups.filter({ hasText: 'Dana Levi' })).toContainText('2 calls');
+  await expect(groups.filter({ hasText: 'Avi Ben David' })).toContainText('1 call');
+  await expect(groups.filter({ hasText: 'No contact' })).toContainText('2 calls');
 
-  await page.getByRole('button', { name: 'Start import' }).click();
+  await page.getByRole('button', { name: 'Import 5 calls' }).click();
   await expect(page.getByText('3 calls imported. 0 failed, 2 duplicates.')).toBeVisible({
     timeout: 120_000,
   });
@@ -78,6 +82,99 @@ test('bulk upload of a mixed folder with a manifest and duplicates', async ({ pa
   await expect(
     page.locator('[data-component="TagManagerRow"]', { hasText: 'Clinic' }),
   ).toContainText('1 call');
+});
+
+test('the empty bulk tab shows the folder layout and an example manifest', async ({
+  page,
+  context,
+}) => {
+  await onboard(page, context, 'guide');
+  await go(page, 'Upload');
+  await page.getByRole('tab', { name: 'Bulk' }).click();
+  const guide = page.locator('[data-component="ImportFormatGuide"]');
+  await guide.getByRole('button', { name: 'Folder layout and manifest.csv' }).click();
+  await expect(guide).toContainText('2026-03-01 Dana.txt');
+  await expect(guide.locator('[data-component="CopyableCode"]')).toContainText(
+    'file,phone,started_at,direction,contact_name,tags',
+  );
+  const download = page.waitForEvent('download');
+  await guide.getByRole('button', { name: 'Download example' }).click();
+  expect((await download).suggestedFilename()).toBe('manifest.csv');
+});
+
+test('leave out a contact and a single call before the import starts', async ({
+  page,
+  context,
+}) => {
+  await onboard(page, context, 'review');
+  await go(page, 'Upload');
+  await page.getByRole('tab', { name: 'Bulk' }).click();
+  const txt = (name: string, text: string) => ({
+    name,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(text),
+  });
+  await page
+    .locator('[data-component="FileDropZone"] input[type="file"]')
+    .first()
+    .setInputFiles([
+      txt('dana-1.txt', 'Dana: The fridge order is confirmed for Sunday.'),
+      txt('dana-2.txt', 'Dana: Please move the delivery to Monday.'),
+      txt('ron-1.txt', 'Ron: The contract is ready to sign.'),
+      {
+        name: 'manifest.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          [
+            'file,phone,contact_name',
+            'dana-1.txt,+972501234567,Dana Levi',
+            'dana-2.txt,+972501234567,Dana Levi',
+            'ron-1.txt,+972527654321,Ron Cohen',
+          ].join('\n'),
+        ),
+      },
+    ]);
+
+  const groups = page.locator('[data-component="ImportGroup"]');
+  await expect(groups).toHaveCount(2, { timeout: 30_000 });
+  const dana = groups.filter({ hasText: 'Dana Levi' });
+  await expect(dana).toContainText('2 calls');
+
+  await page.getByRole('checkbox', { name: 'Include Ron Cohen' }).click();
+  await expect(count(page, 'transcript only')).toHaveText('2');
+  await expect(page.getByRole('button', { name: 'Import 2 calls' })).toBeVisible();
+
+  await dana.getByRole('button', { name: /Dana Levi/ }).click();
+  await page.getByRole('checkbox', { name: 'Include dana-2.txt' }).click();
+  await expect(dana).toContainText('1 of 2');
+  await expect(dana.getByRole('checkbox', { name: 'Include Dana Levi' })).toHaveAttribute(
+    'data-state',
+    'indeterminate',
+  );
+  await expect(page.getByText('1 of 3 selected')).toBeVisible();
+
+  await page.getByRole('radio', { name: 'Folder' }).click();
+  const top = groups.filter({ hasText: 'Top folder' });
+  await expect(top).toContainText('1 of 3');
+  await expect(top.locator('[data-component="QueueRow"][data-selected="true"]')).toHaveCount(1);
+  await expect(top.locator('[data-component="QueueRow"][data-selected="true"]')).toContainText(
+    'dana-1.txt',
+  );
+
+  await page.getByRole('checkbox', { name: 'All calls' }).click();
+  await expect(page.getByRole('button', { name: 'Import 3 calls' })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'All calls' }).click();
+  await expect(page.getByRole('button', { name: 'Import 0 calls' })).toBeDisabled();
+  await expect(page.getByText('Select calls to import.')).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Include dana-1.txt' }).click();
+
+  await page.getByRole('button', { name: 'Import 1 call' }).click();
+  await expect(page.getByText('1 calls imported. 0 failed, 0 duplicates.')).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(
+    page.getByRole('tablist', { name: 'Show' }).getByRole('tab', { name: /All/ }),
+  ).toContainText('1');
 });
 
 test('pause, reload, unlock, pick the files again and resume', async ({ page, context }) => {
@@ -104,7 +201,7 @@ test('pause, reload, unlock, pick the files again and resume', async ({ page, co
     .first()
     .setInputFiles(files);
   await expect(count(page, 'transcript only')).toHaveText('10', { timeout: 30_000 });
-  await page.getByRole('button', { name: 'Start import' }).click();
+  await page.getByRole('button', { name: 'Import 10 calls' }).click();
   await page.getByRole('button', { name: 'Pause' }).click();
   await expect(page.getByRole('button', { name: 'Pausing…' })).toBeVisible();
   release();

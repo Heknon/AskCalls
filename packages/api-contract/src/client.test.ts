@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { ApiError, createApiClient } from './client';
 import { listCalls, updateCall } from './routes/calls';
 import { ask, transcribe } from './routes/providers';
-import { revokeToken } from './routes/tokens';
+import { createToken, revokeToken } from './routes/tokens';
+
+/** A clock that moves only when the client sleeps. */
+function fakeClock() {
+  let t = 0;
+  return {
+    now: () => t,
+    sleep: async (ms: number) => {
+      t += ms;
+    },
+  };
+}
 
 function recorder(respond: (url: string, init: RequestInit) => Response) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
@@ -72,24 +83,86 @@ describe('api client', () => {
     expect(call.createdAt).toEqual(now);
   });
 
-  it('throws typed errors with Retry-After', async () => {
+  it('throws typed errors with Retry-After once the retries are spent', async () => {
+    const clock = fakeClock();
     const r = recorder(() =>
       Response.json(
         { error: { code: 'rate_limited', message: 'too many requests' } },
         { status: 429, headers: { 'Retry-After': '30' } },
       ),
     );
-    const err = await createApiClient({ fetch: r.fetch })
+    const err = await createApiClient({ fetch: r.fetch, ...clock })
       .request(listCalls, {})
       .catch((e) => e);
     expect(err).toBeInstanceOf(ApiError);
     expect(err).toMatchObject({ status: 429, code: 'rate_limited', retryAfterSec: 30 });
+    expect(r.calls).toHaveLength(4);
     const html = recorder(() => new Response('<html>', { status: 502 }));
     expect(
-      await createApiClient({ fetch: html.fetch })
+      await createApiClient({ fetch: html.fetch, ...clock })
         .request(listCalls, {})
         .catch((e) => e.code),
     ).toBe('http_error');
+  });
+
+  it('waits out a 429 for every request of the client, then sends again', async () => {
+    const clock = fakeClock();
+    let limited = 1;
+    const r = recorder(() =>
+      limited-- > 0
+        ? new Response('{}', { status: 429, headers: { 'Retry-After': '5' } })
+        : Response.json({ items: [], nextCursor: null }),
+    );
+    const client = createApiClient({ fetch: r.fetch, ...clock });
+    await client.request(listCalls, {});
+    expect(r.calls).toHaveLength(2);
+    expect(clock.now()).toBeGreaterThanOrEqual(5_000);
+  });
+
+  it('reports a 429 that asks for a long wait, such as a daily limit, at once', async () => {
+    const r = recorder(
+      () => new Response('{}', { status: 429, headers: { 'Retry-After': '3600' } }),
+    );
+    const err = await createApiClient({ fetch: r.fetch, ...fakeClock() })
+      .request(listCalls, {})
+      .catch((e) => e);
+    expect(err).toMatchObject({ status: 429, retryAfterSec: 3600 });
+    expect(r.calls).toHaveLength(1);
+  });
+
+  it('retries network errors and 503 on reads, never a create', async () => {
+    const clock = fakeClock();
+    let n = 0;
+    const flaky = async () => {
+      n++;
+      if (n === 1) throw new TypeError('Failed to fetch');
+      if (n === 2) return new Response('', { status: 503 });
+      return Response.json({ items: [], nextCursor: null });
+    };
+    await createApiClient({ fetch: flaky, ...clock }).request(listCalls, {});
+    expect(n).toBe(3);
+
+    let posts = 0;
+    const down = async () => {
+      posts++;
+      throw new TypeError('Failed to fetch');
+    };
+    await expect(
+      createApiClient({ fetch: down, ...clock }).request(createToken, {
+        body: { name: 'agent', scopes: ['read'], expiresInDays: null },
+      }),
+    ).rejects.toThrow('Failed to fetch');
+    expect(posts).toBe(1);
+  });
+
+  it('paces requests below the server limit', async () => {
+    const clock = fakeClock();
+    const r = recorder(() => Response.json({ items: [], nextCursor: null }));
+    const client = createApiClient({ fetch: r.fetch, maxPerMinute: 60, ...clock });
+    await Promise.all(Array.from({ length: 5 }, () => client.request(listCalls, {})));
+    expect(r.calls).toHaveLength(5);
+    // A burst of 2 (one second's worth), then one request a second.
+    expect(clock.now()).toBeGreaterThanOrEqual(3_000);
   });
 
   it('sends raw bodies and reads text streams', async () => {

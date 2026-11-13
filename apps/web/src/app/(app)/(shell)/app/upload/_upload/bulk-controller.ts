@@ -26,8 +26,8 @@ export type BulkError = 'emptyFolder' | 'zipError' | 'manifestError' | 'pickFail
 export interface Plan {
   pairing: Pairing;
   summary: PreflightSummary;
-  /** Items a manifest row describes. */
-  manifestCovered: number;
+  /** Keys of the items a manifest row describes. */
+  manifestKeys: ReadonlySet<string>;
   /** Number and name per item, from the manifest and file names. */
   meta: ReadonlyMap<string, IngestMeta>;
 }
@@ -50,7 +50,13 @@ export type BulkSnapshot =
   | { phase: 'loading' }
   | { phase: 'empty'; error: BulkError | null }
   | { phase: 'planning' }
-  | { phase: 'preflight'; plan: Plan; error: BulkError | null }
+  | {
+      phase: 'preflight';
+      plan: Plan;
+      /** Keys of the items the user left out; everything else is imported. */
+      excluded: ReadonlySet<string>;
+      error: BulkError | null;
+    }
   | { phase: 'queue'; queue: QueueView };
 
 const utcOffsetMinutes = () => -new Date().getTimezoneOffset();
@@ -296,11 +302,13 @@ export class BulkController {
       estimateDurationSec: (f) => wavSeconds(this.client, f),
     });
     if (run !== this.#planRun) return;
-    const manifestCovered = manifest
-      ? pairing.items.filter((i) =>
-          [i.audio, i.transcript].some((f) => f && manifest.lookup(f.name)),
-        ).length
-      : 0;
+    const manifestKeys = new Set(
+      manifest
+        ? pairing.items
+            .filter((i) => [i.audio, i.transcript].some((f) => f && manifest.lookup(f.name)))
+            .map((i) => i.key)
+        : [],
+    );
     const region = (await ctx.userData.get('settings')).phoneRegion;
     const meta = new Map(
       pairing.items.map((i) => [
@@ -311,9 +319,22 @@ export class BulkController {
     if (run !== this.#planRun) return;
     this.#set({
       phase: 'preflight',
-      plan: { pairing, summary, manifestCovered, meta },
+      plan: { pairing, summary, manifestKeys, meta },
+      excluded: new Set(),
       error: error ?? (manifestError ? 'manifestError' : null),
     });
+  }
+
+  /** Puts calls in the import or leaves them out, before it starts. */
+  setIncluded(keys: readonly string[], included: boolean) {
+    const s = this.#snapshot;
+    if (s.phase !== 'preflight') return;
+    const excluded = new Set(s.excluded);
+    for (const k of keys) {
+      if (included) excluded.delete(k);
+      else excluded.add(k);
+    }
+    this.#set({ ...s, excluded });
   }
 
   // The queue
@@ -321,7 +342,9 @@ export class BulkController {
   async start(backupRecordings: boolean) {
     const s = this.#snapshot;
     if (s.phase !== 'preflight') return;
-    const state = planBatch(s.plan.pairing, { backupRecordings });
+    const items = s.plan.pairing.items.filter((i) => !s.excluded.has(i.key));
+    if (items.length === 0) return;
+    const state = planBatch({ ...s.plan.pairing, items }, { backupRecordings });
     this.#restored = false;
     this.#missing = null;
     this.#lastStep.clear();

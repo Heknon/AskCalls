@@ -87,6 +87,8 @@ export interface PreflightSummary {
   audioOnly: number;
   /** Transcription minutes the audio-only files will use (estimated). */
   estimatedMinutes: number;
+  /** Estimated audio seconds of each audio-only item, by item key. */
+  secondsByKey: Record<string, number>;
   paired: number;
   transcriptOnly: number;
   likelyDuplicates: number;
@@ -116,6 +118,7 @@ export async function preflight(
   const s: PreflightSummary = {
     audioOnly: 0,
     estimatedMinutes: 0,
+    secondsByKey: {},
     paired: 0,
     transcriptOnly: 0,
     likelyDuplicates: 0,
@@ -130,7 +133,9 @@ export async function preflight(
     else if (item.audio) {
       s.audioOnly++;
       const est = (await opts.estimateDurationSec?.(item.audio)) ?? null;
-      seconds += est ?? item.audio.size / FALLBACK_BYTES_PER_SEC;
+      const sec = est ?? item.audio.size / FALLBACK_BYTES_PER_SEC;
+      s.secondsByKey[item.key] = sec;
+      seconds += sec;
     } else s.transcriptOnly++;
 
     if (item.audio) {
@@ -149,8 +154,11 @@ export async function preflight(
         continue;
       }
       const tok = await contentToken(ctx.session.keys.indexKey, contentText(text));
-      const res = await ctx.api.request(listCalls, { query: { content_tok: tok, limit: 1 } });
-      if (res.items.length) dup.add(item.key);
+      // The count is a hint: the import checks again before each upload.
+      const res = await ctx.api
+        .request(listCalls, { query: { content_tok: tok, limit: 1 } })
+        .catch(() => null);
+      if (res?.items.length) dup.add(item.key);
     }
   }
   s.estimatedMinutes = Math.ceil(seconds / 60);

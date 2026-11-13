@@ -563,9 +563,13 @@ Tabs: Single, Bulk. The active transcription provider and its `DataFlowNote` app
 
 Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 
-**Flow:** pick (folder picker, files, or ZIP; optional `manifest.csv`) → pre-flight summary → queue.
+**Flow:** pick (folder picker, files, or ZIP; optional `manifest.csv`) → review and pre-flight summary → queue.
 
-**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), `DataFlowNote`, "Back up recordings" switch, primary "Start import", secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
+**Pick:** under the drop zone, `ImportFormatGuide` ("Folder layout and manifest.csv", closed): how recordings and transcripts pair, an example folder, an example `manifest.csv` to copy or download, and what each column takes.
+
+**Review:** the planned calls in `ImportGroup`s, by Contact (default; the number, else the name; "No contact" last), Folder ("Top folder" first) or Month (newest first; "No date" last). A group's checkbox puts all its calls in or leaves them out; open a group to include or leave out single calls (`QueueRow` with `select`, status "Queued" or "Left out"). The toolbar has "All calls" with "{n} of {total} selected", the group-by toggle and, at 12 groups or more, "Filter groups". Groups are collapsed unless there is one. Only the selected calls are queued; the summary counts and minutes are of the selected calls.
+
+**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), `DataFlowNote`, "Back up recordings" switch, primary "Import {n} calls" (disabled with "Select calls to import." when none is selected), secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
 
 **Queue:** `JobProgress` ("{done} of {total} files done. {active} in progress, {failed} failed, {dup} duplicates skipped. About {t} left.") with Pause; hint "You can close this tab and resume later."; filter tabs All / In progress / Failed / Duplicates; table rows (`QueueRow`): file name (mono, LTR, truncates with the full name in a tooltip), kind badges, contact (from manifest, file name or metadata), `QueueItemStatus` with a thin progress bar for transcription, Retry for failed rows, a link to the existing call for duplicates. "Retry all failed". Desktop: the summary stays in a 320 px side column. Mobile: the table becomes stacked cards; the summary moves above the queue and collapses to one line.
 
@@ -583,7 +587,19 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 | `bulk.usage` | Transcription this month, after this import | תמלול החודש, אחרי הייבוא |
 | `bulk.manifestApplied` | manifest.csv set names and dates for {n} files. | manifest.csv קבע שמות ותאריכים ל-{n} קבצים. |
 | `bulk.overQuota` | This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key. | הייבוא דורש כ-{n} דקות ונותרו {m}. קבצים מעבר למגבלה יחכו בתור עד החודש הבא או עד שיתווסף מפתח משלך. |
-| `bulk.start` / `change` | Start import / Choose different files | התחלת ייבוא / בחירת קבצים אחרים |
+| `bulk.start` / `change` | Import {n} calls / Choose different files | ייבוא {n} שיחות / בחירת קבצים אחרים |
+| `bulk.review.all` / `selected` | All calls / {n} of {total} selected | כל השיחות / {n} מתוך {total} נבחרו |
+| `bulk.review.groupBy` / `by.*` | Group by: Contact · Folder · Month | קיבוץ לפי: איש קשר · תיקייה · חודש |
+| `bulk.review.count` / `countOf` | {n} calls / {n} of {total} | {n} שיחות / {n} מתוך {total} |
+| `bulk.review.include` | Include {name} | לכלול את {name} |
+| `bulk.review.noContact` / `topFolder` / `noDate` | No contact / Top folder / No date | ללא איש קשר / תיקייה ראשית / ללא תאריך |
+| `bulk.review.filter` / `noMatch` | Filter groups / No group matches. | סינון קבוצות / אין קבוצה תואמת. |
+| `bulk.review.noneSelected` | Select calls to import. | יש לבחור שיחות לייבוא. |
+| `queue.excluded` | Left out | לא נכלל |
+| `bulk.guide.title` | Folder layout and manifest.csv | מבנה התיקייה ו-manifest.csv |
+| `bulk.guide.pairing` | A recording and a transcript with the same name in the same folder are one call. The transcript name may end in .transcript or _tx. | הקלטה ותמלול עם אותו שם באותה תיקייה הם שיחה אחת. שם קובץ התמלול יכול להסתיים ב-.transcript או ב-_tx. |
+| `bulk.guide.manifest` | manifest.csv is optional and sets each call's number, date, direction, contact and tags. Only the file column is required. | הקובץ manifest.csv אינו חובה, והוא קובע לכל שיחה מספר, תאריך, כיוון, איש קשר ותגיות. רק העמודה file נדרשת. |
+| `bulk.guide.download` | Download example | הורדת דוגמה |
 | `bulk.progress` | {done} of {total} files done. {active} in progress, {failed} failed, {dup} duplicates skipped. About {t} left. | {done} מתוך {total} קבצים הושלמו. {active} בתהליך, {failed} נכשלו, {dup} כפילויות דולגו. נותרו כ-{t}. |
 | `bulk.closeHint` | You can close this tab and resume later. | אפשר לסגור את הלשונית ולהמשיך אחר כך. |
 | `bulk.pause` / `pausing` / `resume` | Pause / Pausing… / Resume | השהיה / משהה… / המשך |
