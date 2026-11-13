@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useUnlocked } from '../../../../../../client/session/session';
 import { AsyncView, useAsync } from '../../../_shell/states';
+import { ReindexJob } from '../../_calls/reindex-job';
 import { draftKey } from './rule-draft';
 import { SaveIndicator, useSaver } from './shared';
 import { checkGroups, type Group } from './synonyms';
@@ -55,6 +56,7 @@ function Synonyms({ initial }: { initial: SynonymEntry[] }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground">{t('note')}</p>
+      <ReindexJob mode="all" ns="tags.syn.reindex" icon={Replace} />
       <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="outline"

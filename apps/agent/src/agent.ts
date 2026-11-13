@@ -21,6 +21,7 @@ import { TransformersEmbedder } from './adapters/embedder';
 import { fetchBlobTransport } from './adapters/http';
 import { openSecretStore, type SecretStoreKind } from './adapters/secret-store';
 import { transcriberFor } from './adapters/transcriber';
+import { translatorFor } from './adapters/translator';
 import { type AgentConfig, dataDir, loadConfig, paths } from './config';
 
 /** The personal access token, next to the device secrets of `DEVICE_SECRETS`. */
@@ -165,6 +166,12 @@ export async function unlockAgent(
   } catch {
     // A broken own-key setting turns transcription off; transcripts still ingest.
   }
-  const ctx: ClientContext = { ...base, transcriber };
+  let translator: ClientContext['translator'] = null;
+  try {
+    translator = translatorFor(account.api, providers.llm);
+  } catch {
+    // A broken own-key LLM setting stores calls in their own language only.
+  }
+  const ctx: ClientContext = { ...base, transcriber, translator };
   return { ...account, session, ctx };
 }

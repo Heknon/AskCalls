@@ -12,6 +12,7 @@
     "build:binary": "bun build ./src/cli.ts --compile --external @huggingface/transformers --external ffmpeg-static --outfile dist/askcalls"
   },
   "dependencies": {
+    "@askcalls/adapter-llm-ai-sdk": "workspace:*",
     "@askcalls/adapter-transcription-deepgram": "workspace:*",
     "@askcalls/adapter-transcription-elevenlabs": "workspace:*",
     "@askcalls/adapter-transcription-openai": "workspace:*",
