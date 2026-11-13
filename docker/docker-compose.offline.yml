@@ -1,0 +1,140 @@
+# Air-gapped AskCalls (spec 11.2b): every service runs on this machine and OFFLINE_MODE=true
+# makes the app refuse to start if any setting points outside the local network.
+#
+#   cd docker
+#   export AUTH_SECRET="$(openssl rand -base64 32)"
+#   docker compose -f docker-compose.offline.yml up
+#
+# While still online (or on a machine that is), pull the images and the models once:
+#   docker compose -f docker-compose.offline.yml pull
+#   docker compose -f docker-compose.offline.yml run --rm ollama-pull
+#   docker compose -f docker-compose.offline.yml run --rm whisper-pull
+# Then move the images (`docker save`) and the `ollama` and `whisper` volumes to the offline host.
+# Sign-in is local accounts only; the embedding model is served by the app itself.
+name: askcalls-offline
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: askcalls
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-askcalls}
+      POSTGRES_DB: askcalls
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U askcalls"]
+      interval: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-askcalls}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-askcalls-minio}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${APP_URL:-http://localhost:3000}
+    # Browsers upload encrypted recordings here directly, so it is published like the app.
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio:/data
+    networks: [internal, edge]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      retries: 20
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks: [internal]
+    entrypoint: >
+      /bin/sh -c "mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-askcalls} $${MINIO_ROOT_PASSWORD:-askcalls-minio}
+      && mc mb --ignore-existing local/askcalls"
+
+  # whisper.cpp's server on the OpenAI transcription path (POST /v1/audio/transcriptions).
+  whisper:
+    image: ghcr.io/ggml-org/whisper.cpp:main
+    command:
+      - >
+        ./build/bin/whisper-server --host 0.0.0.0 --port 8000
+        --model /models/ggml-${WHISPER_MODEL:-small}.bin
+        --inference-path /v1/audio/transcriptions --convert
+    volumes:
+      - whisper:/models
+    networks: [internal]
+
+  # Ollama's OpenAI-compatible API (/v1/chat/completions) for "ask about a call".
+  ollama:
+    image: ollama/ollama:0.6.8
+    volumes:
+      - ollama:/root/.ollama
+    networks: [internal]
+
+  # One-off model downloads, run while online (see the top of this file).
+  ollama-pull:
+    image: ollama/ollama:0.6.8
+    profiles: [pull]
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 3 && ollama pull ${LLM_MODEL:-llama3.2}"]
+    volumes:
+      - ollama:/root/.ollama
+  whisper-pull:
+    image: ghcr.io/ggml-org/whisper.cpp:main
+    profiles: [pull]
+    command: ["./models/download-ggml-model.sh ${WHISPER_MODEL:-small} /models"]
+    volumes:
+      - whisper:/models
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+    networks: [internal, edge]
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET, for example with openssl rand -base64 32}
+      OFFLINE_MODE: "true"
+      AUTH_PROVIDERS: none
+      AUTH_LOCAL_ACCOUNTS: "true"
+      DB_DRIVER: postgres
+      DATABASE_URL: postgres://askcalls:${POSTGRES_PASSWORD:-askcalls}@postgres:5432/askcalls
+      DB_MIGRATE_ON_BOOT: "true"
+      BLOB_DRIVER: s3
+      S3_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_REGION: us-east-1
+      S3_BUCKET: askcalls
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-askcalls}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-askcalls-minio}
+      TRANSCRIPTION_PROVIDER: openai-compatible
+      TRANSCRIPTION_BASE_URL: http://whisper:8000/v1
+      LLM_PROVIDER: openai-compatible
+      LLM_BASE_URL: http://ollama:11434/v1
+      LLM_MODEL: ${LLM_MODEL:-llama3.2}
+      TELEMETRY: none
+    volumes:
+      - data:/data
+
+networks:
+  # No route out: Postgres, Whisper and Ollama are reachable only from the other services.
+  internal:
+    internal: true
+  # Only the app and MinIO are published to the host.
+  edge: {}
+
+volumes:
+  postgres:
+  minio:
+  whisper:
+  ollama:
+  data:
