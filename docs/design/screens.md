@@ -230,7 +230,7 @@ Mock: [`unlock.html`](mocks/unlock.html).
 
 **Purpose:** turn a user gesture into the root key. Shown after sign-in when this browser holds no unwrapped keys, after lock, and on any deep link while locked (returns to the requested route after unlock).
 
-**Layout:** centred 432 px column: lock icon tile, H1, one line, "Unlock with passkey" (primary, focused on load), "Use recovery code", "Use passphrase" (only if one is set), account row with Sign out, footnote. Recovery code and passphrase replace the buttons in place with a back link ("Other ways to unlock"). Mobile: same column.
+**Layout:** centred 432 px column: lock icon tile, H1, one line, "Unlock with passkey" (primary, focused on load), "Use passphrase" (only if one is set; primary when there is no passkey), "Use recovery code" (primary only when it is the sole method), account row with Sign out, footnote. Recovery code and passphrase replace the buttons in place with a back link ("Other ways to unlock"). Mobile: same column.
 
 **States:** waiting for the OS dialog; passkey failed ("Couldn't unlock with this passkey. Try again or use your recovery code."); wrong recovery code; wrong passphrase; processing (spinner "Unlocking…"); offline (callout "You're offline. Unlocking needs a connection to fetch your keys." when the wrapped key isn't cached); inbox items found after unlock (toast X2).
 
@@ -713,7 +713,7 @@ Mock: [`settings-security.html`](mocks/settings-security.html).
 - **Passkeys:** `UnlockMethodRow` per passkey (device · provider, created, last used and OS, "This device" badge), Remove; "Add passkey".
 - **Recovery code and passphrase:** recovery code (created date, Regenerate: requires an unlock, then shows O3/O4 again and revokes the old code on confirm), passphrase (Not set → Set passphrase; set → Change, Remove).
 - **Linked devices:** browsers and agents (`UnlockMethodRow` kind="device") with Revoke; "Link a device" opens D1.
-- **Auto-lock:** "Lock after idle for" select: 5, 15 (default), 30, 60 minutes, 4 hours.
+- **Auto-lock:** "Lock after idle for" select: 5, 15 (default), 30, 60 minutes, 4, 8, 24 hours, Never. Idle means no input (clicks, typing, pointer movement, scrolling) and no recording playing in any AskCalls tab; closing the tab still locks.
 
 **States:** removing the last passkey when no passphrase exists: allowed only with a confirmed recovery code ("Remove your only passkey? You'll need your recovery code to unlock on this device."); revoke confirm ("Revoke {device}? It loses access at its next request. Keys it already holds aren't rotated in this version."); passkey add cancelled (inline).
 
@@ -732,7 +732,7 @@ Mock: [`settings-security.html`](mocks/settings-security.html).
 | `sec.devices` / `link` / `revoke` | Linked devices / Link a device / Revoke | מכשירים מקושרים / קישור מכשיר / ביטול |
 | `sec.revoke.title` | Revoke {device}? | לבטל את {device}? |
 | `sec.revoke.body` | It loses access at its next request. Keys it already holds aren't rotated in this version. | הגישה שלו תיחסם בבקשה הבאה. מפתחות שכבר נמצאים אצלו לא מוחלפים בגרסה הזאת. |
-| `sec.autolock` / `idleFor` | Auto-lock / Lock after idle for | נעילה אוטומטית / נעילה אחרי חוסר פעילות של |
+| `sec.autolock` / `idleFor` / `never` | Auto-lock / Lock after idle for / Never | נעילה אוטומטית / נעילה אחרי חוסר פעילות של / אף פעם |
 
 ### D1 Device linking dialog
 

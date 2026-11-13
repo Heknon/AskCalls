@@ -15,16 +15,17 @@ import { Lock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { useNotify } from '../../../../../../../client/notices/notices';
-import { useUnlocked } from '../../../../../../../client/session/session';
+import { useAppSession, useUnlocked } from '../../../../../../../client/session/session';
 import { useAsync } from '../../../../_shell/states';
 
-/** Spec 6.8 / S1: minutes of idle before locking. */
-export const AUTO_LOCK_OPTIONS = [5, 15, 30, 60, 240] as const;
+/** Spec 6.8 / S1: minutes of idle before locking; 0 never locks while the tab is open. */
+export const AUTO_LOCK_OPTIONS = [5, 15, 30, 60, 240, 480, 1440, 0] as const;
 
 export function AutoLockSection() {
   const t = useTranslations('settings.sec.autolock');
   const ts = useTranslations('settings');
   const { ctx } = useUnlocked();
+  const { refreshAutoLock } = useAppSession();
   const notify = useNotify();
   const id = useId();
   const settings = useAsync(() => ctx.userData.get('settings'), [ctx]);
@@ -33,7 +34,7 @@ export function AutoLockSection() {
   const minutes = value ?? settings.data?.autoLockMinutes ?? 15;
   const options: number[] = AUTO_LOCK_OPTIONS.includes(minutes as 15)
     ? [...AUTO_LOCK_OPTIONS]
-    : [...AUTO_LOCK_OPTIONS, minutes].sort((a, b) => a - b);
+    : [...AUTO_LOCK_OPTIONS.filter((m) => m > 0), minutes].sort((a, b) => a - b).concat(0);
 
   const save = async (next: number) => {
     setValue(next);
@@ -41,6 +42,7 @@ export function AutoLockSection() {
     try {
       await ctx.userData.update('settings', (s) => ({ ...s, autoLockMinutes: next }));
       await applyAutoLockSetting(ctx);
+      refreshAutoLock();
       notify({ kind: 'event', icon: Lock, title: t('saved') });
     } catch {
       setFailed(true);
@@ -63,7 +65,11 @@ export function AutoLockSection() {
           <SelectContent>
             {options.map((m) => (
               <SelectItem key={m} value={String(m)}>
-                {m % 60 === 0 && m >= 120 ? t('hours', { n: m / 60 }) : t('minutes', { n: m })}
+                {m === 0
+                  ? t('never')
+                  : m % 60 === 0 && m >= 120
+                    ? t('hours', { n: m / 60 })
+                    : t('minutes', { n: m })}
               </SelectItem>
             ))}
           </SelectContent>

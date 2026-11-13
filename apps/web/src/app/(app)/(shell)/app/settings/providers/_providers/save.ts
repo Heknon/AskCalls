@@ -8,16 +8,16 @@ export type SaveResult = { reloading: true } | { reloading: false; doc: Provider
 
 /**
  * Writes the providers document, then mirrors the direct origins into the CSP cookie. When
- * they changed, this page's CSP would block the new provider, so the page reloads (and the
- * gate asks to unlock again).
+ * this page's CSP would block a newly needed origin, the page reloads (and the gate asks to
+ * unlock again).
  */
 export function useSaveProviders() {
   const { client, ctx } = useUnlocked();
   return useCallback(
     async (mutate: (p: Providers) => Providers): Promise<SaveResult> => {
       const doc = await ctx.userData.update('providers', mutate);
-      const { changed } = await client.syncDirectAccess();
-      if (changed) {
+      const { stale } = await client.syncDirectAccess();
+      if (stale) {
         window.location.reload();
         return { reloading: true };
       }
