@@ -8,6 +8,11 @@ import type { TranscriptSegment, TranslationLanguage } from '@askcalls/domain';
 export interface Embedder {
   readonly modelId: string;
   readonly dimensions: 384;
+  /**
+   * Cosine similarity below which a passage is unrelated to a query, calibrated for the model.
+   * Meaning search drops hits under it. Absent: every hit is kept.
+   */
+  readonly minSimilarity?: number;
   embed(texts: string[]): Promise<Float32Array[]>;
 }
 

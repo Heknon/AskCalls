@@ -13,6 +13,8 @@ export const EMBEDDING_MODEL = {
   id: 'Xenova/multilingual-e5-small',
   build: '0c5a50de057d0d47',
   dtype: 'q8',
+  /** Same as the browser's (apps/web/src/client/assets.ts). */
+  minSimilarity: 0.78,
   files: [
     {
       path: 'config.json',
