@@ -8,7 +8,7 @@ import {
   randomBytes,
   toBase64Url,
 } from '@askcalls/crypto';
-import { DomainError, type UserDataKind } from '@askcalls/domain';
+import { DomainError, MAX_TRANSLATIONS_PER_CALL, type UserDataKind } from '@askcalls/domain';
 import {
   DEFAULT_INTENT_THRESHOLD,
   IntentDefinitionSchema,
@@ -83,11 +83,36 @@ export const BucketSchema = z.object({
   accessKeyId: z.string().min(1).max(256),
   secretAccessKey: z.string().min(1).max(4_096),
 });
+const Iso6391 = z.string().regex(/^[a-z]{2}$/);
+/** `from: 'any'`: every language no other rule names. */
+export const TranslationRuleSchema = z.object({
+  from: z.union([z.literal('any'), Iso6391]),
+  to: z.array(Iso6391).min(1).max(MAX_TRANSLATIONS_PER_CALL),
+});
+export type TranslationRuleInput = z.output<typeof TranslationRuleSchema>;
+
+/**
+ * What a new account starts with (written at onboarding, shown on the sample step): Hebrew calls
+ * are also stored in English. Accounts from before translation keep no rules: nothing of theirs
+ * goes to the LLM until they add one.
+ */
+export const DEFAULT_TRANSLATION_RULES: TranslationRuleInput[] = [{ from: 'he', to: ['en'] }];
+
 /** Own provider keys and buckets (spec 11.2a). Decrypted only on the device. */
 export const ProvidersDocSchema = z.object({
   v: z.literal(1),
   transcription: Capability.default({ mode: 'managed' }),
   llm: Capability.default({ mode: 'managed' }),
+  /**
+   * Translation at ingest, through the `llm` choice (managed or own key): calls in a rule's
+   * `from` language are also stored in each `to` language. No rules: translation is off.
+   */
+  translation: z
+    .object({ rules: z.array(TranslationRuleSchema).max(20) })
+    .refine((t) => new Set(t.rules.map((r) => r.from)).size === t.rules.length, {
+      message: 'one rule per source language',
+    })
+    .default({ rules: [] }),
   recordings: z
     .discriminatedUnion('mode', [
       z.object({ mode: z.literal('managed') }),

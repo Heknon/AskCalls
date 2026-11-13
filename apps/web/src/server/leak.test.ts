@@ -189,6 +189,15 @@ beforeAll(async () => {
       { id: 'orbitex', label: 'Orbitex deals', examples: ['Orbitex warehouse panels'] },
     ],
   }));
+  await ctx.userData.update('providers', (d) => ({
+    ...d,
+    translation: {
+      rules: [
+        { from: 'he', to: ['en'] },
+        { from: 'en', to: ['he'] },
+      ],
+    },
+  }));
   const tag = await createTag(ctx.userData, { name: TAG_NAME });
 
   const en = await ingestCall(ctx, {

@@ -7,10 +7,10 @@ import { type Actor, audit, blobKeys, HOUR_MS } from './context';
 
 /**
  * Caps that keep one request bounded. Spec 7.5 caps keyword tokens at 5,000 per text; a call is
- * indexed from its original and up to two translations, so 15,000 per call.
+ * indexed from its original and up to four translations, so 25,000 per call.
  */
 export const CALL_LIMITS = {
-  keywordToks: 15_000,
+  keywordToks: 25_000,
   tagToks: 256,
   chunks: 2_000,
   wrappedDekBytes: 256,

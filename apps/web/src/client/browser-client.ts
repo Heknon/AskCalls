@@ -9,6 +9,7 @@ import type {
 } from '@askcalls/client-core/ports/index';
 import { KeySession } from '@askcalls/client-core/session';
 import { managedTranscriber } from '@askcalls/client-core/transcription';
+import { managedTranslator } from '@askcalls/client-core/translation';
 import type { Providers } from '@askcalls/client-core/userdata';
 import { DomainError } from '@askcalls/domain';
 import { BrowserAudioCodec } from './adapters/audio/codec';
@@ -18,6 +19,7 @@ import { DeviceDb } from './adapters/idb';
 import { bucketOrigin, SigV4BucketStore } from './adapters/own-bucket';
 import { SettingsTranscriber } from './adapters/own-key-transcriber';
 import { WebAuthnPasskeyAuthenticator } from './adapters/passkey';
+import { SettingsTranslator } from './adapters/settings-translator';
 import { IdbBulkStateStore, IdbDeviceKeyStore, IdbSecretStore } from './adapters/stores';
 import { FetchBlobFetcher, FetchRecordingUploader } from './adapters/transfer';
 import {
@@ -138,6 +140,12 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     transcriber: new SettingsTranscriber(
       () => context().userData,
       managedTranscriber(api),
+      session,
+    ),
+    translator: new SettingsTranslator(
+      api,
+      () => context().userData,
+      managedTranslator(api),
       session,
     ),
     uploader: new FetchRecordingUploader(),

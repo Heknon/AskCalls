@@ -29,8 +29,14 @@ import { supportsDirectoryPicker } from '../../../../../../client/adapters/bulk-
 import { type Me, useAppSession } from '../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../i18n/locales';
 import { type BulkController, bulkController, type Plan, type QueueView } from './bulk-controller';
-import { failureKey, minutesLeft, quotaWarnings, type TranscriptionFlow } from './plan';
-import { TranscriptionNote } from './transcription-note';
+import {
+  failureKey,
+  minutesLeft,
+  quotaWarnings,
+  type TranscriptionFlow,
+  type TranslationFlow,
+} from './plan';
+import { TranscriptionNote, TranslationNote } from './transcription-note';
 
 const PAGE = 100;
 
@@ -52,12 +58,13 @@ export function useBulk(): BulkController {
 
 export interface BulkUploadProps {
   flow: TranscriptionFlow;
+  translation: TranslationFlow;
   settings: Settings;
   recordingsOff: boolean;
 }
 
 /** U2: a folder, files or a ZIP, then the pre-flight summary, then the queue. */
-export function BulkUpload({ flow, settings, recordingsOff }: BulkUploadProps) {
+export function BulkUpload({ flow, translation, settings, recordingsOff }: BulkUploadProps) {
   const t = useTranslations('upload.bulk');
   const tu = useTranslations('upload');
   const controller = useBulk();
@@ -102,6 +109,7 @@ export function BulkUpload({ flow, settings, recordingsOff }: BulkUploadProps) {
           <Summary
             me={me}
             flow={flow}
+            translation={translation}
             counts={summaryCounts(plan)}
             minutes={plan.summary.estimatedMinutes}
             manifestCovered={plan.manifestCovered}
@@ -207,6 +215,7 @@ function queueCounts(items: readonly BulkItemState[]): Counts {
 function Summary({
   me,
   flow,
+  translation,
   counts,
   minutes,
   manifestCovered,
@@ -217,6 +226,8 @@ function Summary({
 }: {
   me: Me;
   flow: TranscriptionFlow;
+  /** Shown before the import starts: every file is translated without a prompt. */
+  translation?: TranslationFlow;
   counts: Counts;
   minutes: number;
   manifestCovered: number;
@@ -268,12 +279,17 @@ function Summary({
           .join(' ') || undefined
       }
       dataFlow={
-        counts.audioOnly > 0 ? (
-          flow.route === 'off' ? (
-            <ErrorState scope="inline" title={tu('txOff')} />
-          ) : (
-            <TranscriptionNote flow={flow} />
-          )
+        counts.audioOnly > 0 || translation ? (
+          <div className="flex flex-col gap-3">
+            {counts.audioOnly > 0 ? (
+              flow.route === 'off' ? (
+                <ErrorState scope="inline" title={tu('txOff')} />
+              ) : (
+                <TranscriptionNote flow={flow} />
+              )
+            ) : null}
+            {translation ? <TranslationNote flow={translation} /> : null}
+          </div>
         ) : null
       }
       {...(backup && { backup: { ...backup, label: t('backup') } })}

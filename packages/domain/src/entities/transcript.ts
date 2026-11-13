@@ -6,12 +6,10 @@ export interface TranscriptSegment {
   text: string;
 }
 
-/** Every call is stored in both of these (owner decision, translation milestone). */
-export const TRANSLATION_LANGUAGES = ['en', 'he'] as const;
-export type TranslationLanguage = (typeof TRANSLATION_LANGUAGES)[number];
+/** An ISO 639-1 code: the language of a transcript or of one of its translations. */
+export type TranslationLanguage = string;
 
-export const isTranslationLanguage = (v: string): v is TranslationLanguage =>
-  (TRANSLATION_LANGUAGES as readonly string[]).includes(v);
+export const isTranslationLanguage = (v: string): v is TranslationLanguage => /^[a-z]{2}$/.test(v);
 
 /**
  * A machine translation of the whole transcript, aligned with the original: the same number of
@@ -31,8 +29,11 @@ export interface TranscriptTranslation {
 export interface Transcript {
   segments: TranscriptSegment[];
   text: string;
-  /** English and Hebrew versions of a call in another language; never the original's own language. */
-  translations?: Partial<Record<TranslationLanguage, TranscriptTranslation>>;
+  /**
+   * Machine translations keyed by ISO 639-1, made by the user's translation rules; never the
+   * original's own language.
+   */
+  translations?: Record<TranslationLanguage, TranscriptTranslation>;
 }
 
 export type CallDirection = 'in' | 'out' | 'unknown';

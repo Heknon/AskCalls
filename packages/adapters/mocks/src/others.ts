@@ -135,8 +135,10 @@ const EN_HE = new Map(MOCK_DICTIONARY.map(([en, he]) => [en, he]));
 const HE_EN = new Map(MOCK_DICTIONARY.map(([en, he]) => [he, en]));
 const HE_PREFIX = /^[והבלמשכ]/;
 
-function mockTranslateWord(word: string, target: 'en' | 'he'): string {
+/** English ↔ Hebrew by the dictionary; other targets keep every word (names-and-numbers style). */
+function mockTranslateWord(word: string, target: string): string {
   if (target === 'he') return EN_HE.get(word.toLowerCase()) ?? word;
+  if (target !== 'en') return word;
   const direct = HE_EN.get(word);
   if (direct) return direct;
   if (word.length > 3 && HE_PREFIX.test(word)) return HE_EN.get(word.slice(1)) ?? word;

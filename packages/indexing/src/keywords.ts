@@ -3,10 +3,10 @@ import { tokenize } from './normalize';
 
 /**
  * Spec 7.5: at most this many keyword tokens per text. A call is indexed from its original and
- * up to two translations, each capped on its own, so one long text never crowds out another.
+ * up to four translations, each capped on its own, so one long text never crowds out another.
  */
 export const MAX_KEYWORDS_PER_TEXT = 5000;
-export const MAX_KEYWORDS_PER_CALL = 3 * MAX_KEYWORDS_PER_TEXT;
+export const MAX_KEYWORDS_PER_CALL = 5 * MAX_KEYWORDS_PER_TEXT;
 
 export interface KeywordExtraction {
   /** Distinct forms, at most `cap`, in the deterministic keep order. */

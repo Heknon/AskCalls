@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { Translator } from './ports/index';
 import { needsTranslation } from './reindex';
 import {
-  missingTranslations,
   splitLong,
   translateInBatches,
   translateTranscript,
+  translationPlan,
+  withoutTranslations,
 } from './translation';
 
 const clock = { now: () => new Date('2026-06-15T12:00:00Z') };
@@ -59,8 +60,8 @@ describe('translateTranscript', () => {
     },
   };
 
-  it('adds each missing language, aligned with the original', async () => {
-    const he = await translateTranscript(translator, transcript, 'he', { clock });
+  it('adds each target language, aligned with the original', async () => {
+    const he = await translateTranscript(translator, transcript, 'he', ['en', 'he'], { clock });
     expect(Object.keys(he.translations!)).toEqual(['en']);
     expect(he.translations!.en).toEqual({
       segments: [
@@ -72,9 +73,36 @@ describe('translateTranscript', () => {
       model: 'm',
       createdAt: '2026-06-15T12:00:00.000Z',
     });
-    const ar = await translateTranscript(translator, transcript, 'ar', { clock });
-    expect(Object.keys(ar.translations!).sort()).toEqual(['en', 'he']);
-    expect(missingTranslations(ar, 'ar')).toEqual([]);
+    const ru = await translateTranscript(translator, transcript, 'he', ['ru'], { clock });
+    expect(Object.keys(ru.translations!)).toEqual(['ru']);
+    expect(ru.translations!.ru!.segments[1]!.text).toBe('ru:מה המחיר?');
+  });
+
+  it('plans additions and removals from the rules', async () => {
+    const both = await translateTranscript(translator, transcript, 'he', ['en', 'ru'], { clock });
+    expect(translationPlan(both, 'he', [{ from: 'he', to: ['ru', 'ar'] }])).toEqual({
+      missing: ['ar'],
+      extra: ['en'],
+    });
+    expect(translationPlan(both, 'he', [])).toEqual({ missing: [], extra: ['en', 'ru'] });
+    expect(Object.keys(withoutTranslations(both, ['en']).translations!)).toEqual(['ru']);
+  });
+
+  it('skips a failing language and keeps the others when asked to', async () => {
+    const flaky: Translator = {
+      id: 'flaky',
+      async translate(segments, { target }) {
+        if (target === 'en') throw new Error('quota');
+        return { segments: segments.map((s) => s), provider: 'p', model: 'm' };
+      },
+    };
+    const failed: string[] = [];
+    const out = await translateTranscript(flaky, transcript, 'he', ['en', 'ru'], {
+      clock,
+      onError: (l) => failed.push(l),
+    });
+    expect(failed).toEqual(['en']);
+    expect(Object.keys(out.translations!)).toEqual(['ru']);
   });
 
   it('refuses a translator reply that is not aligned', async () => {
@@ -82,17 +110,26 @@ describe('translateTranscript', () => {
       id: 'bad',
       translate: async () => ({ segments: ['one'], provider: 'p', model: 'm' }),
     };
-    await expect(translateTranscript(bad, transcript, 'he', { clock })).rejects.toMatchObject({
+    await expect(
+      translateTranscript(bad, transcript, 'he', ['en'], { clock }),
+    ).rejects.toMatchObject({
       code: 'provider_error',
     });
   });
 });
 
 describe('needsTranslation', () => {
-  it('reads the metadata only', () => {
-    expect(needsTranslation({ language: 'he', translatedTo: ['en'] })).toBe(false);
-    expect(needsTranslation({ language: 'en', translatedTo: [] })).toBe(true);
-    expect(needsTranslation({ language: 'ar', translatedTo: ['en'] })).toBe(true);
-    expect(needsTranslation({ language: 'he' })).toBe(true);
+  it('compares the metadata with the rules', () => {
+    const heEn = [{ from: 'he', to: ['en'] }];
+    expect(needsTranslation({ language: 'he', translatedTo: ['en'] }, heEn)).toBe(false);
+    expect(needsTranslation({ language: 'en', translatedTo: [] }, heEn)).toBe(false);
+    expect(needsTranslation({ language: 'he', translatedTo: [] }, heEn)).toBe(true);
+    expect(needsTranslation({ language: 'he', translatedTo: ['en', 'ru'] }, heEn)).toBe(true);
+    expect(needsTranslation({ language: 'he' }, heEn)).toBe(true);
+    expect(needsTranslation({ language: 'en' }, heEn)).toBe(false);
+    expect(needsTranslation({ language: 'he', translatedTo: ['en'] }, [])).toBe(true);
+    expect(
+      needsTranslation({ language: 'he', translatedTo: ['ru'] }, [{ from: 'he', to: ['ru'] }]),
+    ).toBe(false);
   });
 });

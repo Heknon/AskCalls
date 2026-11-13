@@ -105,6 +105,8 @@ export interface TranslationResult {
  */
 export interface Translator {
   readonly id: string;
+  /** False when translation is off right now (Settings); ingest then stores the original only. */
+  enabled?(): Promise<boolean>;
   translate(
     segments: readonly string[],
     opts: { source: string | null; target: TranslationLanguage; signal?: AbortSignal },

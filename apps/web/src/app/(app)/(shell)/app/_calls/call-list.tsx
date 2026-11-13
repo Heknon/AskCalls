@@ -2,7 +2,7 @@
 
 import { getCall } from '@askcalls/client-core/calls';
 import type { ClientContext } from '@askcalls/client-core/context';
-import { highlightRanges } from '@askcalls/client-core/search';
+import { findPassage as passageIn } from '@askcalls/client-core/search';
 import type { Contact } from '@askcalls/client-core/userdata';
 import type { CallMeta } from '@askcalls/domain';
 import { CallRow, type CallRowAction } from '@askcalls/ui/components/CallRow';
@@ -13,11 +13,12 @@ import { ExternalLink, FolderOpen, Star, Tag, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
+import { localName } from '../../../../../client/i18n/language-names';
 import { contactName, DIRECTION, startedAt, tagChips, whatsappHref } from './present';
 import type { Feed, FeedItem } from './use-call-feed';
 import { useWindowList } from './use-window-list';
 
-type Passage = { text: string; hits: string[] } | null;
+type Passage = { text: string; hits: string[]; lang: string | null; translated: boolean } | null;
 
 export type CallListProps = {
   ctx: ClientContext;
@@ -88,21 +89,22 @@ export function CallList({
     const forms = new Set(feed.forms);
     getCall(ctx, id).then(
       (call) => {
-        for (const seg of call.transcript.segments) {
-          const ranges = highlightRanges(seg.text, forms);
-          if (ranges.length) {
-            passages.current.set(id, {
-              text: seg.text,
-              hits: ranges.map((r) => seg.text.slice(r.start, r.end)),
-            });
-            setPassageVersion((v) => v + 1);
-            return;
-          }
-        }
+        const p = passageIn(call.transcript, call.meta.language, forms);
+        if (!p) return;
+        passages.current.set(id, p);
+        setPassageVersion((v) => v + 1);
       },
       () => {},
     );
   };
+
+  const marker = (lang: string | null, translated: boolean) =>
+    translated && lang
+      ? {
+          label: lang.toUpperCase(),
+          title: t('row.fromTranslation', { language: localName(lang, locale) }),
+        }
+      : undefined;
 
   const labels = {
     star: tc('star'),
@@ -141,6 +143,7 @@ export function CallList({
               search={search}
               needsPassage={search && !item.snippet && feed.forms.length > 0}
               onPassage={findPassage}
+              marker={marker}
               onMeta={feed.noteMeta}
               contacts={contacts}
               intentLabel={intentLabel}
@@ -225,6 +228,10 @@ type FeedRowProps = {
   search: boolean;
   needsPassage: boolean;
   onPassage: (id: string) => void;
+  marker: (
+    lang: string | null,
+    translated: boolean,
+  ) => { label: string; title: string } | undefined;
   onMeta: (id: string, meta: CallMeta) => void;
   contacts: readonly Contact[];
   intentLabel: (id: string) => string;
@@ -245,6 +252,7 @@ function FeedRow({
   search,
   needsPassage,
   onPassage,
+  marker,
   onMeta,
   contacts,
   intentLabel,
@@ -283,12 +291,17 @@ function FeedRow({
     labels,
   };
   if (!meta) return <CallRow {...common} call="locked" />;
+  const lang = item.snippet ? marker(item.snippetLang, item.snippetTranslated) : undefined;
+  const fromPassage = passage ? marker(passage.lang, passage.translated) : undefined;
   const snippet = item.snippet
     ? {
         text: item.snippet,
         hits: item.highlights.map((h) => item.snippet!.slice(h.start, h.end)),
+        ...(lang && { marker: lang }),
       }
-    : (passage ?? undefined);
+    : passage
+      ? { text: passage.text, hits: passage.hits, ...(fromPassage && { marker: fromPassage }) }
+      : undefined;
   return (
     <CallRow
       {...common}

@@ -64,11 +64,15 @@ async function onboard(d: ClientDevice) {
 const found = async (text: string, semantic = false) =>
   (await searchCalls(ctx, { text, semantic })).items.map((i) => i.id).sort();
 
+const setRules = (rules: Array<{ from: string; to: string[] }>) =>
+  ctx.userData.update('providers', (d) => ({ ...d, translation: { rules } }));
+
 beforeAll(async () => {
   h = await startClientHarness();
   device = h.browser();
   ctx = device.ctx;
   await onboard(device);
+  await setRules([{ from: 'he', to: ['en'] }]);
   const he = await ingestCall(ctx, {
     source: 'app',
     transcript: HEBREW.text,
@@ -80,15 +84,15 @@ beforeAll(async () => {
     transcriptFileName: ENGLISH.fileName,
   });
   expect(he).toMatchObject({ status: 'done', translation: 'done' });
-  expect(en).toMatchObject({ status: 'done', translation: 'done' });
+  expect(en).toMatchObject({ status: 'done', translation: 'none' });
   ids.he = (he as { callId: string }).callId;
   ids.en = (en as { callId: string }).callId;
 });
 
 afterAll(() => h.app.close());
 
-describe('translation at ingest', () => {
-  it('stores both languages, aligned, signed, with the language in the metadata', async () => {
+describe("translation at ingest, by the user's rules (he → en)", () => {
+  it('stores the Hebrew call with an aligned English translation, signed', async () => {
     const he = await getCall(ctx, ids.he);
     expect(he.meta.language).toBe('he');
     expect(he.meta.translatedTo).toEqual(['en']);
@@ -101,26 +105,44 @@ describe('translation at ingest', () => {
       he.transcript.segments.map((s) => [s.start, s.end]),
     );
     expect(tr).toMatchObject({ provider: 'mock', model: 'mock-1' });
-    expect(he.transcript.translations?.he).toBeUndefined();
     expect(he.signature.status).toBe('valid');
 
     const en = await getCall(ctx, ids.en);
     expect(en.meta.language).toBe('en');
-    expect(en.meta.translatedTo).toEqual(['he']);
-    expect(en.transcript.translations!.he!.text).toContain('מחיר');
-    expect(en.signature.status).toBe('valid');
+    expect(en.meta.translatedTo).toEqual([]);
+    expect(en.transcript.translations ?? {}).toEqual({});
   });
 
-  it('keyword search matches across languages, queries never translated', async () => {
+  it('"price" finds the Hebrew call; "מחיר" keyword-matches only calls that hold Hebrew', async () => {
     expect(await found('price')).toEqual([ids.he, ids.en].sort());
     expect(await found('refrigerators')).toEqual([ids.he]);
-    expect(await found('מחיר')).toEqual([ids.he, ids.en].sort());
-    expect(await found('חוזה')).toEqual([ids.en]);
-    expect(await found('והחוזה')).toEqual([ids.en]);
-    expect(await found('contract')).toEqual([ids.en]);
+    expect(await found('מחיר')).toEqual([ids.he]);
+    // Meaning search is cross-lingual: it still ranks the English call.
+    expect(await found('מחיר', true)).toContain(ids.en);
     const sent = h.app.ports.mockLlm.translated.length;
     await found('price delivery');
     expect(h.app.ports.mockLlm.translated.length).toBe(sent);
+  });
+
+  it('after adding en → he and applying it to existing calls, "מחיר" matches the English call', async () => {
+    await setRules([
+      { from: 'he', to: ['en'] },
+      { from: 'en', to: ['he'] },
+    ]);
+    expect(await reindexCandidates(ctx, 'translate')).toEqual([ids.en]);
+    const r = await reindexCalls(ctx, { mode: 'translate' });
+    expect(r).toMatchObject({ total: 1, done: 1, reindexed: 1, failed: 0 });
+    expect(await found('מחיר')).toEqual([ids.he, ids.en].sort());
+    expect(await found('חוזה')).toEqual([ids.en]);
+    expect(await found('והחוזה')).toEqual([ids.en]);
+    const en = await getCall(ctx, ids.en);
+    expect(en.meta.translatedTo).toEqual(['he']);
+    expect(en.signature.status).toBe('valid');
+    expect(h.app.ports.db.chunks.get(ids.en)!.map((c) => [c.ord, c.lang])).toEqual([
+      [0, 'en'],
+      [1, 'he'],
+    ]);
+    expect(await reindexCandidates(ctx, 'translate')).toEqual([]);
   });
 
   it('finds the passage in the language that matched', async () => {
@@ -139,12 +161,45 @@ describe('translation at ingest', () => {
     expect(en.snippet).not.toBeNull();
     expect(['en', 'he']).toContain(en.snippetLang);
     expect(en.snippetTranslated).toBe(en.snippetLang === 'he');
-    const chunks = h.app.ports.db.chunks.get(ids.en)!;
-    expect(chunks.map((c) => c.lang)).toEqual(['en', 'he']);
-    expect(chunks.map((c) => c.ord)).toEqual([0, 1]);
   });
 
-  it('keeps the call, untranslated, when translation fails', async () => {
+  it('translates into any language a rule names (he → ru)', async () => {
+    await setRules([
+      { from: 'he', to: ['en', 'ru'] },
+      { from: 'en', to: ['he'] },
+    ]);
+    const r = await ingestCall(ctx, {
+      source: 'app',
+      transcript: '[00:00:01] A: שלום, ההזמנה מוכנה',
+    });
+    const call = await getCall(ctx, (r as { callId: string }).callId);
+    expect(Object.keys(call.transcript.translations!).sort()).toEqual(['en', 'ru']);
+    expect(call.meta.translatedTo).toEqual(['en', 'ru']);
+    expect(h.app.ports.mockLlm.translated.at(-1)).toEqual({ segments: 1, target: 'ru' });
+    expect(new Set(h.app.ports.db.chunks.get(call.id)!.map((c) => c.lang))).toEqual(
+      new Set(['he', 'en', 'ru']),
+    );
+  });
+
+  it('removes translations no rule covers any more, and their tokens', async () => {
+    await setRules([{ from: 'en', to: ['he'] }]);
+    expect(await reindexCandidates(ctx, 'translate')).toContain(ids.he);
+    const r = await reindexCalls(ctx, { mode: 'translate' });
+    expect(r.failed).toBe(0);
+    const he = await getCall(ctx, ids.he);
+    expect(he.transcript.translations ?? {}).toEqual({});
+    expect(he.meta.translatedTo).toEqual([]);
+    expect(await found('refrigerators')).toEqual([]);
+    expect(await found('מחיר')).toEqual([ids.he, ids.en].sort());
+    await setRules([
+      { from: 'he', to: ['en'] },
+      { from: 'en', to: ['he'] },
+    ]);
+    await reindexCalls(ctx, { mode: 'translate' });
+    expect(await found('refrigerators')).toEqual([ids.he]);
+  });
+
+  it('keeps the call when translation fails', async () => {
     const llm = h.app.ports.mockLlm;
     const original = llm.translate.bind(llm);
     llm.translate = async () => {
@@ -188,6 +243,9 @@ describe('re-index and backfill', () => {
 
     const candidates = await reindexCandidates(ctx, 'translate');
     expect(candidates).toContain(id);
+    const reindexAudit = () =>
+      h.app.ports.db.audit.filter((e) => e.action === 'call.reindex').length;
+    const auditedBefore = reindexAudit();
     const progress: number[] = [];
     const result = await reindexCalls(ctx, {
       mode: 'translate',
@@ -200,9 +258,7 @@ describe('re-index and backfill', () => {
     const call = await getCall(ctx, id);
     expect(call.meta.translatedTo).toEqual(['en']);
     expect(call.signature.status).toBe('valid');
-    expect(h.app.ports.db.audit.filter((e) => e.action === 'call.reindex').length).toBe(
-      candidates.length,
-    );
+    expect(reindexAudit() - auditedBefore).toBe(candidates.length);
     expect(await reindexCandidates(ctx, 'translate')).toEqual([]);
   });
 

@@ -39,7 +39,7 @@ export const CreateCallBody = z.object({
   transcriptCt: BytesMax(3 * 1024 * 1024),
   metaCt: BytesMax(64 * 1024),
   contactTok: TokCodec.nullable(),
-  keywordToks: z.array(TokCodec).max(15_000),
+  keywordToks: z.array(TokCodec).max(25_000),
   tagToks: z.array(TokCodec).max(256),
   audioTok: TokCodec.nullable(),
   contentTok: TokCodec,
@@ -155,7 +155,7 @@ export const replaceCallContent = defineRoute({
   body: z.object({
     transcriptCt: BytesMax(3 * 1024 * 1024),
     metaCt: BytesMax(64 * 1024),
-    keywordToks: z.array(TokCodec).max(15_000),
+    keywordToks: z.array(TokCodec).max(25_000),
     chunks: z.array(ChunkIn).max(2_000),
     expectedUpdatedAt: DateCodec,
   }),

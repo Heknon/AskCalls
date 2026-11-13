@@ -22,7 +22,7 @@ import {
   resolveLanguage,
   type Transcript,
   type TranscriptSegment,
-  type TranslationLanguage,
+  translationTargets,
 } from '@askcalls/domain';
 import {
   contentText,
@@ -45,7 +45,7 @@ import { duplicateOf, type FailureReason, failureReason, IngestError } from './e
 import type { AudioSource, DecodedAudio } from './ports/index';
 import { ensureTags, intentTagId } from './tags';
 import { RECORDING_BITRATE_KBPS, transcribeAudio } from './transcription';
-import { missingTranslations, translateTranscript } from './translation';
+import { translateTranscript } from './translation';
 
 /** Per-file states of the bulk queue (spec 8). */
 export type IngestStatus =
@@ -100,15 +100,16 @@ export type IngestResult =
       /** `failed` when the call was stored but its vocabulary delta was not (fuzzy search misses it). */
       vocabulary: 'updated' | 'failed';
       /**
-       * `failed`: stored in its own language only (quota, provider error); "Translate existing
-       * calls" picks it up later. `off`: translation is turned off on this device.
+       * `none`: no translation rule covers its language. `failed`: a translation the rules ask
+       * for could not be made (quota, provider error); "Apply to existing calls" picks it up
+       * later. `off`: the rules ask for one but the AI provider is off.
        */
       translation: TranslationOutcome;
     }
   | { status: 'duplicate'; existingId: string; match: 'audio' | 'content' }
   | { status: 'failed'; reason: FailureReason };
 
-export type TranslationOutcome = 'done' | 'failed' | 'off';
+export type TranslationOutcome = 'done' | 'none' | 'failed' | 'off';
 
 /** Concurrency gates the bulk queue passes in; the defaults run immediately. */
 export interface IngestGates {
@@ -250,26 +251,28 @@ async function runIngest(
   if (dup.existing) return { status: 'duplicate', existingId: dup.existing, match: 'content' };
   const { contentTok } = dup;
 
-  // 3a. Translation: every call is stored in English and Hebrew (in transit only).
+  // 3a. Translation by the user's rules (in transit only, through the Ask provider).
+  const providers = await ctx.userData.get('providers');
+  const targets = translationTargets(language, providers.translation.rules);
   let full: Transcript = transcript;
-  let translation: TranslationOutcome = 'done';
-  if (missingTranslations(transcript, language).length) {
-    if (!ctx.translator) {
+  let translation: TranslationOutcome = targets.length ? 'done' : 'none';
+  if (targets.length) {
+    const translator = ctx.translator;
+    if (!translator || !(await (translator.enabled?.() ?? true))) {
       translation = 'off';
     } else {
-      const translator = ctx.translator;
       onStatus('translating');
-      full = await gates
-        .transcription(() =>
-          translateTranscript(translator, transcript, language, { clock: ctx.clock }),
-        )
-        .catch(() => {
-          translation = 'failed';
-          return transcript;
-        });
+      full = await gates.transcription(() =>
+        translateTranscript(translator, transcript, language, targets, {
+          clock: ctx.clock,
+          onError: () => {
+            translation = 'failed';
+          },
+        }),
+      );
     }
   }
-  const translatedTo = Object.keys(full.translations ?? {}) as TranslationLanguage[];
+  const translatedTo = Object.keys(full.translations ?? {}).sort();
 
   return gates.indexing(async () => {
     // 4. Index (spec 7).

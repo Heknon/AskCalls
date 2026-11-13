@@ -58,6 +58,8 @@ export interface SearchResultItem {
   snippetLang: string | null;
   /** True when the snippet comes from a translation rather than the original. */
   snippetTranslated: boolean;
+  /** The matched chunk's ord, for `locateChunk` in the call view. */
+  snippetOrd: number | null;
   /** Ranges in `snippet` (UTF-16 offsets) whose word matches a searched form. */
   highlights: HighlightRange[];
   score: number | null;
@@ -97,9 +99,8 @@ export function findPassage(
     translated: boolean;
     segments: Transcript['segments'];
   }> = [{ lang: language, translated: false, segments: transcript.segments }];
-  for (const lang of ['en', 'he'] as const) {
-    const t = transcript.translations?.[lang];
-    if (t) versions.push({ lang, translated: true, segments: t.segments });
+  for (const [lang, t] of Object.entries(transcript.translations ?? {}).sort()) {
+    versions.push({ lang, translated: true, segments: t.segments });
   }
   for (const v of versions) {
     for (let i = 0; i < v.segments.length; i++) {
@@ -137,7 +138,7 @@ export function locateChunk(
   }).chunks.find((c) => c.ord === ord);
   if (!chunk) return null;
   const segments = chunk.translated
-    ? (transcript.translations?.[chunk.lang as 'en' | 'he']?.segments ?? transcript.segments)
+    ? (transcript.translations?.[chunk.lang ?? '']?.segments ?? transcript.segments)
     : transcript.segments;
   const segment = Math.max(
     0,
@@ -271,6 +272,7 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
         hasRecording: hit.hasRecording,
         snippet,
         snippetLang: snippet ? hit.bestChunkLang : null,
+        snippetOrd: snippet ? hit.bestChunkOrd : null,
         snippetTranslated:
           snippet !== null && hit.bestChunkLang !== null && hit.bestChunkLang !== meta.language,
         highlights: snippet ? highlightRanges(snippet, formSet) : [],

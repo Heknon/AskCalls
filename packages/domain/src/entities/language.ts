@@ -1,4 +1,4 @@
-import { TRANSLATION_LANGUAGES, type TranslationLanguage } from './transcript';
+import type { TranslationLanguage } from './transcript';
 
 /**
  * ISO 639-2/639-3 codes and English names that providers and file formats report, mapped to
@@ -104,7 +104,79 @@ export function resolveLanguage(reported: string | null | undefined, text: strin
   return fromReport;
 }
 
-/** The languages a call still needs: both English and Hebrew, minus its own language. */
-export function translationTargets(language: string | null): TranslationLanguage[] {
-  return TRANSLATION_LANGUAGES.filter((l) => l !== language);
+/**
+ * One translation rule from the user's settings: calls in `from` (or, for `any`, in a language
+ * no other rule names) are also stored in each `to` language.
+ */
+export interface TranslationRule {
+  from: string | 'any';
+  to: string[];
 }
+
+/** Most translations one call gets: each is a text to index, embed and store. */
+export const MAX_TRANSLATIONS_PER_CALL = 4;
+
+/**
+ * The languages a call in `language` is translated into under `rules`: the rule for its language,
+ * else the `any` rule, never its own language, at most MAX_TRANSLATIONS_PER_CALL. A call whose
+ * language is unknown only follows `any`. No rules: no translation.
+ */
+export function translationTargets(
+  language: string | null,
+  rules: readonly TranslationRule[],
+): TranslationLanguage[] {
+  const rule =
+    (language ? rules.find((r) => r.from === language) : undefined) ??
+    rules.find((r) => r.from === 'any');
+  if (!rule) return [];
+  return [...new Set(rule.to)].filter((l) => l !== language).slice(0, MAX_TRANSLATIONS_PER_CALL);
+}
+
+/**
+ * What keyword search will match under `rules`, for the Settings card: for each rule, the
+ * languages its calls are also searchable in, and the directions it leaves one-way.
+ */
+export function oneWayDirections(rules: readonly TranslationRule[]): Array<[string, string]> {
+  const out: Array<[string, string]> = [];
+  for (const r of rules) {
+    if (r.from === 'any') continue;
+    for (const to of r.to) {
+      const back = translationTargets(to, rules);
+      if (!back.includes(r.from)) out.push([r.from, to]);
+    }
+  }
+  return out;
+}
+
+/** ISO 639-1 codes the language picker offers, the most common for AskCalls users first. */
+export const COMMON_LANGUAGES = [
+  'he',
+  'en',
+  'ar',
+  'ru',
+  'fr',
+  'es',
+  'de',
+  'am',
+  'uk',
+  'it',
+  'pt',
+  'tr',
+  'pl',
+  'ro',
+  'fa',
+  'yi',
+  'zh',
+  'hi',
+  'th',
+] as const;
+
+/** Every ISO 639-1 code. */
+export const ISO_639_1 = (
+  'aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr cs cu cv cy ' +
+  'da de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu gv ha he hi ho hr ht hu ' +
+  'hy hz ia id ie ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb ' +
+  'lg li ln lo lt lu lv mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om ' +
+  'or os pa pi pl ps pt qu rm rn ro ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ' +
+  'ta te tg th ti tk tl tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu'
+).split(' ');

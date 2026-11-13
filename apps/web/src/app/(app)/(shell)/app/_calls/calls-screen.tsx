@@ -41,7 +41,7 @@ import {
   isFiltered,
   parseFilters,
 } from './filters';
-import { recalledSearch, rememberSearch } from './memory';
+import { type LastSearch, recalledSearch, rememberSearch } from './memory';
 import { contactName, startedAt, tagColour } from './present';
 import { buildSuggestions } from './suggestions';
 import { TagDialog } from './tag-dialog';
@@ -137,6 +137,16 @@ export function CallsScreen() {
   const ids = useMemo(() => feed.items.map((i) => i.id), [feed.items]);
   useEffect(() => {
     if (feed.status !== 'ready') return;
+    const matched: NonNullable<LastSearch['matched']> = {};
+    for (const item of feed.items) {
+      if (item.snippetOrd !== null) {
+        matched[item.id] = {
+          lang: item.snippetLang,
+          translated: item.snippetTranslated,
+          ord: item.snippetOrd,
+        };
+      }
+    }
     rememberSearch(ctx.session, {
       text: searched,
       numbers,
@@ -144,8 +154,9 @@ export function CallsScreen() {
       excluded,
       ids,
       query,
+      matched,
     });
-  }, [ctx, feed.status, feed.forms, searched, numbers, excluded, ids, query]);
+  }, [ctx, feed.status, feed.forms, feed.items, searched, numbers, excluded, ids, query]);
 
   const { contacts: contactList, tags: tagList, intents } = catalogs;
   // Every call decrypted while unlocked, not only the current results, names suggestions.

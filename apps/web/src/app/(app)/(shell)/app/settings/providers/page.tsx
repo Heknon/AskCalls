@@ -17,6 +17,7 @@ import { AsyncView, useAsync } from '../../../_shell/states';
 import { SectionScreen } from '../_settings/section-screen';
 import { BucketCard } from './_providers/bucket-card';
 import { Field, KeyCard } from './_providers/key-card';
+import { TranslationCard } from './_providers/translation-card';
 
 /** Transcription language hints offered; any provider takes these BCP-47 codes. */
 const LANGUAGES = ['he', 'en', 'ar', 'ru', 'es', 'fr', 'de', 'it', 'pt', 'uk', 'am'] as const;
@@ -120,6 +121,7 @@ export default function ProvidersSettingsPage() {
                 }
                 onSaved={setDoc}
               />
+              <TranslationCard key={p.llm.mode} value={p} onSaved={setDoc} />
               <BucketCard value={p.recordings} onSaved={setDoc} />
             </div>
           );

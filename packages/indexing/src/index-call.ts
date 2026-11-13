@@ -138,14 +138,14 @@ interface IndexedText {
   segments: readonly TranscriptSegment[];
 }
 
-/** The original, then each translation (English before Hebrew). */
+/** The original, then each translation in code order, so ords are stable across devices. */
 export function indexedTexts(transcript: Transcript, language: string | null): IndexedText[] {
   const out: IndexedText[] = [
     { lang: language, translated: false, text: transcript.text, segments: transcript.segments },
   ];
-  for (const lang of ['en', 'he'] as const) {
-    const t = transcript.translations?.[lang];
-    if (t) out.push({ lang, translated: true, text: t.text, segments: t.segments });
+  for (const lang of Object.keys(transcript.translations ?? {}).sort()) {
+    const t = transcript.translations![lang]!;
+    out.push({ lang, translated: true, text: t.text, segments: t.segments });
   }
   return out;
 }

@@ -3,9 +3,10 @@ import { replaceCallContent } from '@askcalls/api-contract/routes/calls';
 import { signCall, toBase64Url, tokenSet } from '@askcalls/crypto';
 import {
   type CallMeta,
+  normalizeLanguage,
   resolveLanguage,
   type Transcript,
-  type TranslationLanguage,
+  type TranslationRule,
   translationTargets,
 } from '@askcalls/domain';
 import {
@@ -18,7 +19,7 @@ import {
 import { encryptMeta, encryptSnippet, encryptTranscript, transcriptPlaintext } from './call-crypto';
 import { type DecryptedCall, getCall, listCalls } from './calls';
 import type { ClientContext } from './context';
-import { missingTranslations, translateTranscript } from './translation';
+import { translateTranscript, translationPlan, withoutTranslations } from './translation';
 
 /**
  * Re-indexing (translation backfill, synonym changes): the device decrypts a call, re-derives
@@ -48,11 +49,20 @@ function vocabularyDiff(next: Vocabulary, prev: Vocabulary): Vocabulary {
   return out;
 }
 
-/** True when the list row's metadata shows translations are still missing (or unknown). */
-export function needsTranslation(meta: Pick<CallMeta, 'language' | 'translatedTo'>): boolean {
-  if (!meta.translatedTo) return true;
+/**
+ * True when the list row's metadata shows the call's translations differ from what the rules
+ * ask: one missing, or one no rule covers any more. Calls stored before translations count when
+ * a rule covers their language (or their language is unknown).
+ */
+export function needsTranslation(
+  meta: Pick<CallMeta, 'language' | 'translatedTo'>,
+  rules: readonly TranslationRule[],
+): boolean {
+  const language = normalizeLanguage(meta.language);
+  const want = translationTargets(language, rules);
+  if (!meta.translatedTo) return want.length > 0 || (language === null && rules.length > 0);
   const have = new Set(meta.translatedTo);
-  return translationTargets(meta.language).some((l) => !have.has(l));
+  return want.length !== have.size || want.some((l) => !have.has(l));
 }
 
 async function reindexOnce(
@@ -65,21 +75,28 @@ async function reindexOnce(
   let transcript: Transcript = call.transcript;
   let outcome: ReindexOutcome = 'reindexed';
   if (opts.translate) {
-    const missing = missingTranslations(transcript, language);
-    if (!missing.length && call.meta.translatedTo && call.meta.language === language) {
+    const { translation } = await ctx.userData.get('providers');
+    const plan = translationPlan(transcript, language, translation.rules);
+    if (
+      !plan.missing.length &&
+      !plan.extra.length &&
+      call.meta.translatedTo &&
+      call.meta.language === language
+    ) {
       return 'skipped';
     }
-    if (missing.length) {
-      if (!ctx.translator) {
+    transcript = withoutTranslations(transcript, plan.extra);
+    if (plan.missing.length) {
+      const translator = ctx.translator;
+      if (!translator || !(await (translator.enabled?.() ?? true))) {
         outcome = 'untranslated';
       } else {
-        transcript = await translateTranscript(ctx.translator, transcript, language, {
+        transcript = await translateTranscript(translator, transcript, language, plan.missing, {
           clock: ctx.clock,
           ...(opts.signal && { signal: opts.signal }),
-        }).catch((e) => {
-          if (opts.signal?.aborted) throw e;
-          outcome = 'untranslated';
-          return transcript;
+          onError: () => {
+            outcome = 'untranslated';
+          },
         });
       }
     }
@@ -137,7 +154,7 @@ async function reindexOnce(
     ...call.meta,
     language,
     signature,
-    translatedTo: Object.keys(transcript.translations ?? {}) as TranslationLanguage[],
+    translatedTo: Object.keys(transcript.translations ?? {}).sort(),
   };
   const [transcriptCt, metaCt, chunks, keywordToks] = await Promise.all([
     encryptTranscript(call.dek, keyCtx, plaintext),
@@ -208,11 +225,12 @@ export async function reindexCandidates(
   mode: 'translate' | 'all',
 ): Promise<string[]> {
   const ids: string[] = [];
+  const { rules } = (await ctx.userData.get('providers')).translation;
   let cursor: string | null = null;
   do {
     const page = await listCalls(ctx, { limit: 100, cursor });
     for (const row of page.items) {
-      if (mode === 'all' || needsTranslation(await row.meta())) ids.push(row.id);
+      if (mode === 'all' || needsTranslation(await row.meta(), rules)) ids.push(row.id);
     }
     cursor = page.nextCursor;
   } while (cursor);

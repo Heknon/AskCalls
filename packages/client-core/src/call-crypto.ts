@@ -26,7 +26,7 @@ export const CallMetaSchema = z.object({
   language: z.string().nullable(),
   signature: z.object({ deviceKeyId: z.string(), signature: z.string() }).nullable(),
   segmentsFormat: z.string().nullable(),
-  translatedTo: z.array(z.enum(['en', 'he'])).optional(),
+  translatedTo: z.array(z.string().regex(/^[a-z]{2}$/)).optional(),
 }) satisfies z.ZodType<CallMeta>;
 
 const SegmentSchema = z.object({
@@ -48,9 +48,7 @@ export const TranscriptSchema = z
   .object({
     segments: z.array(SegmentSchema),
     text: z.string(),
-    translations: z
-      .object({ en: TranslationSchema.optional(), he: TranslationSchema.optional() })
-      .optional(),
+    translations: z.record(z.string().regex(/^[a-z]{2}$/), TranslationSchema).optional(),
   })
   .superRefine((t, ctx) => {
     for (const [lang, tr] of Object.entries(t.translations ?? {})) {

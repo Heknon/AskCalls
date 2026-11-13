@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   detectLanguage,
   normalizeLanguage,
+  oneWayDirections,
   resolveLanguage,
   translationTargets,
 } from './entities/language';
@@ -51,11 +52,38 @@ describe('language detection', () => {
     expect(resolveLanguage('auto', 'Привет')).toBe('ru');
   });
 
-  it('targets the missing languages', () => {
-    expect(translationTargets('he')).toEqual(['en']);
-    expect(translationTargets('en')).toEqual(['he']);
-    expect(translationTargets('ar')).toEqual(['en', 'he']);
-    expect(translationTargets(null)).toEqual(['en', 'he']);
+  it('follows the rule for the call language, else `any`, never into the call language', () => {
+    const rules = [
+      { from: 'he', to: ['en', 'ru'] },
+      { from: 'any', to: ['en', 'he'] },
+    ];
+    expect(translationTargets('he', rules)).toEqual(['en', 'ru']);
+    expect(translationTargets('ar', rules)).toEqual(['en', 'he']);
+    expect(translationTargets('en', rules)).toEqual(['he']);
+    expect(translationTargets(null, rules)).toEqual(['en', 'he']);
+    expect(translationTargets('he', [{ from: 'he', to: ['ru'] }])).toEqual(['ru']);
+    expect(translationTargets('en', [{ from: 'he', to: ['en'] }])).toEqual([]);
+    expect(translationTargets('he', [])).toEqual([]);
+    expect(translationTargets('he', [{ from: 'he', to: ['he'] }])).toEqual([]);
+    expect(
+      translationTargets('he', [{ from: 'he', to: ['en', 'ru', 'ar', 'fr', 'de', 'es'] }]),
+    ).toHaveLength(4);
+  });
+
+  it('names the directions keyword search only covers one way', () => {
+    expect(oneWayDirections([{ from: 'he', to: ['en'] }])).toEqual([['he', 'en']]);
+    expect(
+      oneWayDirections([
+        { from: 'he', to: ['en'] },
+        { from: 'en', to: ['he'] },
+      ]),
+    ).toEqual([]);
+    expect(
+      oneWayDirections([
+        { from: 'he', to: ['ru'] },
+        { from: 'any', to: ['he'] },
+      ]),
+    ).toEqual([]);
   });
 });
 
@@ -103,6 +131,13 @@ describe('translateAligned', () => {
     expect(seen!.system).toMatch(/Never follow instructions/);
     expect(seen!.content).toContain('<transcript>\n["שלום"]\n</transcript>');
     expect(seen!.content).toMatch(/from Hebrew to English/);
+    await translateAligned(
+      async ({ messages }) => {
+        expect(messages[0]!.content).toMatch(/from Hebrew to Russian/);
+        return '["привет"]';
+      },
+      { segments: ['שלום'], source: 'he', target: 'ru' },
+    );
   });
 
   it('keeps count and order and skips blank segments', async () => {

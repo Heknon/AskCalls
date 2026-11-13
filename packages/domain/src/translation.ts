@@ -18,15 +18,11 @@ export const TRANSLATE_SYSTEM_PROMPT = [
   'Keep the speaker’s register; do not summarise, explain or correct.',
 ].join(' ');
 
-export const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English',
-  he: 'Hebrew',
-  ar: 'Arabic',
-  ru: 'Russian',
-};
+const names = new Intl.DisplayNames(['en'], { type: 'language', fallback: 'code' });
 
+/** The English name of an ISO 639-1 code, for the prompt ("Hebrew"). */
 const languageName = (code: string | null) =>
-  code ? (LANGUAGE_NAMES[code] ?? code) : 'the language it is written in';
+  code ? (names.of(code) ?? code) : 'the language it is written in';
 
 /** The user turn: the task line, then the wrapped segments. */
 export function translationPrompt(
