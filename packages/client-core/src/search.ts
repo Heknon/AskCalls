@@ -29,6 +29,8 @@ export interface SearchRequest {
   dateTo?: Date;
   /** Meaning chip: rank by the query embedding instead of filtering by keywords. */
   semantic?: boolean;
+  /** Variants the user removed from "also matched"; they are not searched. */
+  exclude?: readonly string[];
   limit?: number;
   cursor?: string | null;
 }
@@ -44,6 +46,7 @@ export interface SearchResultItem {
   durationBucket: DurationBucket;
   meta: CallMeta;
   tags: ResolvedTag[];
+  tagToks: readonly bigint[];
   starred: boolean;
   hasRecording: boolean;
   snippet: string | null;
@@ -59,6 +62,8 @@ export interface SearchResponse {
   alsoMatched: string[];
   /** Words dropped as stopwords. */
   ignored: string[];
+  /** Every word form searched, for highlighting the same words in a decrypted transcript. */
+  forms: string[];
 }
 
 /** `POST /api/search` accepts at most 32 terms. */
@@ -112,11 +117,14 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
     },
   });
   const semantic = req.semantic === true && prepared.terms.length > 0;
+  const excluded = new Set(req.exclude ?? []);
+  const groups = prepared.keywordGroups.map((g) => {
+    const kept = g.filter((f) => !excluded.has(f));
+    return kept.length ? kept : g;
+  });
   const keywordGroups = semantic
     ? []
-    : await Promise.all(
-        prepared.keywordGroups.slice(0, MAX_KEYWORD_GROUPS).map((g) => tokenSet(index, 'w', g)),
-      );
+    : await Promise.all(groups.slice(0, MAX_KEYWORD_GROUPS).map((g) => tokenSet(index, 'w', g)));
 
   const requiredTagIds = [
     ...(req.tagIds ?? []),
@@ -135,12 +143,14 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
       : Promise.resolve(undefined),
   ]);
   // A contact chip that matches no parsable phone can match no call.
+  const forms = [...new Set(groups.flat())];
   if (contactToks && contactToks.length === 0) {
     return {
       items: [],
       nextCursor: null,
       alsoMatched: prepared.alsoMatched,
       ignored: prepared.ignored,
+      forms,
     };
   }
 
@@ -159,7 +169,7 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
     },
   });
 
-  const forms = new Set(prepared.keywordGroups.flat());
+  const formSet = new Set(forms);
   const items = await Promise.all(
     res.items.map(async (hit): Promise<SearchResultItem> => {
       const keyCtx = { userId: session.userId, callId: hit.id };
@@ -176,10 +186,11 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
         durationBucket: hit.durationBucket,
         meta,
         tags: directory.resolve(hit.tagToks),
+        tagToks: hit.tagToks,
         starred: hit.starred ?? directory.isStarred(hit.tagToks),
         hasRecording: hit.hasRecording,
         snippet,
-        highlights: snippet ? highlightRanges(snippet, forms) : [],
+        highlights: snippet ? highlightRanges(snippet, formSet) : [],
         score: hit.score,
       };
     }),
@@ -190,5 +201,6 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
     nextCursor: res.nextCursor,
     alsoMatched: prepared.alsoMatched,
     ignored: prepared.ignored,
+    forms,
   };
 }

@@ -1,4 +1,180 @@
 {
   "title": "Calls",
-  "upload": "Upload"
+  "upload": "Upload",
+  "empty": {
+    "title": "No calls yet",
+    "upload": "Upload calls",
+    "sample": "Try a sample call",
+    "sampleFailed": "Couldn't import the sample call. Try again."
+  },
+  "filtered": {
+    "title": "No calls match",
+    "clear": "Clear filters"
+  },
+  "error": {
+    "title": "Couldn't load calls",
+    "body": "The server didn't respond. Try again."
+  },
+  "loadingMore": "Loading more calls",
+  "limit": "You've reached {n} calls. Delete calls to upload more.",
+  "row": {
+    "detail": ", {direction}, {when}, {duration}",
+    "decrypting": "Decrypting",
+    "open": "Open",
+    "tags": "Tags",
+    "list": "Calls"
+  },
+  "search": {
+    "placeholder": "Search names, numbers, tags or words",
+    "label": "Search calls",
+    "clear": "Clear search",
+    "s": {
+      "contact": "Contact · show only this",
+      "add": "{kind} · add to the filter",
+      "chosen": "{kind} · chosen, tap to remove",
+      "only": "{kind} · show only this",
+      "group": "{kind} · see all {n}",
+      "callWith": "Call with {contact}",
+      "words": "Words: {q}",
+      "wordsMeta": "Search the transcripts",
+      "starred": "Starred calls",
+      "onlyThese": "show only these"
+    },
+    "error": "Search failed. Try again.",
+    "offline": "Search needs a connection"
+  },
+  "kinds": {
+    "contact": "Contact",
+    "tag": "Tag",
+    "intent": "Intent",
+    "date": "Date",
+    "direction": "Direction"
+  },
+  "groups": {
+    "tag": "Tags",
+    "intent": "Intents",
+    "contact": "Contacts",
+    "date": "Dates"
+  },
+  "groupWords": {
+    "tag": "tag",
+    "intent": "intent",
+    "contact": "contact",
+    "date": "date"
+  },
+  "filters": {
+    "showing": "Showing",
+    "calls": {
+      "empty": "all calls",
+      "starred": "starred calls"
+    },
+    "contact": {
+      "before": "with",
+      "empty": "anyone"
+    },
+    "tag": {
+      "before": "tagged",
+      "empty": "any tag"
+    },
+    "intent": {
+      "before": "about",
+      "empty": "any intent"
+    },
+    "date": {
+      "before": "from",
+      "empty": "any time",
+      "today": "today",
+      "7d": "the last 7 days",
+      "30d": "the last 30 days",
+      "year": "this year",
+      "range": "{from} to {to}"
+    },
+    "dir": {
+      "empty": "in and out",
+      "in": "incoming only",
+      "out": "outgoing only"
+    },
+    "match": {
+      "before": "matching",
+      "words": "exact words",
+      "meaning": "meaning"
+    },
+    "clear": "Clear"
+  },
+  "picker": {
+    "titles": {
+      "calls": "Which calls?",
+      "contact": "Which contacts?",
+      "tag": "Which tag?",
+      "intent": "Which intent?",
+      "date": "When?",
+      "direction": "Which direction?",
+      "match": "Match by"
+    },
+    "search": "Search {n} {kinds}",
+    "kinds": {
+      "contact": "contacts",
+      "tag": "tags",
+      "intent": "intents"
+    },
+    "chosen": "{n} chosen",
+    "pickMany": "Pick as many as you like",
+    "show": "Show {n, plural, one {# call} other {# calls}}",
+    "done": "Done",
+    "clear": "Clear",
+    "tapOne": "Tap one to show only that.",
+    "noMatch": "No {kind} matches “{q}”",
+    "noTags": "No tags yet. Tags you add appear here.",
+    "noContacts": "No contacts yet. Names from your calls appear here.",
+    "options": {
+      "all": "All calls",
+      "starred": "Starred calls",
+      "today": "Today",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "year": "This year",
+      "both": "In and out",
+      "in": "Incoming only",
+      "out": "Outgoing only",
+      "words": "Exact words",
+      "meaning": "Meaning"
+    }
+  },
+  "results": {
+    "count": "{n, plural, one {# call} other {# calls}}",
+    "countMore": "{n}+ calls",
+    "alsoMatched": "also matched",
+    "exclude": "Exclude {term}",
+    "sort": "Sort",
+    "sorts": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "longest": "Longest first",
+      "best": "Best match"
+    },
+    "meaningLoading": "Loading the meaning model ({size}, once)"
+  },
+  "noMatches": {
+    "title": "No calls match all of these.",
+    "clearSearch": "Clear the search “{q}”",
+    "starred": "All calls",
+    "contact": "Anyone",
+    "tag": "Any tag",
+    "intent": "Any intent",
+    "date": "Any time",
+    "direction": "In and out"
+  },
+  "folded": {
+    "all": "All calls",
+    "show": "Show search and filters"
+  },
+  "intents": {
+    "purchase_interest": "Purchase interest",
+    "price_question": "Price question",
+    "complaint": "Complaint",
+    "service_request": "Service request",
+    "scheduling": "Scheduling",
+    "legal": "Legal",
+    "follow_up": "Follow-up"
+  }
 }
