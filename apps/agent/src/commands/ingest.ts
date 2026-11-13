@@ -14,13 +14,14 @@ export interface IngestCommandOptions {
 }
 
 function preflightLines(p: PreflightSummary): string[] {
-  return [
-    `  ${p.paired} with audio and transcript`,
-    `  ${p.transcriptOnly} transcript only`,
-    `  ${p.audioOnly} audio only, to transcribe (about ${p.estimatedMinutes} min)`,
-    ...(p.likelyDuplicates ? [`  ${p.likelyDuplicates} likely already imported`] : []),
-    ...(p.unreadable.length ? [`  ${p.unreadable.length} transcripts that cannot be read`] : []),
+  const lines: Array<[number, string]> = [
+    [p.paired, 'with audio and transcript'],
+    [p.transcriptOnly, 'transcript only'],
+    [p.audioOnly, `audio only, to transcribe (about ${p.estimatedMinutes} min)`],
+    [p.likelyDuplicates, 'likely already imported'],
+    [p.unreadable.length, 'with a transcript that cannot be read'],
   ];
+  return lines.filter(([n]) => n > 0).map(([n, text]) => `  ${n} ${text}`);
 }
 
 const bar = (c: BulkCounts, width = 24) => {
