@@ -266,7 +266,7 @@ Your own keys and bucket credentials are encrypted with your keys and used only 
 
 ## Verify what you run
 
-AskCalls is MIT-licensed and builds reproducibly. Every release publishes the SHA-256 of each client JavaScript asset, so you can check that askcalls.com serves exactly the code in this repository. App routes load no third-party scripts and run under a strict CSP.
+AskCalls is MIT-licensed and builds reproducibly. Every release publishes the SHA-256 of each client JavaScript asset, so you can check that askcalls.com serves exactly the code in this repository. App routes load no third-party scripts and run under a strict CSP. [How to verify](docs/reproducible-builds.md).
 
 Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 

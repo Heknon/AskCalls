@@ -1,13 +1,12 @@
 'use client';
 
 import { Check, Search } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { lazy, type ReactNode, Suspense, useState } from 'react';
 import type { DateRange, Locale } from 'react-day-picker';
 import { cn } from '../lib/cn';
 import { type TagColour, tagDotClass } from '../lib/tag-colour';
 import { useIsPhone } from '../lib/use-media-query';
 import { Button } from '../primitives/button';
-import { Calendar } from '../primitives/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../primitives/popover';
 import {
   Sheet,
@@ -17,6 +16,11 @@ import {
   SheetTrigger,
 } from '../primitives/sheet';
 import { Toggle } from '../primitives/toggle';
+
+// The date grid loads when a date blank first opens, not with every page that has filters.
+const Calendar = lazy(() =>
+  import('../primitives/calendar').then((m) => ({ default: m.Calendar })),
+);
 
 const SEARCHABLE_OVER = 8;
 
@@ -185,13 +189,15 @@ function PickerBody({
           </div>
         )}
         {range ? (
-          <Calendar
-            mode="range"
-            selected={range.selected}
-            onSelect={range.onSelect}
-            locale={range.locale}
-            className="mt-3"
-          />
+          <Suspense fallback={null}>
+            <Calendar
+              mode="range"
+              selected={range.selected}
+              onSelect={range.onSelect}
+              locale={range.locale}
+              className="mt-3"
+            />
+          </Suspense>
         ) : null}
       </div>
       {multiple ? (

@@ -1,4 +1,3 @@
-import { argon2id } from 'hash-wasm';
 import { utf8 } from './bytes';
 import { CryptoError } from './errors';
 
@@ -63,6 +62,8 @@ export async function argon2idBytes(
   const p = checkArgon2Params(params);
   if (salt.length !== ARGON2_SALT_LENGTH)
     throw new CryptoError('invalid_input', 'salt must be 16 bytes');
+  // Loaded on first use: its WebAssembly would otherwise sit in every page that imports crypto.
+  const { argon2id } = await import('hash-wasm');
   return argon2id({
     password: utf8(normalizePassphrase(passphrase)),
     salt,

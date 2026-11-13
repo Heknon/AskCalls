@@ -4,8 +4,6 @@ import { ApiError, createApiClient } from '@askcalls/api-contract';
 import type { ResponseFor } from '@askcalls/api-contract/client';
 import { getMe } from '@askcalls/api-contract/routes/account';
 import type { ClientContext } from '@askcalls/client-core/context';
-import { applyAutoLockSetting } from '@askcalls/client-core/context';
-import { processInboxOnUnlock } from '@askcalls/client-core/inbox';
 import type { LockReason } from '@askcalls/client-core/session';
 import { DEFAULT_IDLE_TIMEOUT_MS } from '@askcalls/client-core/session';
 import { Inbox, Lock } from 'lucide-react';
@@ -150,7 +148,8 @@ export function AppSessionProvider({
     const unsubscribe = session.subscribe((e) => {
       if (e.type === 'unlocked') {
         setUnlocked(true);
-        applyAutoLockSetting(ctx)
+        import('@askcalls/client-core/context')
+          .then(({ applyAutoLockSetting }) => applyAutoLockSetting(ctx))
           .then(() => setAutoLockMinutes(Math.round(session.idleTimeoutMs / 60_000)))
           .catch(() => {});
         refreshMe().catch(() => {});
@@ -167,35 +166,44 @@ export function AppSessionProvider({
         });
       }
     });
-    const stopInbox = processInboxOnUnlock(
-      ctx,
-      (report) => {
-        const added = report.processed;
-        if (added > 0) {
-          refreshMe().catch(() => {});
-          notify({
-            kind: 'event',
-            icon: Inbox,
-            title: tRef.current('toast.inbox.title', { n: added }),
-            action: {
-              label: tRef.current('toast.inbox.view'),
-              altText: tRef.current('toast.inbox.view'),
-              onAction: () => router.push('/app'),
-            },
-          });
-        }
-        if (report.failed.length > 0) {
-          notify({
-            kind: 'error',
-            title: tRef.current('toast.inbox.failed', { n: report.failed.length }),
-          });
-        }
-      },
-      () => notify({ kind: 'error', title: tRef.current('toast.inbox.unreachable') }),
-    );
+    // Ingest code (and its phone and transcript-format parsers) stays out of the layout's
+    // first load: browser-client has already loaded it by now, so this resolves at once.
+    let stopInbox: (() => void) | null = null;
+    let stopped = false;
+    const watchInbox = ({ processInboxOnUnlock }: typeof import('@askcalls/client-core/inbox')) => {
+      if (stopped) return;
+      stopInbox = processInboxOnUnlock(
+        ctx,
+        (report) => {
+          const added = report.processed;
+          if (added > 0) {
+            refreshMe().catch(() => {});
+            notify({
+              kind: 'event',
+              icon: Inbox,
+              title: tRef.current('toast.inbox.title', { n: added }),
+              action: {
+                label: tRef.current('toast.inbox.view'),
+                altText: tRef.current('toast.inbox.view'),
+                onAction: () => router.push('/app'),
+              },
+            });
+          }
+          if (report.failed.length > 0) {
+            notify({
+              kind: 'error',
+              title: tRef.current('toast.inbox.failed', { n: report.failed.length }),
+            });
+          }
+        },
+        () => notify({ kind: 'error', title: tRef.current('toast.inbox.unreachable') }),
+      );
+    };
+    import('@askcalls/client-core/inbox').then(watchInbox).catch(() => {});
     return () => {
+      stopped = true;
       unsubscribe();
-      stopInbox();
+      stopInbox?.();
     };
   }, [client, notify, refreshMe, router]);
 

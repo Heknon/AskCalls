@@ -99,6 +99,19 @@ account and have no calls). Otherwise move the data with your database's own too
 (`pg_dump` / `pg_restore` for Postgres). A local-mode install (below) moves with
 `askcalls backup` and `askcalls restore`.
 
+## Telemetry
+
+Off by default. `TELEMETRY` takes a comma list, and every backend has a free or self-hosted option:
+
+| Backend | Gets | Settings |
+| --- | --- | --- |
+| `otel` | events, errors and timings as OTLP/HTTP JSON (logs and histograms), for any OpenTelemetry collector: Grafana, SigNoz, OpenObserve, Honeycomb, Datadog | `OTEL_EXPORTER_OTLP_ENDPOINT` (base URL), `OTEL_EXPORTER_OTLP_HEADERS` (`key=value,…`) |
+| `sentry` | server and opted-in browser errors | `SENTRY_DSN`, from Sentry or a self-hosted GlitchTip |
+| `posthog` | opted-in product events, without person profiles or GeoIP | `POSTHOG_KEY`, `POSTHOG_HOST` (default EU Cloud) |
+| `umami` | cookieless marketing page views and opted-in product events, without user ids | `UMAMI_WEBSITE_ID`, `UMAMI_HOST` (default Umami Cloud) |
+
+Whatever the backend, it receives only what the shared scrubber allows: ids, counts, durations, route names, error codes and stack frames as `file:line:col`; never a message, body, query string, header or anything a user typed ([threat model, Telemetry](threat-model.md#telemetry)). Users opt in to product events and browser error reports in Settings → Privacy; until they do, nothing about their use is sent. In offline mode every backend must be on your network.
+
 ## Backups
 
 Back up the data directory (it contains `config.json` with your secrets: keep it private) and,

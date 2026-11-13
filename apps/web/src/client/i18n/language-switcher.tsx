@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { LOCALES, localeDir, localeName } from '../../i18n/locales';
-import { saveLocale } from '../../server/actions/locale';
 
 const OPTIONS = LOCALES.map((l) => ({ value: l, label: localeName(l) }));
 
@@ -27,7 +26,13 @@ export function LanguageControl() {
       busy={pending}
       onChange={(next) =>
         start(async () => {
-          await saveLocale(next);
+          // The /language form route rather than a server action: action ids differ per build,
+          // and every client chunk must build reproducibly (docs/reproducible-builds.md).
+          await fetch('/language', {
+            method: 'POST',
+            body: new URLSearchParams({ locale: next }),
+            redirect: 'manual',
+          });
           document.documentElement.lang = next;
           document.documentElement.dir = localeDir(next);
           router.refresh();
