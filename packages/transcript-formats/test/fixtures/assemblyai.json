@@ -1,0 +1,27 @@
+{
+  "id": "6rlr37h2a1-0000-4c1b-9e2f-000000000002",
+  "status": "completed",
+  "language_code": "he",
+  "audio_duration": 14,
+  "speaker_labels": true,
+  "text": "שלום, אני רוצה לבטל את המנוי. I've been charged twice this month. אני מתנצל, נבדוק את זה מיד.",
+  "words": [{ "text": "שלום,", "start": 240, "end": 700, "confidence": 0.98, "speaker": "A" }],
+  "utterances": [
+    {
+      "speaker": "A",
+      "start": 240,
+      "end": 5100,
+      "confidence": 0.93,
+      "text": "שלום, אני רוצה לבטל את המנוי. I've been charged twice this month.",
+      "words": [{ "text": "שלום,", "start": 240, "end": 700, "confidence": 0.98, "speaker": "A" }]
+    },
+    {
+      "speaker": "B",
+      "start": 5600,
+      "end": 9900,
+      "confidence": 0.95,
+      "text": "אני מתנצל, נבדוק את זה מיד.",
+      "words": [{ "text": "אני", "start": 5600, "end": 5900, "confidence": 0.99, "speaker": "B" }]
+    }
+  ]
+}

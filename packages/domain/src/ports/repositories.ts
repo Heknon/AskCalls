@@ -82,14 +82,21 @@ export interface KeyringRepository extends HealthCheckable {
   updateLinkSession(
     id: string,
     patch: Partial<
-      Pick<DeviceLinkSession, 'state' | 'devicePublicKey' | 'deviceLabel' | 'encryptedRootKey'>
+      Pick<
+        DeviceLinkSession,
+        'state' | 'devicePublicKey' | 'deviceLabel' | 'deviceSigningPublicKey' | 'encryptedRootKey'
+      >
     >,
   ): Promise<void>;
   deleteExpiredLinkSessions(now: Date): Promise<number>;
 }
 
 export interface CallRepository extends HealthCheckable {
-  /** Throws DomainError('duplicate') on a repeated audioTok or contentTok for the same user. */
+  /**
+   * Throws DomainError('duplicate', …, { existingId }) on a repeated audioTok or contentTok for
+   * the same user, and DomainError('conflict') when the id exists for any user (the client picks
+   * call ids; an existing row is never touched).
+   */
   create(call: NewCall): Promise<Call>;
   get(userId: UserId, id: CallId): Promise<Call | null>;
   /** Newest day first, then id descending. */
@@ -100,6 +107,7 @@ export interface CallRepository extends HealthCheckable {
   findIdByAudioTok(userId: UserId, tok: Token): Promise<CallId | null>;
   findIdByContentTok(userId: UserId, tok: Token): Promise<CallId | null>;
   count(userId: UserId): Promise<number>;
+  /** Sum of `recording.bytes` stored in the instance bucket (`bucketRef` null): the 2 GB quota. */
   totalRecordingBytes(userId: UserId): Promise<number>;
   /** Calls with `day < beforeDay`, for retention. */
   listIdsBefore(userId: UserId, beforeDay: Day, limit: number): Promise<CallId[]>;

@@ -7,6 +7,7 @@ import { buildScheduler } from './adapters/scheduler';
 import { buildTelemetry } from './adapters/telemetry';
 import { buildTranscription } from './adapters/transcription';
 import { ConfigService, type ResolvedConfig } from './config/config-service';
+import { registerJobs } from './jobs';
 
 /**
  * Composition root (spec 3.1). Gets resolved config from ConfigService and wires adapters into
@@ -49,6 +50,7 @@ export async function buildContainer(resolved: ResolvedConfig): Promise<Containe
     ids: systemIds,
     limits: { ...DEFAULT_LIMITS, maxCalls: config.limits.freeTierMaxCalls },
   };
+  registerJobs(ports);
   return {
     config: resolved,
     ports,
@@ -71,10 +73,17 @@ const g = globalThis as typeof globalThis & { __askcalls?: Runtime };
 async function boot(): Promise<Runtime> {
   const configService = new ConfigService();
   const resolved = await configService.load();
-  const runtime: Runtime = { configService, container: buildContainer(resolved) };
+  const start = (c: Promise<Container>) => {
+    c.then(
+      (ready) => ready.ports.scheduler.start(),
+      () => {},
+    );
+    return c;
+  };
+  const runtime: Runtime = { configService, container: start(buildContainer(resolved)) };
   configService.subscribe((next) => {
     const previous = runtime.container;
-    const rebuilt = buildContainer(next);
+    const rebuilt = start(buildContainer(next));
     // Swap only when the new container is ready; keep serving with the old one meanwhile.
     rebuilt.then(
       async (c) => {
@@ -104,4 +113,17 @@ export async function getContainer(): Promise<Container> {
 
 export async function getConfigService(): Promise<ConfigService> {
   return (await runtime()).configService;
+}
+
+/**
+ * Test seam: route-level tests run the real handlers against a container built from mocks.
+ * Pass null to drop the override. Not reachable from any route.
+ */
+export function setContainerForTests(container: Container | null): void {
+  booting = null;
+  if (!container) {
+    delete g.__askcalls;
+    return;
+  }
+  g.__askcalls = { configService: new ConfigService({}), container: Promise.resolve(container) };
 }

@@ -1,23 +1,5 @@
 import type { NextConfig } from 'next';
 
-/**
- * Strict CSP for app routes (spec 2.4). Blob-storage and own-key provider origins are added at
- * runtime by middleware once the config service knows them; this is the static baseline.
- */
-const APP_CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval'",
-  "style-src 'self'",
-  "img-src 'self' blob: data:",
-  "media-src 'self' blob:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self' blob:",
-  "frame-ancestors 'none'",
-  "base-uri 'none'",
-  "form-action 'self'",
-].join('; ');
-
 const config: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
@@ -41,6 +23,8 @@ const config: NextConfig = {
     '@askcalls/adapter-transcription-openai-compatible',
     '@askcalls/adapter-llm-ai-sdk',
   ],
+  // The CSP for /app/** and /admin/** is set per request by middleware (nonce for Next.js
+  // bootstrap scripts).
   async headers() {
     return [
       {
@@ -51,7 +35,6 @@ const config: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), geolocation=(), microphone=()' },
         ],
       },
-      { source: '/app/:path*', headers: [{ key: 'Content-Security-Policy', value: APP_CSP }] },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
     ];
   },

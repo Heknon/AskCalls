@@ -32,6 +32,26 @@ bun run format             # Biome autofix
 - UI strings live in message files (next-intl); no hard-coded copy in components. Use logical CSS properties (`ms-`, `pe-`, `start-`) so RTL works. Transcript text uses `dir="auto"`.
 - Design system and screen specs: `docs/design/`.
 
+## UI components
+
+`docs/design/design-language.md` is the source of truth for the UI. Read it before building any screen.
+
+- Three layers: primitives (shadcn/ui in `packages/ui`, styled only through design tokens) → product components (the catalog in the design language doc, also in `packages/ui`) → screens in `apps/web`. Screens compose product components; they never restyle primitives or copy markup.
+- Components are named by meaning (`CallRow`, `LockedValue`, `DataFlowNote`, `TagChip`), not by look (`GrayBox`, `Card2`).
+- One component per meaning. Before writing a component, search the catalog and `packages/ui`. Need a variation? Add a variant with a meaning (`TagChip variant="star"`), don't copy. A new component is added to the catalog in the same PR.
+
+## Copy: no slop
+
+Every word on screen must earn its place. If removing it loses nothing, remove it.
+
+- No captions that restate what's visible, no reassurance lines, no taglines inside the app. A page title needs no subtitle unless the subtitle carries information the user acts on.
+- Don't advertise encryption in the app. Mention it only where it changes what the user does or decides: unlocking, the recovery code, consent before data goes to a provider, the inbox in-transit notice, and the data-flow line on provider cards. Locked or decrypting state is shown with the lock icon and a skeleton, not a sentence.
+- Empty states: one short line saying what's missing and the action that fixes it.
+- No filler words: seamless, secure, powerful, effortless, simply, just, easily, robust, magic. No exclamation marks, no emojis.
+- Labels are nouns or verbs (`Upload`, `Delete call`), not sentences. Errors say what happened and what to do next, in one line.
+- The marketing site explains the privacy model once, with proof (the diagram, the source, the leak test), not on every section.
+- The same rule applies to code: no comments restating the code, no placeholder text, no TODO stubs.
+
 ## Security rules (non-negotiable)
 
 1. Plaintext never persists server-side: no transcript text, words, names, numbers, tag names, notes or recordings stored unencrypted, logged, cached or sent to telemetry.
@@ -46,4 +66,7 @@ Every API route requires a session or a scoped token, is rate-limited, writes au
 
 ## Git
 
-Commit messages are short and imperative. Don't add yourself to the README. Don't edit migrations that already reached `dev`; add new ones.
+- Never push to `master`. Every change goes through a pull request.
+- Branch names: `feature/<what>` for new capability, `bugfix/<what>` for fixes, `refactor/<what>` for restructuring with no behavior change, `docs/<what>` for docs only. Lower-case, hyphenated: `feature/postgres-adapters`, `bugfix/remote-mcp-path`.
+- One bucket of work per PR. The PR description says what changed, how it was tested, and anything reviewers must check.
+- Commit messages are short and imperative. Don't edit migrations that already reached `dev`; add new ones.

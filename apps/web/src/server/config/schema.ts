@@ -20,8 +20,21 @@ export const InstanceConfigSchema = z.object({
       localAccounts: z.boolean().default(false),
       google: z.object({ id: z.string().optional(), secret }).default({}),
       github: z.object({ id: z.string().optional(), secret }).default({}),
+      /** Magic-link email: an SMTP URL (smtp(s)://user:pass@host:port) and the From address. */
+      email: z.object({ server: secret, from: z.string().optional() }).default({}),
+      /** Previews route OAuth through the dev deployment (spec 14). */
+      redirectProxyUrl: z.string().url().optional(),
+      /** Test-only sign-in provider for e2e. Never active when NODE_ENV=production. */
+      testProvider: z.boolean().default(false),
     })
-    .default({ providers: ['google'], localAccounts: false, google: {}, github: {} }),
+    .default({
+      providers: ['google'],
+      localAccounts: false,
+      google: {},
+      github: {},
+      email: {},
+      testProvider: false,
+    }),
 
   db: z
     .object({
@@ -92,6 +105,8 @@ export const InstanceConfigSchema = z.object({
   billing: z.object({ provider: z.enum(['none']).default('none') }).default({ provider: 'none' }),
 
   scheduler: z.enum(['vercel-cron', 'in-process']).default('in-process'),
+  /** Bearer secret for /api/cron/*. Without it the routes fail closed in production. */
+  cronSecret: secret,
 });
 
 export type InstanceConfig = z.infer<typeof InstanceConfigSchema>;
@@ -101,6 +116,8 @@ export const SECRET_PATHS = new Set([
   'auth.secret',
   'auth.google.secret',
   'auth.github.secret',
+  'auth.email.server',
+  'cronSecret',
   'db.url',
   'blob.s3.secretAccessKey',
   'transcription.keys.elevenlabs',
@@ -144,6 +161,10 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['AUTH_GOOGLE_SECRET', 'auth.google.secret', str],
   ['AUTH_GITHUB_ID', 'auth.github.id', str],
   ['AUTH_GITHUB_SECRET', 'auth.github.secret', str],
+  ['AUTH_EMAIL_SERVER', 'auth.email.server', str],
+  ['AUTH_EMAIL_FROM', 'auth.email.from', str],
+  ['AUTH_REDIRECT_PROXY_URL', 'auth.redirectProxyUrl', str],
+  ['AUTH_TEST_PROVIDER', 'auth.testProvider', bool],
   ['DB_DRIVER', 'db.driver', str],
   ['DATABASE_URL', 'db.url', str],
   ['PGLITE_DATA_DIR', 'db.pgliteDir', str],
@@ -178,4 +199,5 @@ export const ENV_BINDINGS: ReadonlyArray<readonly [env: string, path: string, pa
   ['UMAMI_HOST', 'telemetry.umami.host', str],
   ['BILLING_PROVIDER', 'billing.provider', str],
   ['SCHEDULER', 'scheduler', str],
+  ['CRON_SECRET', 'cronSecret', str],
 ];

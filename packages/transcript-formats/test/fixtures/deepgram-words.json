@@ -1,0 +1,35 @@
+{
+  "metadata": { "duration": 9.4, "channels": 2 },
+  "results": {
+    "channels": [
+      {
+        "alternatives": [
+          {
+            "transcript": "hello this is the bank",
+            "words": [
+              { "word": "hello", "punctuated_word": "Hello,", "start": 0.1, "end": 0.5 },
+              { "word": "this", "punctuated_word": "this", "start": 0.6, "end": 0.8 },
+              { "word": "is", "punctuated_word": "is", "start": 0.8, "end": 0.9 },
+              { "word": "the", "punctuated_word": "the", "start": 0.9, "end": 1.0 },
+              { "word": "bank", "punctuated_word": "bank.", "start": 1.0, "end": 1.4 },
+              { "word": "ההלוואה", "punctuated_word": "ההלוואה", "start": 5.2, "end": 5.9 },
+              { "word": "אושרה", "punctuated_word": "אושרה.", "start": 5.9, "end": 6.5 }
+            ]
+          }
+        ]
+      },
+      {
+        "alternatives": [
+          {
+            "transcript": "שלום כן",
+            "words": [
+              { "word": "שלום", "punctuated_word": "שלום,", "start": 1.8, "end": 2.2 },
+              { "word": "כן", "punctuated_word": "כן.", "start": 2.3, "end": 2.6 },
+              { "word": "great", "punctuated_word": "Great!", "start": 7.0, "end": 7.6 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
