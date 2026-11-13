@@ -41,10 +41,16 @@ describe('createCall', () => {
     await createCall(ports, session(a), first);
     await expect(
       createCall(ports, session(a), newCall({ contentTok: first.contentTok })),
-    ).rejects.toMatchObject({ code: 'duplicate', details: { existingId: first.id, match: 'content' } });
+    ).rejects.toMatchObject({
+      code: 'duplicate',
+      details: { existingId: first.id, match: 'content' },
+    });
     await expect(
       createCall(ports, session(a), newCall({ audioTok: first.audioTok })),
-    ).rejects.toMatchObject({ code: 'duplicate', details: { existingId: first.id, match: 'audio' } });
+    ).rejects.toMatchObject({
+      code: 'duplicate',
+      details: { existingId: first.id, match: 'audio' },
+    });
     // Another user's identical content is not a duplicate.
     await createCall(ports, session(b), newCall({ contentTok: first.contentTok }));
   });
@@ -141,9 +147,9 @@ describe('updateCall and recordings', () => {
     const tag = randTok();
     const updated = await updateCall(ports, session(a), input.id, { tagToks: [tag, tag] });
     expect(updated.tagToks).toEqual([tag]);
-    await expect(
-      updateCall(ports, session(b), input.id, { tagToks: [] }),
-    ).rejects.toMatchObject({ code: 'not_found' });
+    await expect(updateCall(ports, session(b), input.id, { tagToks: [] })).rejects.toMatchObject({
+      code: 'not_found',
+    });
   });
 
   it('presigns uploads within the 2 GB quota and confirms uploaded blobs', async () => {
@@ -180,7 +186,7 @@ describe('updateCall and recordings', () => {
     ).rejects.toMatchObject({ code: 'quota_exceeded' });
   });
 
-  it("rejects recording keys of another call or user", async () => {
+  it('rejects recording keys of another call or user', async () => {
     const input = newCall();
     await createCall(ports, session(a), input);
     const key = `rec/${b}/${input.id}/x`;
@@ -207,7 +213,9 @@ describe('deleteCall and retention', () => {
     await updateCall(ports, session(a), two.id, {
       recording: { bucketRef: 'mybucket', objectKey: 'calls/abc.ogg', bytes: 10 },
     });
-    await expect(deleteCall(ports, session(b), one.id)).rejects.toMatchObject({ code: 'not_found' });
+    await expect(deleteCall(ports, session(b), one.id)).rejects.toMatchObject({
+      code: 'not_found',
+    });
     await deleteCall(ports, session(a), one.id);
     expect(ports.db.chunks.has(one.id)).toBe(false);
     expect(await ports.blobs.exists(up.objectKey)).toBe(false);
@@ -235,7 +243,12 @@ describe('deleteCall and retention', () => {
       expiresAt: new Date(ports.clock.now().getTime() - 1),
     });
     const r = await runRetentionPurge(ports);
-    expect(r).toEqual({ usersProcessed: 1, callsDeleted: 1, inboxExpired: 1, linkSessionsExpired: 0 });
+    expect(r).toEqual({
+      usersProcessed: 1,
+      callsDeleted: 1,
+      inboxExpired: 1,
+      linkSessionsExpired: 0,
+    });
     expect(await ports.calls.get(a, old.id)).toBeNull();
     expect(await ports.calls.get(a, fresh.id)).not.toBeNull();
     expect(await ports.calls.get(b, bOld.id)).not.toBeNull();
@@ -267,7 +280,11 @@ describe('searchCalls', () => {
       ).rejects.toMatchObject({ code: 'invalid' });
     }
     await expect(
-      searchCalls(ports, session(a), { keywordGroups: [], vector: new Float32Array(383), limit: 5 }),
+      searchCalls(ports, session(a), {
+        keywordGroups: [],
+        vector: new Float32Array(383),
+        limit: 5,
+      }),
     ).rejects.toMatchObject({ code: 'invalid' });
     await expect(
       searchCalls(ports, session(a), { keywordGroups: [[]], limit: 5 }),

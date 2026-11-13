@@ -50,7 +50,10 @@ describe('transcription quota (seconds per UTC month)', () => {
     }
     await expect(
       transcribeChunk(ports, session(a), { audio, mimeType: 'audio/ogg', language: 'auto' }),
-    ).rejects.toMatchObject({ code: 'quota_exceeded', details: { quota: 'transcription_minutes' } });
+    ).rejects.toMatchObject({
+      code: 'quota_exceeded',
+      details: { quota: 'transcription_minutes' },
+    });
     // Per user, and a new month starts fresh.
     await transcribeChunk(ports, session(b), { audio, mimeType: 'audio/ogg', language: 'auto' });
     ports.fixedClock.set(new Date('2026-07-01T00:00:00Z'));
@@ -95,18 +98,18 @@ describe('transcription quota (seconds per UTC month)', () => {
       mintTranscriptionToken(ports, session(a), { durationSec: 30 }),
     ).rejects.toMatchObject({ code: 'quota_exceeded' });
     const off = { ...ports, transcription: null };
-    await expect(
-      mintTranscriptionToken(off, session(a), { durationSec: 1 }),
-    ).rejects.toMatchObject({ code: 'unsupported' });
+    await expect(mintTranscriptionToken(off, session(a), { durationSec: 1 })).rejects.toMatchObject(
+      { code: 'unsupported' },
+    );
   });
 });
 
 describe('ask', () => {
   it('requires consent, streams, and allows the daily limit', async () => {
     const input = { question: 'Who called?', transcriptText: SECRET, consent: true };
-    await expect(askAboutCall(ports, session(a), { ...input, consent: false })).rejects.toMatchObject(
-      { code: 'invalid' },
-    );
+    await expect(
+      askAboutCall(ports, session(a), { ...input, consent: false }),
+    ).rejects.toMatchObject({ code: 'invalid' });
     for (let i = 0; i < 3; i++) {
       expect(await collect(await askAboutCall(ports, session(a), input))).toContain('mock answer');
     }
@@ -155,13 +158,20 @@ describe('inbox (spec 6.7)', () => {
     );
     const item = ports.db.inbox.get(id)!;
     expect(item.ephemeralPublicKey.length).toBe(65);
-    const dump = Buffer.from(JSON.stringify([...ports.db.inbox.values()], (_k, v) =>
-      v instanceof Uint8Array ? Buffer.from(v).toString('latin1') : v,
-    ));
+    const dump = Buffer.from(
+      JSON.stringify([...ports.db.inbox.values()], (_k, v) =>
+        v instanceof Uint8Array ? Buffer.from(v).toString('latin1') : v,
+      ),
+    );
     expect(dump.includes('Moshe')).toBe(false);
     expect(dump.includes('0541234567')).toBe(false);
 
-    const plain = await openInboxSeal(pair.privateKey, item.ephemeralPublicKey, item.payloadCt!, inboxAad(a));
+    const plain = await openInboxSeal(
+      pair.privateKey,
+      item.ephemeralPublicKey,
+      item.payloadCt!,
+      inboxAad(a),
+    );
     const decoded = decodeInboxPayload(plain);
     expect(decoded.transcriptText).toBe(SECRET);
     expect(decoded.audio?.bytes).toEqual(audio);
@@ -172,7 +182,9 @@ describe('inbox (spec 6.7)', () => {
 
     expect((await listInbox(ports, session(a))).map((i) => i.id)).toEqual([id]);
     expect(await listInbox(ports, session(b))).toEqual([]);
-    await expect(deleteInboxItem(ports, session(b), id)).rejects.toMatchObject({ code: 'not_found' });
+    await expect(deleteInboxItem(ports, session(b), id)).rejects.toMatchObject({
+      code: 'not_found',
+    });
     await deleteInboxItem(ports, session(a), id);
     expect(await ports.inbox.count(a)).toBe(0);
   });
@@ -182,7 +194,14 @@ describe('inbox (spec 6.7)', () => {
       uploadToInbox(
         ports,
         session(b),
-        { transcriptText: 'x', audio: null, phone: null, startedAt: null, direction: null, contactName: null },
+        {
+          transcriptText: 'x',
+          audio: null,
+          phone: null,
+          startedAt: null,
+          direction: null,
+          contactName: null,
+        },
         sealToInbox,
       ),
     ).rejects.toMatchObject({ code: 'conflict' });

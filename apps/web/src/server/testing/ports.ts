@@ -21,12 +21,7 @@ export interface TestPorts extends Ports {
 }
 
 export function makeTestPorts(
-  opts: {
-    limits?: Partial<Limits>;
-    now?: Date;
-    transcription?: boolean;
-    llm?: boolean;
-  } = {},
+  opts: { limits?: Partial<Limits>; now?: Date; transcription?: boolean; llm?: boolean } = {},
 ): TestPorts {
   const db = new MemoryDb();
   const blobStore = new MemoryBlobStore();

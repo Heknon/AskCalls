@@ -82,7 +82,10 @@ describe('keyring', () => {
   });
 
   it('registers this device', async () => {
-    const d = await registerDevice(ports, session(a), { label: 'Laptop', signingPublicKey: rand(91) });
+    const d = await registerDevice(ports, session(a), {
+      label: 'Laptop',
+      signingPublicKey: rand(91),
+    });
     expect((await listKeyring(ports, session(a))).devices.map((x) => x.id)).toEqual([d.id]);
   });
 });

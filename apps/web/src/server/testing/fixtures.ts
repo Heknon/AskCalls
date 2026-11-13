@@ -1,5 +1,5 @@
-import type { Actor } from '@askcalls/domain/use-cases/context';
 import type { CreateCallInput } from '@askcalls/domain/use-cases/calls';
+import type { Actor } from '@askcalls/domain/use-cases/context';
 import { uuidv7 } from 'uuidv7';
 
 export const rand = (n: number) => globalThis.crypto.getRandomValues(new Uint8Array(n));

@@ -1,7 +1,10 @@
-import { deleteAccount, getMe, listAudit, setTelemetryConsent } from '@askcalls/domain/use-cases/account';
+import {
+  deleteAccount,
+  getMe,
+  listAudit,
+  setTelemetryConsent,
+} from '@askcalls/domain/use-cases/account';
 import { createCall, presignRecordingUpload, updateCall } from '@askcalls/domain/use-cases/calls';
-import { appendVocab, compactVocab, listVocab } from '@askcalls/domain/use-cases/vocab';
-import { getUserData, putUserData } from '@askcalls/domain/use-cases/userdata';
 import { getRetention, setRetention } from '@askcalls/domain/use-cases/retention';
 import {
   authenticateApiToken,
@@ -9,6 +12,8 @@ import {
   listApiTokens,
   revokeApiToken,
 } from '@askcalls/domain/use-cases/tokens';
+import { getUserData, putUserData } from '@askcalls/domain/use-cases/userdata';
+import { appendVocab, compactVocab, listVocab } from '@askcalls/domain/use-cases/vocab';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newCall, rand, session, tokenActor } from '../testing/fixtures';
 import { makeTestPorts, type TestPorts } from '../testing/ports';
@@ -38,13 +43,21 @@ describe('api tokens', () => {
     const auth = await authenticateApiToken(ports, created.token);
     expect(auth.user.id).toBe(a);
     for (let i = 0; i < 4; i++) {
-      await createApiToken(ports, session(a), { name: `t${i}`, scopes: ['read'], expiresInDays: null });
+      await createApiToken(ports, session(a), {
+        name: `t${i}`,
+        scopes: ['read'],
+        expiresInDays: null,
+      });
     }
     await expect(
       createApiToken(ports, session(a), { name: 'x', scopes: ['read'], expiresInDays: null }),
     ).rejects.toMatchObject({ code: 'quota_exceeded', details: { quota: 'api_tokens' } });
     await expect(
-      createApiToken(ports, tokenActor(a, 't'), { name: 'x', scopes: ['read'], expiresInDays: null }),
+      createApiToken(ports, tokenActor(a, 't'), {
+        name: 'x',
+        scopes: ['read'],
+        expiresInDays: null,
+      }),
     ).rejects.toMatchObject({ code: 'forbidden' });
   });
 
@@ -57,17 +70,21 @@ describe('api tokens', () => {
     await expect(authenticateApiToken(ports, 'ac_short')).rejects.toMatchObject({
       code: 'unauthorized',
     });
-    await expect(
-      authenticateApiToken(ports, `ac_${'A'.repeat(43)}`),
-    ).rejects.toMatchObject({ code: 'unauthorized' });
+    await expect(authenticateApiToken(ports, `ac_${'A'.repeat(43)}`)).rejects.toMatchObject({
+      code: 'unauthorized',
+    });
     ports.fixedClock.advance(86_400_001);
-    await expect(authenticateApiToken(ports, token)).rejects.toMatchObject({ code: 'unauthorized' });
+    await expect(authenticateApiToken(ports, token)).rejects.toMatchObject({
+      code: 'unauthorized',
+    });
     ports.fixedClock.advance(-86_400_001);
     await expect(revokeApiToken(ports, session(b), record.id)).rejects.toMatchObject({
       code: 'not_found',
     });
     await revokeApiToken(ports, session(a), record.id);
-    await expect(authenticateApiToken(ports, token)).rejects.toMatchObject({ code: 'unauthorized' });
+    await expect(authenticateApiToken(ports, token)).rejects.toMatchObject({
+      code: 'unauthorized',
+    });
     expect((await listApiTokens(ports, session(a)))[0]?.revokedAt).toBeInstanceOf(Date);
     expect(await listApiTokens(ports, session(b))).toEqual([]);
   });
@@ -111,8 +128,14 @@ describe('vocab and userdata', () => {
   });
 
   it('enforces versions and kinds', async () => {
-    expect(await getUserData(ports, session(a), 'tags')).toEqual({ kind: 'tags', ct: null, version: 0 });
-    expect(await putUserData(ports, session(a), 'tags', { ct: rand(5), expectedVersion: 0 })).toEqual({
+    expect(await getUserData(ports, session(a), 'tags')).toEqual({
+      kind: 'tags',
+      ct: null,
+      version: 0,
+    });
+    expect(
+      await putUserData(ports, session(a), 'tags', { ct: rand(5), expectedVersion: 0 }),
+    ).toEqual({
       version: 1,
     });
     await expect(
@@ -144,7 +167,10 @@ describe('account deletion', () => {
     await createCall(ports, session(b), newCall());
 
     const r = await deleteAccount(ports, session(a));
-    expect(r).toEqual({ ownBucketRecordings: [{ bucketRef: 'own', objectKey: 'k/1' }], deletedBlobs: 2 });
+    expect(r).toEqual({
+      ownBucketRecordings: [{ bucketRef: 'own', objectKey: 'k/1' }],
+      deletedBlobs: 2,
+    });
     expect(await ports.users.findById(a)).toBeNull();
     expect(await ports.calls.count(a)).toBe(0);
     expect([...ports.blobStore.objects.keys()]).toEqual([`rec/${b}/y/z`]);
