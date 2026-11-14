@@ -75,3 +75,4 @@ Every API route requires a session or a scoped token, is rate-limited, writes au
 - Branch names: `feature/<what>` for new capability, `bugfix/<what>` for fixes, `refactor/<what>` for restructuring with no behavior change, `docs/<what>` for docs only. Lower-case, hyphenated: `feature/postgres-adapters`, `bugfix/remote-mcp-path`.
 - One bucket of work per PR. The PR description says what changed, how it was tested, and anything reviewers must check.
 - Commit messages are short and imperative. Don't edit migrations that already reached `dev`; add new ones.
+- A release (npm agent, image, offline bundles, GitHub release) is a `version` bump in `apps/agent/package.json`: once production runs it, `deploy.yml` tags `v<version>` and starts `release.yml`. Bump minor for new commands, options or behavior, patch for fixes.

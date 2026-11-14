@@ -5,13 +5,17 @@ name: Release
 #   offline bundles → GitHub release with every checksum in its notes.
 # `bun run release:dry-run` does the same locally without publishing anything.
 #
-# Tag a commit that is already on master and deployed: the full suite ran before production
-# (deploy.yml), so only the fast checks run here. The agent goes to npm by trusted publishing
+# deploy.yml tags the version in apps/agent/package.json once production runs it and starts this
+# workflow on the tag (its token's tag push starts nothing by itself); a tag pushed by hand starts
+# it too. Either way the commit is on master and deployed: the full suite ran before production,
+# so only the fast checks run here. The agent goes to npm by trusted publishing
 # (OIDC, no token): npm trusts this workflow for the `askcalls` package. Until that package
 # exists the npm step is skipped and the run says so (docs/deployment.md, npm).
 on:
   push:
     tags: ["v*.*.*"]
+  # deploy.yml runs it on the tag it pushed; on a branch the version check below stops it.
+  workflow_dispatch:
 
 # A release that started finishes: a half-published version is worse than a late one.
 concurrency:

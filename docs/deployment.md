@@ -16,7 +16,7 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
     ▼ merge (PR dev → master)
  master  ──push──▶ production full tests (fast checks + integration ∥ E2E)
                               → CDK AskCallsStorage-prod + AskCallsModels → publish the model (if new) → migrate main
-                              → Vercel --prod
+                              → Vercel --prod → tag v<version> if apps/agent/package.json has a new one
  v*.*.*  ──tag───▶ release    fast checks → client asset hashes → npm (agent) → Docker image (GHCR, amd64 + arm64)
                               → offline bundles → GitHub release
 ```
@@ -25,8 +25,8 @@ feature/* ──PR──▶ Preview     Neon branch preview/pr-<n> (from dev) �
 |---|---|---|
 | `ci.yml` (Full tests) | before production (called by `deploy.yml`); the `full-tests` label on a pull request; Run workflow by hand | two parallel jobs: fast checks + integration tests (pgvector Postgres service, MinIO), and Playwright E2E on Chromium |
 | `preview.yml` | pull request opened / synchronized / reopened / closed (not for docs-only changes) | one job: per-PR database branch + migrations + preview deploy + PR comment, then the fast checks; cleanup on close |
-| `deploy.yml` | push to `dev` or `master` (docs-only changes skip it); Run workflow to re-deploy (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → `cdk deploy` (`AskCallsStorage-<env>`, plus `AskCallsModels` on production) through the OIDC deploy role → `models:publish` (a few HEAD requests when the pinned build is already there) → migrations → Vercel |
-| `release.yml` | a `v<major>.<minor>.<patch>` tag | one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
+| `deploy.yml` | push to `dev` or `master` (docs-only changes skip it); Run workflow to re-deploy (other branches are skipped) | production first waits for `ci.yml`; then one job: fast checks (dev only; production ran them in `ci.yml`) → `cdk deploy` (`AskCallsStorage-<env>`, plus `AskCallsModels` on production) through the OIDC deploy role → `models:publish` (a few HEAD requests when the pinned build is already there) → migrations → Vercel; on production, then a second job: tags `v<version>` from `apps/agent/package.json` when that tag doesn't exist yet and starts `release.yml` on it |
+| `release.yml` | a `v<major>.<minor>.<patch>` tag: pushed by `deploy.yml` (which starts it by hand, since a tag pushed with a workflow token triggers nothing) or by a person | one job: build and fast checks, SHA-256 of every client JS asset, the `askcalls` npm package, the multi-arch image to `ghcr.io/<owner>/askcalls`, offline bundles, and a GitHub release whose notes carry every checksum ([reproducible-builds.md](reproducible-builds.md)) |
 | `codeql.yml` | weekly, pushes to `master`, by hand | CodeQL (JavaScript and TypeScript, security-extended) |
 
 `AskCallsGithubDeploy` (the OIDC roles the workflows assume) is the one stack no workflow
@@ -327,8 +327,8 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    token. npm can only trust a workflow for a package that exists, so once:
    1. Publish the first version by hand, built the way `release.yml` builds it:
       `bun scripts/release/agent-package.ts --version 0.1.0`, then in `apps/agent/dist/npm`
-      `npm login` and `npm publish --access public`. Tag that commit `v0.1.0` afterwards so the
-      GitHub release matches; the npm step skips a version that is already published.
+      `npm login` and `npm publish --access public`. (0.1.0 went out this way; 0.2.0 was the
+      first release from `deploy.yml`. The npm step skips a version that is already published.)
    2. On npmjs.com, `askcalls` → Settings → Trusted publishing → GitHub Actions: owner
       `Heknon`, repository `AskCalls`, workflow `release.yml`, no environment.
    3. Same page: Publishing access → require two-factor authentication and disallow tokens.
@@ -338,6 +338,9 @@ nothing else, since the objects are already encrypted with keys AWS never sees. 
    repository's Packages settings after the first release.
 5. Labels: `full-tests` (runs `ci.yml` on the PR) and `real-providers` (previews use the
    non-prod provider keys).
+   Releases: bump `version` in `apps/agent/package.json` in a pull request. When production runs
+   it, `deploy.yml` pushes the `v<version>` tag and starts `release.yml`. If a tag ruleset
+   protects `v*`, let GitHub Actions bypass it.
 6. Production: every merge into `master` deploys once the full suite passes. To gate it, add
    required reviewers to the `production` environment (free on public repositories).
 7. Security: turn on secret scanning and push protection (Settings → Code security), and
