@@ -67,7 +67,7 @@
   "reason": {
     "audio_unreadable": "Couldn't decode the audio. The file may be damaged or in an unsupported format.",
     "transcript_unreadable": "Couldn't read the transcript. Use TXT, SRT, VTT or JSON.",
-    "transcript_empty": "The transcript has no text.",
+    "transcript_empty": "No speech found.",
     "transcription_unavailable": "Transcription is off. Add a transcript file to upload this call.",
     "transcription_failed": "Transcription failed. Retry.",
     "provider_key_rejected": "The transcription provider rejected the key. Check it in Settings → Providers.",
@@ -185,7 +185,14 @@
         "tags": "Separated by ;"
       },
       "download": "Download example"
-    }
+    },
+    "listen": "Listen",
+    "saveEmpty": "Save empty",
+    "saveAllEmpty": "{n, plural, one {Save # empty call} other {Save # empty calls}}",
+    "emptyTitle": "No speech found",
+    "emptyBody": "Listen before saving it as a call with no transcript.",
+    "playError": "Couldn't play this file.",
+    "cancelPause": "Cancel pause"
   },
   "flowTr": {
     "managed": "Calls your translation rules cover are also translated as they upload: the transcript passes through AskCalls to {provider}, streamed and not stored. No prompt each time; change the rules in Settings → Providers.",

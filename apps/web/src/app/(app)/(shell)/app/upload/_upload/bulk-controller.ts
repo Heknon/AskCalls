@@ -405,6 +405,12 @@ export class BulkController {
     this.#publishQueue();
   }
 
+  /** Takes back a pause while the calls in flight are still finishing: nothing stops. */
+  cancelPause() {
+    this.#queue?.start();
+    this.#publishQueue();
+  }
+
   /** Resume (also after a reload). Asking for folder access needs this click. */
   async resume() {
     const q = this.#queue;
@@ -456,6 +462,16 @@ export class BulkController {
     if (!q) return;
     if (this.#restored && !this.#missing) this.#restored = false;
     q.retry(id ? [id] : undefined);
+    if (!this.#started) this.#started = Date.now();
+    this.#publishQueue();
+  }
+
+  /** Keeps recordings whose transcript came back empty as calls with no transcript. */
+  saveEmpty(id?: string) {
+    const q = this.#queue;
+    if (!q) return;
+    if (this.#restored && !this.#missing) this.#restored = false;
+    q.saveEmpty(id ? [id] : undefined);
     if (!this.#started) this.#started = Date.now();
     this.#publishQueue();
   }

@@ -151,6 +151,7 @@ export function CallList({
               selected={index === cursor}
               setSize={feed.hasMore ? -1 : feed.items.length}
               posInSet={index + 1}
+              {...(index === feed.meaningFrom && { section: t('results.byMeaning') })}
               labels={{ ...labels, ...(decrypting && { decrypting: t('row.decrypting') }) }}
               detail={(m) =>
                 t('row.detail', {
@@ -243,6 +244,7 @@ type FeedRowProps = {
   detail: (meta: CallMeta) => string;
   onStar: (starred: boolean) => void;
   actions: (meta: CallMeta) => CallRowAction[];
+  section?: string;
 };
 
 function FeedRow({
@@ -264,6 +266,7 @@ function FeedRow({
   detail,
   onStar,
   actions,
+  section,
 }: FeedRowProps) {
   useEffect(() => {
     if (meta) return;
@@ -289,6 +292,7 @@ function FeedRow({
     setSize: setSize < 0 ? undefined : setSize,
     posInSet,
     labels,
+    ...(section && { section }),
   };
   if (!meta) return <CallRow {...common} call="locked" />;
   const lang = item.snippet ? marker(item.snippetLang, item.snippetTranslated) : undefined;

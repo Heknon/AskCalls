@@ -61,6 +61,8 @@ export interface IndexCallInput extends AnalyzeCallInput {
   /** Built once per session with `buildIntentPrototypes`. */
   intents?: readonly IntentPrototype[];
   intentThreshold?: number;
+  /** The embedder's similarity floor (`Embedder.minSimilarity`): an intent's chunk reaches it too. */
+  minSimilarity?: number;
   /** Parsed with `parseRules`. */
   rules?: readonly Rule[];
 }
@@ -287,6 +289,7 @@ export async function indexCall(input: IndexCallInput): Promise<IndexedCall> {
 
   const intents = classifyIntents(vectors, input.intents ?? [], {
     threshold: input.intentThreshold ?? DEFAULT_INTENT_THRESHOLD,
+    ...(input.minSimilarity !== undefined && { minSimilarity: input.minSimilarity }),
   });
   const intentIds = intents.map((i) => i.id);
 
