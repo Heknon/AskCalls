@@ -32,6 +32,20 @@ describe('ModelFiles', () => {
     expect(fetch).toHaveBeenCalledWith(`${base}config.json`, expect.anything());
   });
 
+  it('records a file the host did not serve or the network blocked as a download failure', async () => {
+    vi.stubGlobal('fetch', async () => new Response(null, { status: 403 }));
+    const forbidden = new ModelFiles(base, ORIGIN, () => {});
+    await expect(forbidden.get('config.json')).rejects.toMatchObject({ code: 'provider_error' });
+    expect(forbidden).toMatchObject({ downloadFailed: true, verificationFailed: false });
+
+    vi.stubGlobal('fetch', async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    const blocked = new ModelFiles(base, ORIGIN, () => {});
+    await expect(blocked.get('config.json')).rejects.toThrow();
+    expect(blocked.downloadFailed).toBe(true);
+  });
+
   it('refuses a body longer than the pin without reading all of it', async () => {
     vi.stubGlobal('fetch', async () => new Response(new Uint8Array(10_000)));
     await expect(new ModelFiles(base, ORIGIN, () => {}).get('config.json')).rejects.toMatchObject({

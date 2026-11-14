@@ -2,7 +2,12 @@
 
 import { deviceTimeZone } from '@askcalls/client-core/bulk/time-zone';
 import type { FailureReason } from '@askcalls/client-core/errors';
-import { type ActiveStatus, type IngestResult, ingestCall } from '@askcalls/client-core/ingest';
+import {
+  type ActiveStatus,
+  type IngestResult,
+  ingestCall,
+  type Transcribed,
+} from '@askcalls/client-core/ingest';
 import type { Contact, Settings } from '@askcalls/client-core/userdata';
 import type { CallDirection } from '@askcalls/domain';
 import { DEFAULT_PHONE_REGION, isPhoneRegion } from '@askcalls/indexing';
@@ -18,7 +23,7 @@ import { ToggleGroup, ToggleGroupItem } from '@askcalls/ui/primitives/toggle-gro
 import { FileAudio, FileText, Phone, PhoneIncoming, PhoneOutgoing, X } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useAppSession } from '../../../../../../client/session/session';
 import { failureKey, minutesLeft, type TranscriptionFlow, type TranslationFlow } from './plan';
 import {
@@ -75,6 +80,8 @@ export function SingleUpload({
   const [form, setForm] = useState<SingleForm | null>(null);
   const [backup, setBackup] = useState(settings.backupRecordings);
   const [run, setRun] = useState<Run>({ state: 'idle' });
+  /** The last failed attempt's transcription, for a retry of the same audio. */
+  const transcribed = useRef<{ audio: File; result: Transcribed } | null>(null);
 
   if (!client || !me) return null;
 
@@ -97,6 +104,7 @@ export function SingleUpload({
     if (!next.audio && !next.transcript) setForm(null);
   };
   const reset = () => {
+    transcribed.current = null;
     setPicked({ audio: null, transcript: null });
     setForm(null);
     setUnsupported(false);
@@ -137,6 +145,9 @@ export function SingleUpload({
           contactName: form.contactName.trim() || null,
         },
         backupRecording: backup && !!picked.audio && !recordingsOff,
+        ...(transcribed.current?.audio === picked.audio && {
+          transcribed: transcribed.current.result,
+        }),
       },
       {
         onStatus: (s) => {
@@ -145,6 +156,10 @@ export function SingleUpload({
         },
       },
     );
+    transcribed.current =
+      result.status === 'failed' && result.transcribed && picked.audio
+        ? { audio: picked.audio, result: result.transcribed }
+        : null;
     setRun({ state: 'finished', result, lastStep: step });
     if (result.status === 'done') refreshMe().catch(() => {});
   };

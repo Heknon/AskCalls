@@ -96,6 +96,16 @@ export type TranscriptInput =
   | Uint8Array
   | { segments: TranscriptSegment[]; language?: string | null };
 
+/**
+ * A transcription kept in memory from an attempt that failed after it, so a retry doesn't send
+ * the audio to the provider and pay for it again. Never persisted.
+ */
+export interface Transcribed {
+  segments: TranscriptSegment[];
+  language: string | null;
+  format: string;
+}
+
 export interface IngestInput {
   source: CallSource;
   audio?: AudioSource;
@@ -112,6 +122,8 @@ export interface IngestInput {
    * confirmed it has no speech. Audio only.
    */
   empty?: boolean;
+  /** The failed attempt's transcription of this audio; used instead of transcribing again. */
+  transcribed?: Transcribed;
 }
 
 export type IngestResult =
@@ -130,7 +142,12 @@ export type IngestResult =
       translation: TranslationOutcome;
     }
   | { status: 'duplicate'; existingId: string; match: 'audio' | 'content' }
-  | { status: 'failed'; reason: FailureReason };
+  | {
+      status: 'failed';
+      reason: FailureReason;
+      /** Set when the audio was transcribed before the failure: pass it back on retry. */
+      transcribed?: Transcribed;
+    };
 
 export type TranslationOutcome = 'done' | 'none' | 'failed' | 'off';
 
@@ -185,13 +202,25 @@ export async function ingestCall(
   input: IngestInput,
   opts: IngestOptions = {},
 ): Promise<IngestResult> {
+  const attempt: Attempt = {};
   try {
-    return await runIngest(ctx, input, opts.onStatus ?? (() => {}), opts.gates ?? immediate);
+    return await runIngest(
+      ctx,
+      input,
+      opts.onStatus ?? (() => {}),
+      opts.gates ?? immediate,
+      attempt,
+    );
   } catch (e) {
     const dup = duplicateOf(e);
     if (dup) return { status: 'duplicate', ...dup };
-    return { status: 'failed', reason: failureReason(e) };
+    const { transcribed } = attempt;
+    return { status: 'failed', reason: failureReason(e), ...(transcribed && { transcribed }) };
   }
+}
+
+interface Attempt {
+  transcribed?: Transcribed;
 }
 
 async function findExisting(
@@ -221,6 +250,7 @@ async function runIngest(
   input: IngestInput,
   onStatus: (s: ActiveStatus) => void,
   gates: IngestGates,
+  attempt: Attempt,
 ): Promise<IngestResult> {
   const { session } = ctx;
   if (!input.audio && input.transcript === undefined) {
@@ -248,6 +278,9 @@ async function runIngest(
     parsed = { transcript: buildTranscript([]), language: null, format: 'empty' };
   } else if (input.transcript !== undefined) {
     parsed = toTranscript(input.transcript, input.transcriptFileName);
+  } else if (input.transcribed) {
+    attempt.transcribed = input.transcribed;
+    parsed = { ...input.transcribed, transcript: buildTranscript(input.transcribed.segments) };
   } else {
     const audio = decoded;
     if (!audio) throw new IngestError('audio_unreadable', 'audio could not be decoded');
@@ -263,11 +296,12 @@ async function runIngest(
         throw new IngestError(providerRefusal(e) ?? 'transcription_failed', 'transcription failed');
       }),
     );
-    parsed = {
-      transcript: buildTranscript(result.segments),
+    attempt.transcribed = {
+      segments: result.segments,
       language: result.language,
       format: `transcriber:${transcriber.id}`,
     };
+    parsed = { ...attempt.transcribed, transcript: buildTranscript(result.segments) };
   }
   const { transcript } = parsed;
   if (!empty && (transcript.segments.length === 0 || transcript.text.trim() === '')) {
