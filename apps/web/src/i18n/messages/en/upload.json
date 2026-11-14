@@ -191,7 +191,8 @@
     "saveAllEmpty": "{n, plural, one {Save # empty call} other {Save # empty calls}}",
     "emptyTitle": "No speech found",
     "emptyBody": "Listen before saving it as a call with no transcript.",
-    "playError": "Couldn't play this file."
+    "playError": "Couldn't play this file.",
+    "cancelPause": "Cancel pause"
   },
   "flowTr": {
     "managed": "Calls your translation rules cover are also translated as they upload: the transcript passes through AskCalls to {provider}, streamed and not stored. No prompt each time; change the rules in Settings → Providers.",

@@ -263,8 +263,13 @@ test('pause, reload, unlock, pick the files again and resume', async ({ page, co
     .setInputFiles(files);
   await expect(count(page, 'transcript only')).toHaveText('10', { timeout: 30_000 });
   await page.getByRole('button', { name: 'Import 10 calls' }).click();
+  const progressText = page.locator('[data-component="JobProgress"]');
   await page.getByRole('button', { name: 'Pause' }).click();
-  await expect(page.getByRole('button', { name: 'Pausing…' })).toBeVisible();
+  await expect(progressText).toContainText('Pausing…');
+  await page.getByRole('button', { name: 'Cancel pause' }).click();
+  await expect(progressText).not.toContainText('Pausing…');
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect(page.getByRole('button', { name: 'Cancel pause' })).toBeVisible();
   release();
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible({ timeout: 60_000 });
   const progress = page.locator('[data-component="JobProgress"]');

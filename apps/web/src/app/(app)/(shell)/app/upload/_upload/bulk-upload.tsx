@@ -421,6 +421,7 @@ function QueuePanel({
       <b>{t('progressDone', { done, total: counts.total })}</b>{' '}
       {t('progressDetail', { active: counts.active, failed: counts.failed, dup: counts.duplicate })}
       {queue.etaSec ? ` ${t('eta', { t: formatDuration(queue.etaSec, locale) })}` : ''}
+      {pausing ? ` ${t('pausing')}` : ''}
     </span>
   );
 
@@ -490,14 +491,14 @@ function QueuePanel({
               done={done}
               total={counts.total}
               label={progressLabel}
-              paused={queue.paused && !pausing}
+              paused={queue.paused}
               {...(!queue.restored && {
-                onPause: () => !pausing && controller.pause(),
-                onResume: () => void controller.resume(),
+                onPause: () => controller.pause(),
+                onResume: () => (pausing ? controller.cancelPause() : void controller.resume()),
               })}
               labels={{
-                pause: pausing ? t('pausing') : t('pause'),
-                resume: t('resume'),
+                pause: t('pause'),
+                resume: pausing ? t('cancelPause') : t('resume'),
                 stop: t('stop'),
                 progress: t('progressLabel'),
               }}

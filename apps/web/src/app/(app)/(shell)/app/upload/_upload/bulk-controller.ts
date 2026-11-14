@@ -405,6 +405,12 @@ export class BulkController {
     this.#publishQueue();
   }
 
+  /** Takes back a pause while the calls in flight are still finishing: nothing stops. */
+  cancelPause() {
+    this.#queue?.start();
+    this.#publishQueue();
+  }
+
   /** Resume (also after a reload). Asking for folder access needs this click. */
   async resume() {
     const q = this.#queue;
