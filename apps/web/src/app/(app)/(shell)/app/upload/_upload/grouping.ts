@@ -1,4 +1,5 @@
 import type { PlannedItem } from '@askcalls/client-core/bulk/pairing';
+import { INVISIBLE, nameKey } from '@askcalls/client-core/contact-names';
 import type { IngestMeta } from '@askcalls/client-core/ingest';
 import { DEFAULT_PHONE_REGION, isPhoneRegion, parsePhone } from '@askcalls/indexing';
 
@@ -26,12 +27,6 @@ function folderOf(item: Item): string {
   parts.pop();
   return parts.join('/');
 }
-
-const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
-
-/** Names that look the same group together: no bidi marks, one Unicode form, one case. */
-const nameKey = (name: string) =>
-  `name:${name.normalize('NFC').replace(INVISIBLE, '').replace(/\s+/g, ' ').trim().toLowerCase()}`;
 
 function contactKey(meta: IngestMeta | undefined, region: string) {
   const phone = meta?.phone

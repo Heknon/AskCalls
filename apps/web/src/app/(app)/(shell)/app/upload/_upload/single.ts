@@ -1,5 +1,5 @@
 import { parseRecordingFileName } from '@askcalls/client-core/bulk/filenames';
-import { classifyFile } from '@askcalls/client-core/bulk/pairing';
+import { classifyFile, pairKey } from '@askcalls/client-core/bulk/pairing';
 import type { Contact } from '@askcalls/client-core/userdata';
 import type { CallDirection } from '@askcalls/domain';
 import { type CountryCode, parsePhone } from '@askcalls/indexing';
@@ -8,6 +8,13 @@ import { formatPhone } from '@askcalls/ui/lib/format';
 export interface Picked {
   audio: File | null;
   transcript: File | null;
+}
+
+/** How many calls the files make, paired the way bulk import pairs them. */
+export function callCount(files: readonly File[]): number {
+  const kinds = new Set(['audio', 'transcript']);
+  return new Set(files.filter((f) => kinds.has(classifyFile(f.name))).map((f) => pairKey(f.name)))
+    .size;
 }
 
 /** Adds dropped files to the current pick: the newest audio and transcript win. */

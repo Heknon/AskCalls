@@ -177,7 +177,7 @@ export async function seedLeakData(h: ClientHarness): Promise<void> {
 
   await ctx.userData.update('contacts', (d) => ({
     ...d,
-    contacts: [{ id: 'c1', name: CONTACT.name, phones: [CONTACT.phone] }],
+    contacts: [{ id: 'c1', name: CONTACT.name, phones: [CONTACT.phone], aliases: [] }],
   }));
   await ctx.userData.update('synonyms', (d) => ({
     ...d,

@@ -47,6 +47,8 @@ export type NewCall = Omit<Call, 'createdAt' | 'updatedAt'>;
 export interface CallPatch {
   metaCt?: Bytes;
   tagToks?: Token[];
+  /** The other party's token; null clears it. */
+  contactTok?: Token | null;
   recording?: RecordingRef | null;
 }
 

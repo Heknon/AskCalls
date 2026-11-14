@@ -27,6 +27,8 @@ export { EmptyCallDialog } from './empty-call-dialog';
 import { phoneValid } from './single';
 
 const GROUP_PAGE = 30;
+/** Calls in an import small enough to show every group open. */
+const OPEN_UP_TO = 10;
 /** Groups at which the filter input appears. */
 const FILTER_AT = 12;
 
@@ -117,7 +119,8 @@ export function ReviewTable({
     : groups;
   const all = pairing.items.map((i) => i.key);
   const selected = all.length - excluded.size;
-  const isOpen = (g: ItemGroup) => toggled.has(g.key) !== (groups.length === 1);
+  const openFirst = groups.length === 1 || all.length <= OPEN_UP_TO;
+  const isOpen = (g: ItemGroup) => toggled.has(g.key) !== openFirst;
   const phoneRegion = isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION;
   const contactNames = useMemo(() => [...new Set(contacts.map((c) => c.name))], [contacts]);
 

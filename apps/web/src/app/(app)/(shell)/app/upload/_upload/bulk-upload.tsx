@@ -79,6 +79,9 @@ export interface BulkUploadProps {
   settings: Settings;
   contacts: readonly Contact[];
   recordingsOff: boolean;
+  /** Files handed over from single upload; added once no import is running. */
+  handoff?: File[] | null;
+  onHandoff?: () => void;
 }
 
 /** U2: a folder, files or a ZIP, then the pre-flight summary, then the queue. */
@@ -88,6 +91,8 @@ export function BulkUpload({
   settings,
   contacts,
   recordingsOff,
+  handoff,
+  onHandoff,
 }: BulkUploadProps) {
   const t = useTranslations('upload.bulk');
   const tu = useTranslations('upload');
@@ -97,6 +102,11 @@ export function BulkUpload({
   const [backup, setBackup] = useState(settings.backupRecordings && !recordingsOff);
   const [folderPicker, setFolderPicker] = useState(false);
   useEffect(() => setFolderPicker(supportsDirectoryPicker()), []);
+  useEffect(() => {
+    if (!handoff || snap.phase === 'queue' || snap.phase === 'loading') return;
+    onHandoff?.();
+    void controller.addFiles(handoff);
+  }, [handoff, snap.phase, controller, onHandoff]);
   if (!me) return null;
 
   const drop = (
