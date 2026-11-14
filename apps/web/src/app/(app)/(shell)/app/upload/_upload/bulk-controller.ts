@@ -55,11 +55,8 @@ export type BulkSnapshot =
 
 const utcOffsetMinutes = () => -new Date().getTimezoneOffset();
 
-/**
- * The queue and the ingest runner: loaded once there are files, not with the upload screen. They
- * come with the review table's chunk, so every page's loader knows one chunk fewer.
- */
-const loadBulkCode = () => import('./review-table');
+/** The queue and the ingest runner: loaded once there are files, not with the upload screen. */
+const loadBulkCode = () => import('./bulk-code');
 type BulkCode = Awaited<ReturnType<typeof loadBulkCode>>;
 
 /** WAV durations from the header; other formats fall back to the size estimate. */
