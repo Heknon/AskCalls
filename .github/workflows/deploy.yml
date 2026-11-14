@@ -3,7 +3,8 @@ name: Deploy
 # dev    → the dev environment on every push (dev Neon branch, askcalls-dev under dev/, DEV_DOMAIN)
 # master → production on every push (a merged pull request), after the full suite passes.
 #          The production environment only accepts master. Run workflow re-deploys a branch
-#          without a new commit.
+#          without a new commit. Once production runs a version (apps/agent/package.json) that
+#          has no tag yet, the release job tags it and starts release.yml.
 #
 # Order: AWS (CDK stacks, then the embedding model) → migrations → app. Migrations run before
 # the code that needs them is live, so every migration must be backward compatible with the
@@ -51,6 +52,8 @@ jobs:
     environment:
       name: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
       url: ${{ steps.app.outputs.url }}
+    outputs:
+      deployed: ${{ steps.cfg.outputs.deploy }}
     permissions:
       contents: read
       id-token: write # AWS OIDC (askcalls-github-deploy trusts only the dev and production environments)
@@ -160,3 +163,31 @@ jobs:
             url="https://$DEV_DOMAIN"
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
+
+  # Bumping the version in apps/agent/package.json is how a release is asked for: npm, the image,
+  # the offline bundles and the GitHub release follow once production runs it. A tag pushed with
+  # this job's token starts no workflow, so the job starts release.yml on the tag itself.
+  release:
+    name: Tag the release
+    needs: deploy
+    if: github.ref_name == 'master' && needs.deploy.outputs.deployed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # push the tag
+      actions: write # start release.yml
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tag a new version and start its release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(jq -r .version apps/agent/package.json)"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "::notice::$tag is already tagged; nothing to release."
+            exit 0
+          fi
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          gh workflow run release.yml --ref "$tag"
+          echo "::notice::Tagged $tag on $GITHUB_SHA and started its release."
