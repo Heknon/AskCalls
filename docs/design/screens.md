@@ -457,7 +457,7 @@ Mock: [`call-view.html`](mocks/call-view.html).
 - No recording: no player; timestamps still scroll and highlight but don't play (tooltip "No recording saved for this call").
 - Number hidden or missing: WhatsApp and Call back disabled with tooltip "No phone number for this call".
 - Ask off on this instance or for this user: Ask tab shows `EmptyState` "Ask is turned off." + "Settings → Providers" (link only for users who can change it).
-- Ask quota: "You've used today's 50 questions. More at 00:00 UTC."
+- Ask quota: "You've used today's 50 questions. More at 02:00." (the next UTC midnight, in local time)
 - Ask error: "Anthropic didn't respond. Try again." (provider name from config).
 - Delete: `ConfirmDialog` "Delete this call?" / "The transcript, notes, tags and recording are deleted for good." / Cancel · Delete call; then navigate back with a toast with Undo (5 s; the delete request is sent when the toast closes).
 
@@ -501,7 +501,7 @@ Mock: [`call-view.html`](mocks/call-view.html).
 | `ask.route.managed` | {model} via AskCalls · sends this call to {provider} | {model} דרך AskCalls · השיחה נשלחת ל-{provider} |
 | `ask.route.direct` | {model} with your key · sends this call to {provider} | {model} עם המפתח שלך · השיחה נשלחת ל-{provider} |
 | `ask.off` | Ask is turned off. | שאלות כבויות. |
-| `ask.quota` | You've used today's {n} questions. More at 00:00 UTC. | ניצלת את {n} השאלות של היום. עוד שאלות ב-00:00 UTC. |
+| `ask.quota` | You've used today's {n} questions. More at {time}. | ניצלת את {n} השאלות של היום. עוד שאלות ב-{time}. |
 | `ask.error` | {provider} didn't respond. Try again. | {provider} לא הגיבה. כדאי לנסות שוב. |
 | `notes.placeholder` | Notes | הערות |
 | `notes.saving` / `saved` / `error` | Saving… / Saved / Couldn't save. Retry | שומר… / נשמר / השמירה נכשלה. ניסיון חוזר |
@@ -569,7 +569,7 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 
 **Review:** the planned calls in `ImportGroup`s, by Contact (default; the number, else the name; "No contact" last), Folder ("Top folder" first) or Month (newest first; "No date" last). A group's checkbox puts all its calls in or leaves them out; open a group to include or leave out single calls (`QueueRow` with `select`, status "Queued" or "Left out"). The toolbar has "All calls" with "{n} of {total} selected", the group-by toggle and, at 12 groups or more, "Filter groups". Groups are collapsed unless there is one or the import has 10 calls or fewer. Only the selected calls are queued; the summary counts and minutes are of the selected calls.
 
-**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), `DataFlowNote`, "Back up recordings" switch, primary "Import {n} calls" (disabled with "Select calls to import." when none is selected), secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
+**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), "Recording time zone" (a `NativeSelect` of IANA zones, the device's by default; shown when some call takes its time from a file name or `manifest.csv`, whose times without an offset are read in it; edits are kept when it changes, and a resumed import keeps the zone it started with), `DataFlowNote`, "Back up recordings" switch, primary "Import {n} calls" (disabled with "Select calls to import." when none is selected), secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
 
 **Queue:** `JobProgress` ("{done} of {total} files done. {active} in progress, {failed} failed, {dup} duplicates skipped. About {t} left.") with Pause; hint "You can close this tab and resume later."; filter tabs All / In progress / Failed / Duplicates; table rows (`QueueRow`): file name (mono, LTR, truncates with the full name in a tooltip), kind badges, contact (from manifest, file name or metadata), `QueueItemStatus` with a thin progress bar for transcription, Retry for failed rows, a link to the existing call for duplicates. "Retry all failed". Desktop: the summary stays in a 320 px side column. Mobile: the table becomes stacked cards; the summary moves above the queue and collapses to one line.
 
@@ -586,6 +586,7 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 | `bulk.minutes` | About {n} minutes of audio to transcribe. | כ-{n} דקות שמע לתמלול. |
 | `bulk.usage` | Transcription this month, after this import | תמלול החודש, אחרי הייבוא |
 | `bulk.manifestApplied` | manifest.csv set names and dates for {n} files. | manifest.csv קבע שמות ותאריכים ל-{n} קבצים. |
+| `bulk.timeZone` | Recording time zone | אזור הזמן של ההקלטות |
 | `bulk.overQuota` | This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key. | הייבוא דורש כ-{n} דקות ונותרו {m}. קבצים מעבר למגבלה יחכו בתור עד החודש הבא או עד שיתווסף מפתח משלך. |
 | `bulk.start` / `change` | Import {n} calls / Choose different files | ייבוא {n} שיחות / בחירת קבצים אחרים |
 | `bulk.review.all` / `selected` | All calls / {n} of {total} selected | כל השיחות / {n} מתוך {total} נבחרו |

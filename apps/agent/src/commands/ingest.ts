@@ -15,6 +15,7 @@ import { fail } from './run';
 
 export interface IngestCommandOptions {
   manifest?: string;
+  timeZone?: string;
   backupRecordings?: boolean;
   transcribe: string;
   dryRun?: boolean;
@@ -120,7 +121,11 @@ export async function runIngest(
     throw new Error('--transcribe must be auto or never');
   }
   if (opts.dryRun) {
-    const plan = await planFolder({ path, ...(opts.manifest && { manifestPath: opts.manifest }) });
+    const plan = await planFolder({
+      path,
+      ...(opts.manifest && { manifestPath: opts.manifest }),
+      ...(opts.timeZone && { timeZone: opts.timeZone }),
+    });
     if (opts.json) io.out(JSON.stringify(plan, null, 2));
     else for (const line of planLines(plan)) io.out(line);
     return { counts: { total: 0, queued: 0, active: 0, done: 0, duplicate: 0, failed: 0 } };
@@ -130,6 +135,7 @@ export async function runIngest(
   const batch = await prepareBatch(agent.ctx, {
     path,
     ...(opts.manifest && { manifestPath: opts.manifest }),
+    ...(opts.timeZone && { timeZone: opts.timeZone }),
     backupRecordings: opts.backupRecordings ?? false,
     transcribe: opts.transcribe,
     store,
@@ -183,6 +189,10 @@ export function registerIngest(program: Command) {
     .option(
       '--manifest <file>',
       'manifest.csv with file, phone, started_at, direction, contact_name, tags',
+    )
+    .option(
+      '--time-zone <zone>',
+      "IANA time zone of times in file names and the manifest (default: this computer's)",
     )
     .option('--backup-recordings', 'store encrypted recording backups')
     .option('--transcribe <mode>', 'auto | never', 'auto')

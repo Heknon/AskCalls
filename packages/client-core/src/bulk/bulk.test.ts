@@ -186,10 +186,13 @@ describe('recording file names', () => {
     expect(parseRecordingFileName(name)).toEqual({ phone, contactName, startedAt });
   });
 
-  it('applies the phone clock offset and rejects impossible dates', () => {
-    expect(
-      parseRecordingFileName('x_240501_101532.m4a', { utcOffsetMinutes: 180 })?.startedAt,
-    ).toBe('2024-05-01T07:15:32.000Z');
+  it('reads the phone clock in the chosen time zone and rejects impossible dates', () => {
+    const jerusalem = (name: string) =>
+      parseRecordingFileName(name, { timeZone: 'Asia/Jerusalem' })?.startedAt;
+    expect(jerusalem('x_240501_101532.m4a')).toBe('2024-05-01T07:15:32.000Z');
+    expect(jerusalem('x_240115_101532.m4a')).toBe('2024-01-15T08:15:32.000Z');
+    expect(jerusalem('Call with Dana 2024-01-15 at 10.15.m4a')).toBe('2024-01-15T08:15:00.000Z');
+    expect(jerusalem('20240501101532+0000.m4a')).toBe('2024-05-01T10:15:32.000Z');
     expect(parseRecordingFileName('x_241341_101532.m4a')).toBeNull();
     expect(parseRecordingFileName('voice memo.m4a')).toBeNull();
     expect(parseRecordingFileName('0525550134.m4a')).toBeNull();

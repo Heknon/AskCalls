@@ -9,7 +9,7 @@ import {
   transcriptFile,
   updateCallTags,
 } from '@askcalls/client-core/calls';
-import type { CallMeta } from '@askcalls/domain';
+import { type CallMeta, callStartedAt } from '@askcalls/domain';
 import { CallActions } from '@askcalls/ui/components/CallActions';
 import { CallHeader } from '@askcalls/ui/components/CallHeader';
 import { DecryptingPlaceholder } from '@askcalls/ui/components/DecryptingPlaceholder';
@@ -38,7 +38,7 @@ import { intlLocale } from '../../../../../../../i18n/locales';
 import { Screen } from '../../../../_shell/screen';
 import { useAsync } from '../../../../_shell/states';
 import { recalledSearch } from '../../../_calls/memory';
-import { contactName, DIRECTION, downloadText, startedAt, tagChips } from '../../../_calls/present';
+import { contactName, DIRECTION, downloadText, tagChips } from '../../../_calls/present';
 import { TagDialog } from '../../../_calls/tag-dialog';
 import { useCatalogs } from '../../../_calls/use-catalogs';
 import { useDeleteCall } from '../../../_calls/use-delete';
@@ -443,7 +443,7 @@ function CallView({
             name,
             phone: meta.phoneE164 ?? undefined,
             direction: DIRECTION[meta.direction],
-            startedAt: startedAt(meta, call.day),
+            startedAt: callStartedAt(call, meta.startedAt),
             durationSec: duration,
             starred: call.starred,
             tags: tagChips(call.tags, catalogs.intentLabel).map((chip) => ({

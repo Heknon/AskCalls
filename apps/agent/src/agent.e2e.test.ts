@@ -194,7 +194,7 @@ describe('askcalls agent against the route handlers', () => {
     const sentBefore = sent;
     const r = (await c.callTool({
       name: 'ingest_batch',
-      arguments: { folder_path: folder, dry_run: true },
+      arguments: { folder_path: folder, dry_run: true, time_zone: 'Asia/Jerusalem' },
     })) as ToolResult;
     expect(r.isError).toBeFalsy();
     const plan = JSON.parse(r.content[0]!.text);
@@ -212,7 +212,7 @@ describe('askcalls agent against the route handlers', () => {
       transcript: 'a.transcript.txt',
       manifest_line: 2,
       phone: '+972501234567',
-      started_at: '2026-03-01T10:00:00.000Z',
+      started_at: '2026-03-01T08:00:00.000Z',
       direction: null,
       contact_name: 'Dana',
     });

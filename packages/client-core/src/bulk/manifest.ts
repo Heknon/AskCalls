@@ -1,6 +1,7 @@
 import { type CallDirection, DomainError } from '@askcalls/domain';
 import { decodeText } from '@askcalls/transcript-formats';
 import { baseName } from './pairing';
+import { fromZonedTime } from './time-zone';
 
 /** One `manifest.csv` row (spec 8). Values override anything parsed from file names. */
 export interface ManifestEntry {
@@ -91,26 +92,27 @@ export const MANIFEST_DIRECTIONS: Readonly<Record<string, CallDirection>> = {
   unknown: 'unknown',
 };
 
-/** ISO 8601, or `YYYY-MM-DD HH:MM[:SS]` read as UTC. */
-function parseDate(value: string): string | null {
+/** ISO 8601 with an offset, or `YYYY-MM-DD[ HH:MM[:SS]]` read in `timeZone`. */
+function parseDate(value: string, timeZone: string): string | null {
   const v = value.trim();
-  const local = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(v);
-  const d = local
-    ? new Date(
-        Date.UTC(
-          +local[1]!,
-          +local[2]! - 1,
-          +local[3]!,
-          +(local[4] ?? 0),
-          +(local[5] ?? 0),
-          +(local[6] ?? 0),
-        ),
-      )
-    : new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  const local =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?)?$/.exec(v);
+  if (!local) {
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  const [y, mo, d, h, mi, s] = local.slice(1).map((x) => +(x ?? 0)) as number[];
+  const wall = Date.UTC(y!, mo! - 1, d!, h, mi, s);
+  if (new Date(wall).getUTCDate() !== d || h! > 23 || mi! > 59 || s! > 59) return null;
+  return new Date(fromZonedTime(wall, timeZone)).toISOString();
 }
 
-export function parseManifest(input: string | Uint8Array): Manifest {
+/** `timeZone` (IANA, default UTC) is the zone of `started_at` values without an offset. */
+export function parseManifest(
+  input: string | Uint8Array,
+  opts: { timeZone?: string } = {},
+): Manifest {
+  const timeZone = opts.timeZone ?? 'UTC';
   const rows = parseCsv(typeof input === 'string' ? input : decodeText(input));
   const header = rows.shift();
   if (!header) throw new DomainError('invalid', 'manifest is empty');
@@ -137,7 +139,7 @@ export function parseManifest(input: string | Uint8Array): Manifest {
     }
     seen.add(file.toLowerCase());
     const rawDate = col('started_at');
-    const startedAt = rawDate ? parseDate(rawDate) : null;
+    const startedAt = rawDate ? parseDate(rawDate, timeZone) : null;
     if (rawDate && !startedAt) issues.push({ line, code: 'bad_date' });
     const rawDirection = col('direction');
     const direction = rawDirection

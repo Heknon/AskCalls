@@ -39,6 +39,25 @@ describe('importFormatGuide', () => {
     });
   });
 
+  it('reads times without an offset in the recording time zone, and offsets as given', () => {
+    const m = parseManifest(
+      [
+        'file,started_at',
+        'winter.mp3,2026-01-15 14:05',
+        'summer.mp3,2026-07-15T14:05:00',
+        'day.mp3,2026-07-15',
+        'offset.mp3,2026-07-15T14:05:00+00:00',
+        'nonsense.mp3,2026-02-30 10:00',
+      ].join('\n'),
+      { timeZone: 'Asia/Jerusalem' },
+    );
+    expect(m.lookup('winter.mp3')?.startedAt).toBe('2026-01-15T12:05:00.000Z');
+    expect(m.lookup('summer.mp3')?.startedAt).toBe('2026-07-15T11:05:00.000Z');
+    expect(m.lookup('day.mp3')?.startedAt).toBe('2026-07-14T21:00:00.000Z');
+    expect(m.lookup('offset.mp3')?.startedAt).toBe('2026-07-15T14:05:00.000Z');
+    expect(m.issues).toEqual([{ line: 6, code: 'bad_date' }]);
+  });
+
   it('holds for pairing: suffixes pair, folders and second files do not', () => {
     const p = pairFiles(
       [

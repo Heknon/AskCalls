@@ -54,10 +54,6 @@ export function contactName(
   return name?.replace(/\D/g, '') === digits ? undefined : name;
 }
 
-export function startedAt(meta: Pick<CallMeta, 'startedAt'>, day: number): Date {
-  return meta.startedAt ? new Date(meta.startedAt) : new Date(day * 86_400_000);
-}
-
 /** `https://wa.me/<digits>` for an E.164 number. */
 export const whatsappHref = (phone: string | null | undefined) =>
   phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : undefined;

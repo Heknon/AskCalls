@@ -6,8 +6,10 @@ import {
   type BulkStateStore,
   type ClientContext,
   createBulkRunner,
+  deviceTimeZone,
   type FailureReason,
   type ImportPlan,
+  isTimeZone,
   loadManifest,
   type PreflightSummary,
   pairFiles,
@@ -23,6 +25,16 @@ export interface BatchOptions {
   backupRecordings: boolean;
   transcribe: 'auto' | 'never';
   store: BulkStateStore;
+  /** IANA zone of the times in file names and the manifest; this computer's by default. */
+  timeZone?: string;
+}
+
+function zoneOf(timeZone: string | undefined): string {
+  if (timeZone === undefined) return deviceTimeZone();
+  if (!isTimeZone(timeZone)) {
+    throw new Error(`${timeZone} is not a time zone: use an IANA name such as Asia/Jerusalem`);
+  }
+  return timeZone;
 }
 
 export interface PreparedBatch {
@@ -52,10 +64,11 @@ const sameItems = (a: BulkState, b: BulkState) =>
  * resumed instead and its failed items are queued again.
  */
 export async function prepareBatch(ctx: ClientContext, opts: BatchOptions): Promise<PreparedBatch> {
+  const timeZone = zoneOf(opts.timeZone);
   const source = await openIngestSource(opts.path, opts.manifestPath);
   const pairing = pairFiles(source.files);
   const manifestRef = source.manifest ?? pairing.manifest;
-  const manifest = await loadManifest(source.reader, manifestRef);
+  const manifest = await loadManifest(source.reader, manifestRef, timeZone);
   const settings = await ctx.userData.get('settings');
   const run = createBulkRunner(ctx, {
     reader: source.reader,
@@ -64,16 +77,18 @@ export async function prepareBatch(ctx: ClientContext, opts: BatchOptions): Prom
     source: 'agent',
     transcribe: opts.transcribe,
     region: settings.phoneRegion,
+    timeZone,
   });
   const plan = planBatch(
     { ...pairing, manifest: manifestRef },
-    { backupRecordings: opts.backupRecordings },
+    { backupRecordings: opts.backupRecordings, timeZone },
   );
 
   const previous = await opts.store.load();
   const resumable =
     previous !== null &&
     previous.backupRecordings === opts.backupRecordings &&
+    previous.timeZone === timeZone &&
     sameItems(previous, plan) &&
     previous.items.some((i) => i.status !== 'done' && i.status !== 'duplicate');
   const queue = resumable
@@ -99,16 +114,17 @@ export async function planFolder(opts: {
   path: string;
   manifestPath?: string;
   region?: string;
+  timeZone?: string;
 }): Promise<ImportPlan> {
+  const timeZone = zoneOf(opts.timeZone);
   const source = await openIngestSource(opts.path, opts.manifestPath);
   const pairing = pairFiles(source.files);
   const manifestRef = source.manifest ?? pairing.manifest;
-  const manifest = await loadManifest(source.reader, manifestRef);
-  return planImport(
-    { ...pairing, manifest: manifestRef },
-    manifest,
-    opts.region ? { region: opts.region } : {},
-  );
+  const manifest = await loadManifest(source.reader, manifestRef, timeZone);
+  return planImport({ ...pairing, manifest: manifestRef }, manifest, {
+    timeZone,
+    ...(opts.region && { region: opts.region }),
+  });
 }
 
 export interface BatchReport {

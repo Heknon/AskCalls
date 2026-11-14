@@ -57,6 +57,7 @@ import {
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@askcalls/ui/primitives/hover-card';
 import { Input } from '@askcalls/ui/primitives/input';
 import { Label } from '@askcalls/ui/primitives/label';
+import { NativeSelect } from '@askcalls/ui/primitives/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@askcalls/ui/primitives/popover';
 import { Progress } from '@askcalls/ui/primitives/progress';
 import { RadioGroup, RadioGroupItem } from '@askcalls/ui/primitives/radio-group';
@@ -307,7 +308,7 @@ export function PrimitivesGroup() {
           <Textarea id="p-notes" dir="auto" defaultValue="לשלוח הצעה כתובה עד יום ראשון." />
         </div>
       </Specimen>
-      <Specimen name="Select, Checkbox, Switch, RadioGroup">
+      <Specimen name="Select, NativeSelect, Checkbox, Switch, RadioGroup">
         <div className="flex flex-col gap-1.5">
           <Label>{c.autoLock}</Label>
           <Select defaultValue="15">
@@ -323,6 +324,13 @@ export function PrimitivesGroup() {
             </SelectContent>
           </Select>
         </div>
+        <NativeSelect aria-label={c.autoLock} defaultValue="15">
+          {c.lock.map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </NativeSelect>
         <div className="flex items-center gap-2">
           <Checkbox id="p-c1" defaultChecked />
           <Label htmlFor="p-c1" className="font-normal">

@@ -3,6 +3,7 @@
 import { getCall } from '@askcalls/client-core/calls';
 import { ingestCall } from '@askcalls/client-core/ingest';
 import { highlightRanges, type SearchResponse, searchCalls } from '@askcalls/client-core/search';
+import { callStartedAt } from '@askcalls/domain';
 import { CallRow } from '@askcalls/ui/components/CallRow';
 import { EmptyState } from '@askcalls/ui/components/EmptyState';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
@@ -232,7 +233,7 @@ export function TryStep({ client, onNext }: { client: BrowserClient; onNext: () 
                   name: item.meta.contactName ?? undefined,
                   phone: item.meta.phoneE164 ?? undefined,
                   direction: DIRECTION[item.meta.direction],
-                  startedAt: new Date(item.meta.startedAt ?? Date.now()),
+                  startedAt: callStartedAt(item, item.meta.startedAt),
                   durationSec: item.meta.durationSec ?? 0,
                   starred: item.starred,
                   tags: [],

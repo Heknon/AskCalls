@@ -371,6 +371,13 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
       inputSchema: {
         folder_path: z.string().min(1).max(4096),
         manifest_path: z.string().max(4096).optional(),
+        time_zone: z
+          .string()
+          .max(64)
+          .optional()
+          .describe(
+            "IANA time zone of the times in file names and manifest started_at values without an offset, such as Asia/Jerusalem. Defaults to this computer's.",
+          ),
         backup_recordings: z.boolean().optional(),
         dry_run: z
           .boolean()
@@ -386,6 +393,7 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
               ...(a.manifest_path && {
                 manifestPath: absolute(a.manifest_path, 'manifest_path'),
               }),
+              ...(a.time_zone && { timeZone: a.time_zone }),
             });
             return json({
               summary: {
@@ -424,6 +432,7 @@ export function createAgentMcpServer(opts: AgentMcpOptions): McpServer {
               ...(args.manifest_path && {
                 manifestPath: absolute(args.manifest_path, 'manifest_path'),
               }),
+              ...(args.time_zone && { timeZone: args.time_zone }),
               backupRecordings: args.backup_recordings ?? false,
               transcribe: 'auto',
               store: new MemoryBulkStore(),

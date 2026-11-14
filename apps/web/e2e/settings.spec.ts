@@ -239,6 +239,30 @@ test('device link: a second browser joins from the QR link and protects RK with 
   await other.close();
 });
 
+test.describe('in a time zone 14 hours from the server', () => {
+  test.use({ timezoneId: 'Pacific/Kiritimati' });
+
+  test('the audit log shows times in the device time zone', async ({ page, context }) => {
+    await onboard(page, context, 'timezone');
+    await openSection(page, 'Audit log');
+    const time = page.locator('[data-component="AuditEventRow"] time').first();
+    await expect(time).toBeVisible();
+    const [device, utc] = await time.evaluate((el) => {
+      const at = new Date(el.getAttribute('datetime') ?? '');
+      const clock = (timeZone?: string) =>
+        new Intl.DateTimeFormat('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23',
+          timeZone,
+        }).format(at);
+      return [clock(), clock('UTC')];
+    });
+    expect(device).not.toBe(utc);
+    await expect(time).toHaveText(new RegExp(`^Today, ${device}$`));
+  });
+});
+
 test('API tokens and retention', async ({ page, context }) => {
   await onboard(page, context, 'tokens');
   await openSection(page, 'API and MCP');

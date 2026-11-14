@@ -14,9 +14,9 @@ import {
 import {
   type CallMeta,
   type CallSource,
+  callStartedAt,
   DomainError,
   type DurationBucket,
-  dateFromDay,
   dayFromDate,
   type Transcript,
 } from '@askcalls/domain';
@@ -245,9 +245,11 @@ export interface TranscriptFile {
   content: string;
 }
 
+/** Named by the local date the call started (or was uploaded). */
 function baseFileName(call: Pick<DecryptedCall, 'id' | 'day' | 'meta'>): string {
-  const date = (call.meta.startedAt ?? dateFromDay(call.day).toISOString()).slice(0, 10);
-  return `call-${date}-${call.id.slice(-12)}`;
+  const at = callStartedAt(call, call.meta.startedAt);
+  const local = new Date(at.getTime() - at.getTimezoneOffset() * 60_000);
+  return `call-${local.toISOString().slice(0, 10)}-${call.id.slice(-12)}`;
 }
 
 /** TXT or SRT, generated on the device (spec 11.2). */

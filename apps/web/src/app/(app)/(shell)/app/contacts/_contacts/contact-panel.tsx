@@ -3,7 +3,7 @@
 import { isNumberName, normalizeName } from '@askcalls/client-core/contact-names';
 import { type SearchResultItem, searchCalls } from '@askcalls/client-core/search';
 import type { Contact } from '@askcalls/client-core/userdata';
-import { dateFromDay } from '@askcalls/domain';
+import { callStartedAt } from '@askcalls/domain';
 import { type CountryCode, parsePhone } from '@askcalls/indexing';
 import { CallRow } from '@askcalls/ui/components/CallRow';
 import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
@@ -233,7 +233,7 @@ function ContactCalls({ contact }: { contact: Contact }) {
                 name: contact.name,
                 ...(c.meta.phoneE164 && { phone: c.meta.phoneE164 }),
                 direction: DIRECTION[c.meta.direction],
-                startedAt: c.meta.startedAt ? new Date(c.meta.startedAt) : dateFromDay(c.day),
+                startedAt: callStartedAt(c, c.meta.startedAt),
                 durationSec: c.meta.durationSec ?? 0,
                 starred: c.starred,
                 tags: c.tags.flatMap((tag) =>

@@ -27,7 +27,7 @@ const COLUMN_NOTES: Record<(typeof MANIFEST_COLUMNS)[number], string> = {
   phone:
     'The other party, with country code (+972501234567). A local number is read in the region set in Settings.',
   started_at:
-    'ISO 8601 with an offset (2026-03-01T14:05:00+02:00), or YYYY-MM-DD HH:MM[:SS] or YYYY-MM-DD, read as UTC.',
+    'ISO 8601 with an offset (2026-03-01T14:05:00+02:00), or YYYY-MM-DD HH:MM[:SS] or YYYY-MM-DD in the recording time zone.',
   direction: `One of: ${Object.keys(MANIFEST_DIRECTIONS).join(', ')} (any letter case).`,
   contact_name: 'The name to show for the other party.',
   tags: 'Tag names separated by ; or |. Missing tags are created.',
@@ -52,6 +52,7 @@ export function importFormatGuide(): string {
 - A recording without a transcript is transcribed. A transcript without a recording is imported as text only.
 - Other files are skipped, and so is a second recording or transcript with the same name.
 - Without a manifest, Samsung ("Call recording Dana_260301_140500.m4a"), iPhone ("Call with Dana 2026-03-01 at 14.05.m4a") and similar Android recording names give the date, number and name.
+- Times in file names, and manifest times without an offset, are read in the recording time zone: the importing device's unless one is chosen (Recording time zone on the upload screen, --time-zone, or time_zone in MCP).
 
 ## manifest.csv
 
