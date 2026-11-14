@@ -43,6 +43,7 @@ import {
   fakeAudio,
   MemoryBulkStateStore,
 } from '@askcalls/client-core/testing/fakes';
+import { DomainError } from '@askcalls/domain';
 import { unzipSync } from 'fflate';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ClientDevice, type ClientHarness, startClientHarness } from './testing/client';
@@ -521,6 +522,57 @@ describe('client-core end to end against the route handlers', () => {
       expect(call.meta.segmentsFormat).toBe('empty');
       expect(call.meta.durationSec).toBeCloseTo(4, 0);
     }
+  });
+
+  it('retries a call that failed after transcription without transcribing it again', async () => {
+    let transcribed = 0;
+    let embedFails = true;
+    const { transcriber, embedder } = browser.ctx;
+    const flaky = {
+      ...browser.ctx,
+      transcriber: {
+        ...transcriber!,
+        transcribe: (...args: Parameters<NonNullable<typeof transcriber>['transcribe']>) => {
+          transcribed++;
+          return transcriber!.transcribe(...args);
+        },
+      },
+      embedder: {
+        modelId: embedder.modelId,
+        dimensions: embedder.dimensions,
+        embed: async (texts: string[]) => {
+          if (embedFails) {
+            throw new DomainError('provider_error', 'embedding failed', { embedder: 'download' });
+          }
+          return embedder.embed(texts);
+        },
+      },
+    };
+    const bytes = fakeAudio(new Uint8Array(16_000 * 6).map((_, i) => (i * 11) % 241));
+    const reader = {
+      bytes: async () => bytes,
+      audio: async () => ({ bytes, mimeType: 'audio/wav' }),
+    };
+    const q = await BulkQueue.create(
+      planBatch(pairFiles([{ ref: 'retry/a.wav', name: 'retry/a.wav', size: bytes.length }])),
+      {
+        store: new MemoryBulkStateStore(),
+        run: createBulkRunner(flaky, { reader, manifest: null, backupRecordings: false }),
+      },
+    );
+    q.start();
+    await q.whenIdle();
+    expect(q.items.map((i) => [i.status, i.reason])).toEqual([['failed', 'model_unavailable']]);
+    expect(transcribed).toBe(1);
+
+    embedFails = false;
+    expect(q.retry()).toBe(1);
+    await q.whenIdle();
+    expect(q.items.map((i) => i.status)).toEqual(['done']);
+    expect(transcribed).toBe(1);
+    const call = await getCall(browser.ctx, q.items[0]!.callId!);
+    expect(call.transcript.text).toContain('Mock segment');
+    expect(call.meta.segmentsFormat).toBe(`transcriber:${transcriber!.id}`);
   });
 
   it('links an agent: fingerprints match, the agent unlocks from its keychain and signs calls', async () => {

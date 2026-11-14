@@ -65,6 +65,8 @@ export class ModelFiles {
   #pruned = false;
   /** Set once any file failed its hash check (transformers.js swallows fetch errors). */
   verificationFailed = false;
+  /** Set once any file couldn't be fetched (network, CORS, missing on the model host). */
+  downloadFailed = false;
 
   /** `base`: the build's directory URL (assets.ts `modelDirectoryUrl`). */
   constructor(base: string, origin: string, onProgress: FileProgress) {
@@ -97,6 +99,7 @@ export class ModelFiles {
       }
     } catch (e) {
       if (e instanceof DomainError && e.code === 'invalid') this.verificationFailed = true;
+      else this.downloadFailed = true;
       throw e;
     }
     await cache?.put(key, new Response(bytes)).catch(() => {});

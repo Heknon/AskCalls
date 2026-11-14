@@ -61,4 +61,20 @@ describe('WorkerEmbedder', () => {
     await expect(ready).rejects.toMatchObject({ code: 'invalid' });
     expect(e.status).toEqual({ state: 'failed', reason: 'verification' });
   });
+
+  it('rejects an embed with why it failed, for the failure message', async () => {
+    vi.stubGlobal('location', { origin: 'https://app.example.com' });
+    const w = new FakeWorker();
+    const e = new WorkerEmbedder({ createWorker: () => w as unknown as Worker });
+    const download = e.embed(['a']);
+    const inference = e.embed(['b']);
+    const ids = w.sent.flatMap((m) => (m.type === 'embed' ? [m.id] : []));
+    w.emit({ type: 'failed', id: ids[0], cancelled: false, failure: 'download' });
+    w.emit({ type: 'failed', id: ids[1], cancelled: false, failure: 'inference' });
+    await expect(download).rejects.toMatchObject({
+      code: 'provider_error',
+      details: { embedder: 'download' },
+    });
+    await expect(inference).rejects.toMatchObject({ details: { embedder: 'inference' } });
+  });
 });

@@ -191,7 +191,7 @@ export class WorkerEmbedder implements Embedder {
           this.#settle(data.id)?.reject(
             data.cancelled
               ? new DOMException('aborted', 'AbortError')
-              : new DomainError('provider_error', 'embedding failed'),
+              : new DomainError('provider_error', 'embedding failed', { embedder: data.failure }),
           );
           break;
       }

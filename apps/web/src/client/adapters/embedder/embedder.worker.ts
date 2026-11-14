@@ -2,7 +2,7 @@
 import { env, type FeatureExtractionPipeline, pipeline } from '@huggingface/transformers';
 import { EMBEDDING_MODEL, ORT_BASE_PATH } from '../../assets';
 import { ModelFiles } from './model-files';
-import type { EmbedderDevice, EmbedderEvent, EmbedderRequest } from './protocol';
+import type { EmbedderDevice, EmbedderEvent, EmbedderRequest, EmbedFailure } from './protocol';
 
 /**
  * multilingual-e5-small in a dedicated worker (spec 3.3): mean pooling, L2-normalized, 384
@@ -75,6 +75,8 @@ function load(
   }
   extractor ??= (async () => {
     if (!files) throw new Error('model location not set');
+    files.verificationFailed = false;
+    files.downloadFailed = false;
     const started = performance.now();
     let device: EmbedderDevice = prefer === 'auto' ? 'webgpu' : prefer;
     if (device === 'webgpu' && !(await webGpuAvailable())) device = 'wasm';
@@ -96,10 +98,21 @@ function load(
   return extractor;
 }
 
+function loadFailure(): EmbedFailure {
+  if (files?.verificationFailed) return 'verification';
+  if (files?.downloadFailed) return 'download';
+  return 'load';
+}
+
 async function embed(id: number, texts: string[], batchSize: number) {
   const out = new Float32Array(texts.length * EMBEDDING_MODEL.dimensions);
+  let failure: EmbedFailure = 'load';
   try {
-    const p = await load('auto');
+    const p = await load('auto').catch((e: unknown) => {
+      failure = loadFailure();
+      throw e;
+    });
+    failure = 'inference';
     // Similar lengths in one batch waste less padding.
     const order = texts.map((t, i) => [t.length, i] as const).sort((a, b) => a[0] - b[0]);
     for (let b = 0; b < order.length; b += batchSize) {
@@ -120,7 +133,7 @@ async function embed(id: number, texts: string[], batchSize: number) {
     }
     post({ type: 'result', id, vectors: out, count: texts.length }, [out.buffer]);
   } catch {
-    post({ type: 'failed', id, cancelled: cancelled.has(id) });
+    post({ type: 'failed', id, cancelled: cancelled.has(id), failure });
   } finally {
     cancelled.delete(id);
   }

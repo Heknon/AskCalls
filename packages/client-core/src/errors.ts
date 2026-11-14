@@ -19,6 +19,9 @@ export type FailureReason =
   | 'unauthorized'
   | 'upload_failed'
   | 'indexing_failed'
+  | 'model_unavailable'
+  | 'model_unverified'
+  | 'model_unsupported'
   | 'unknown';
 
 /** A failure inside a known step. The reason is content-free. */
@@ -45,6 +48,12 @@ export function providerRefusal(e: unknown): FailureReason | null {
   return typeof reason === 'string' ? (REFUSALS[reason] ?? null) : null;
 }
 
+const EMBEDDER_FAILURES: Record<string, FailureReason> = {
+  download: 'model_unavailable',
+  verification: 'model_unverified',
+  load: 'model_unsupported',
+};
+
 export function failureReason(e: unknown): FailureReason {
   if (e instanceof IngestError) return e.reason;
   if (isCryptoError(e) && e.reason === 'locked') return 'locked';
@@ -54,7 +63,10 @@ export function failureReason(e: unknown): FailureReason {
     if (e.status === 401 || e.status === 403) return 'unauthorized';
     return 'upload_failed';
   }
-  if (isDomainError(e) && e.code === 'provider_error') return 'indexing_failed';
+  if (isDomainError(e) && e.code === 'provider_error') {
+    const embedder = e.details.embedder;
+    return (typeof embedder === 'string' && EMBEDDER_FAILURES[embedder]) || 'indexing_failed';
+  }
   return 'unknown';
 }
 
