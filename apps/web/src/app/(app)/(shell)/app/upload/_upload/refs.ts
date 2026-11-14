@@ -1,6 +1,8 @@
 import type { FileRef } from '@askcalls/client-core/bulk/pairing';
-import type { BulkState } from '@askcalls/client-core/bulk/queue';
-import { isTerminal } from '@askcalls/client-core/bulk/queue';
+import type { BulkItemState, BulkState } from '@askcalls/client-core/bulk/queue';
+
+/** Stored or skipped: the item no longer needs its files. */
+const settled = (s: BulkItemState['status']) => s === 'done' || s === 'duplicate';
 
 /**
  * Where a reference's content lives: one picked folder (`dir:<id>`), one page's files
@@ -19,7 +21,7 @@ export function pendingSources(state: BulkState): Map<string, FileRef> {
     if (f && !out.has(sourceOf(f.ref))) out.set(sourceOf(f.ref), f);
   };
   for (const item of state.items) {
-    if (isTerminal(item.status) && item.status !== 'failed') continue;
+    if (settled(item.status)) continue;
     add(item.audio);
     add(item.transcript);
   }
@@ -57,7 +59,7 @@ export function remapRefs(
   };
   const next = structuredClone(state);
   for (const item of next.items) {
-    if (isTerminal(item.status) && item.status !== 'failed') continue;
+    if (settled(item.status)) continue;
     item.audio = swap(item.audio);
     item.transcript = swap(item.transcript);
   }

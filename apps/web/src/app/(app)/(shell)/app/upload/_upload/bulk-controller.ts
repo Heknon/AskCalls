@@ -1,20 +1,12 @@
 import type { Manifest } from '@askcalls/client-core/bulk/manifest';
-import { type FileRef, type Pairing, pairFiles } from '@askcalls/client-core/bulk/pairing';
-import {
-  type BulkCounts,
-  type BulkItemState,
+import type { FileRef, Pairing } from '@askcalls/client-core/bulk/pairing';
+import type {
+  BulkCounts,
+  BulkItemState,
   BulkQueue,
-  type BulkState,
-  isTerminal,
-  planBatch,
+  BulkState,
 } from '@askcalls/client-core/bulk/queue';
-import {
-  createBulkRunner,
-  itemMeta,
-  loadManifest,
-  type PreflightSummary,
-  preflight,
-} from '@askcalls/client-core/bulk/runner';
+import type { PreflightSummary } from '@askcalls/client-core/bulk/runner';
 import type { ActiveStatus, IngestMeta, MetaEdits } from '@askcalls/client-core/ingest';
 import { isDomainError } from '@askcalls/domain';
 import type { BrowserClient } from '../../../../../../client/browser-client';
@@ -63,6 +55,13 @@ export type BulkSnapshot =
 
 const utcOffsetMinutes = () => -new Date().getTimezoneOffset();
 
+/**
+ * The queue and the ingest runner: loaded once there are files, not with the upload screen. They
+ * come with the review table's chunk, so every page's loader knows one chunk fewer.
+ */
+const loadBulkCode = () => import('./review-table');
+type BulkCode = Awaited<ReturnType<typeof loadBulkCode>>;
+
 /** WAV durations from the header; other formats fall back to the size estimate. */
 async function wavSeconds(client: BrowserClient, file: FileRef): Promise<number | null> {
   if (!file.name.toLowerCase().endsWith('.wav')) return null;
@@ -104,6 +103,7 @@ export class BulkController {
   #unsubscribe: (() => void) | null = null;
   #disposed = false;
   #planRun = 0;
+  #code: BulkCode | null = null;
   #metaOptions: { manifest: Manifest | null; region: string; utcOffsetMinutes: number } | null =
     null;
 
@@ -112,6 +112,11 @@ export class BulkController {
     private readonly onProgress: () => void,
   ) {
     void this.#init();
+  }
+
+  async #load(): Promise<BulkCode> {
+    this.#code ??= await loadBulkCode();
+    return this.#code;
   }
 
   subscribe = (listener: () => void) => {
@@ -172,6 +177,7 @@ export class BulkController {
     try {
       const state = await this.client.bulkState.load();
       if (!state || state.items.length === 0) return this.#set({ phase: 'empty', error: null });
+      const { isTerminal } = await this.#load();
       this.#restored = state.items.some((i) => !isTerminal(i.status));
       this.#missing = this.#restored ? await this.#checkSources(state) : null;
       await this.#open(state);
@@ -196,6 +202,8 @@ export class BulkController {
 
   async #open(state: BulkState, opts: { create?: boolean } = {}) {
     const { ctx } = this.client;
+    const { BulkQueue, concurrencyFor, createBulkRunner, isTerminal, itemMeta, loadManifest } =
+      await this.#load();
     const settings = await ctx.userData.get('settings');
     const reader = this.client.bulkFiles;
     this.#manifest =
@@ -209,7 +217,12 @@ export class BulkController {
       region: settings.phoneRegion,
       utcOffsetMinutes: utcOffsetMinutes(),
     });
-    const options = { store: this.client.bulkState, run };
+    const device = navigator as Navigator & { deviceMemory?: number };
+    const options = {
+      store: this.client.bulkState,
+      run,
+      concurrency: concurrencyFor(device.deviceMemory, device.hardwareConcurrency),
+    };
     const queue = opts.create
       ? await BulkQueue.create(state, options)
       : await BulkQueue.restore(options);
@@ -284,6 +297,8 @@ export class BulkController {
 
   async #plan(error: BulkError | null) {
     const run = ++this.#planRun;
+    const { itemMeta, loadManifest, pairFiles, preflight } = await this.#load();
+    if (run !== this.#planRun) return;
     const pairing = pairFiles(this.#refs);
     if (this.#manifestRef) pairing.manifest = this.#manifestRef;
     if (pairing.items.length === 0) {
@@ -345,7 +360,8 @@ export class BulkController {
   editMeta(keys: readonly string[], patch: MetaEdits) {
     const s = this.#snapshot;
     const options = this.#metaOptions;
-    if (s.phase !== 'preflight' || !options || Object.keys(patch).length === 0) return;
+    const code = this.#code;
+    if (s.phase !== 'preflight' || !options || !code || Object.keys(patch).length === 0) return;
     const byKey = new Map(s.plan.pairing.items.map((i) => [i.key, i]));
     const edits = new Map(s.plan.edits);
     const meta = new Map(s.plan.meta);
@@ -354,7 +370,7 @@ export class BulkController {
       if (!item) continue;
       const next = { ...edits.get(k), ...patch };
       edits.set(k, next);
-      meta.set(k, itemMeta({ ...item, edits: next }, options));
+      meta.set(k, code.itemMeta({ ...item, edits: next }, options));
     }
     this.#set({ ...s, plan: { ...s.plan, meta, edits } });
   }
@@ -363,14 +379,15 @@ export class BulkController {
   revertMeta(keys: readonly string[]) {
     const s = this.#snapshot;
     const options = this.#metaOptions;
-    if (s.phase !== 'preflight' || !options) return;
+    const code = this.#code;
+    if (s.phase !== 'preflight' || !options || !code) return;
     const byKey = new Map(s.plan.pairing.items.map((i) => [i.key, i]));
     const edits = new Map(s.plan.edits);
     const meta = new Map(s.plan.meta);
     for (const k of keys) {
       const item = byKey.get(k);
       if (!item || !edits.delete(k)) continue;
-      meta.set(k, itemMeta(item, options));
+      meta.set(k, code.itemMeta(item, options));
     }
     this.#set({ ...s, plan: { ...s.plan, meta, edits } });
   }
@@ -382,6 +399,7 @@ export class BulkController {
     if (s.phase !== 'preflight') return;
     const items = s.plan.pairing.items.filter((i) => !s.excluded.has(i.key));
     if (items.length === 0) return;
+    const { planBatch } = await this.#load();
     const state = planBatch(
       { ...s.plan.pairing, items },
       { backupRecordings, edits: s.plan.edits },
