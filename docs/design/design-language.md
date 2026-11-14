@@ -411,7 +411,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### CallRow
 - **Purpose:** one call in any list.
 - **Use:** calls list, search results, contact detail's call list, "duplicate of" links in the upload queue. **Don't use:** in the call view header (use `CallHeader`).
-- **Props:** `context="list" | "search"` (search shows the snippet), `density="comfortable" | "compact"` (compact for the contact detail list), `selected` (keyboard cursor), `call` (decrypted meta or `locked`).
+- **Props:** `context="list" | "search"` (search shows the snippet), `density="comfortable" | "compact"` (compact for the contact detail list), `selected` (keyboard cursor), `call` (decrypted meta or `locked`), `section` (a heading above the row that starts a group: "Related by meaning" after the calls that contain the searched words).
 - **Composes:** `StarToggle`, `ContactLabel`, `CallDirection`, `CallMeta`, `TagChip`, `SearchSnippet`, `DropdownMenu` / `ContextMenu` (row actions).
 - **Screens:** C1, C2, K1.
 - **States:** locked (all text replaced by `DecryptingPlaceholder`), default, hover, selected (start-edge accent bar + accent background), focus ring, starred.

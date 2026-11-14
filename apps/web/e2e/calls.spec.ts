@@ -141,12 +141,31 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   await settled(page);
   await expect(rows(page)).toHaveCount(3);
 
-  // Meaning, the default: the semantic search ranks by the query embedding.
+  // Meaning, the default: the call that says the words comes first, then the calls the query
+  // embedding ranks, with the phrase closest to the query marked on the device.
   await search(page).fill('oak finish quote');
   await expect(page).not.toHaveURL(/match=/);
   await expect(rows(page).first()).toContainText('Yossi Mizrahi', { timeout: 60_000 });
-  // The phrase closest to the query is marked, found on the device.
-  await expect(rows(page).first().locator('mark', { hasText: 'oak finish' })).toBeVisible();
+  await expect(rows(page).first().locator('mark', { hasText: 'oak' }).first()).toBeVisible();
+  const byMeaning = rows(page).filter({ hasText: 'Related by meaning' });
+  await expect(byMeaning).toHaveCount(1, { timeout: 60_000 });
+  await expect(rows(page).nth(1)).toContainText('Related by meaning');
+  await expect(byMeaning.locator('mark', { hasText: /\w+ \w+ \w+/ })).toBeVisible();
+  await clearSearch(page);
+
+  // In meaning mode the calls that contain the word come first, translations included, and
+  // the ones found by meaning follow under their own heading.
+  await search(page).fill('price');
+  await expect(rows(page).first().locator('mark').first()).toHaveText(/price/i, {
+    timeout: 60_000,
+  });
+  await settled(page);
+  const texts = await rows(page).allTextContents();
+  const exact = texts.filter((x) => x.includes('Daniel Brooks') || x.includes('דנה לוי'));
+  expect(exact).toHaveLength(2);
+  expect(texts.slice(0, 2)).toEqual(exact);
+  const heading = texts.findIndex((x) => x.includes('Related by meaning'));
+  expect(heading === -1 || heading >= 2).toBe(true);
   await clearSearch(page);
 
   // Keyboard: j / k move the cursor, s stars, Enter opens.
