@@ -61,12 +61,14 @@ describe('per-call DEK', () => {
     const keys = await UnlockedKeys.fromRootKey(generateRootKey());
     const other = await UnlockedKeys.fromRootKey(generateRootKey());
     const { wrappedDek } = await createDek(keys.kek, ctx);
+    // Each attempt starts when it is awaited: a rejection started earlier would go unhandled
+    // while the one before it is awaited.
     for (const attempt of [
-      unwrapDek(keys.kek, { ...ctx, callId: 'call-2' }, wrappedDek),
-      unwrapDek(keys.kek, { ...ctx, userId: 'u2' }, wrappedDek),
-      unwrapDek(other.kek, ctx, wrappedDek),
+      () => unwrapDek(keys.kek, { ...ctx, callId: 'call-2' }, wrappedDek),
+      () => unwrapDek(keys.kek, { ...ctx, userId: 'u2' }, wrappedDek),
+      () => unwrapDek(other.kek, ctx, wrappedDek),
     ]) {
-      await expect(attempt).rejects.toSatisfy((e) => isCryptoError(e, 'decrypt_failed'));
+      await expect(attempt()).rejects.toSatisfy((e) => isCryptoError(e, 'decrypt_failed'));
     }
   });
 });
