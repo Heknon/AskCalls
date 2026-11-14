@@ -89,6 +89,17 @@ test('security: second passkey, new recovery code, passphrase', async ({ page, c
   await unlockWithPasskey(page);
   await expect(page.getByRole('heading', { name: 'Security', level: 1 })).toBeVisible();
 
+  // Lock on reload: a reload shows the gate until the switch is off again.
+  const autoLock = section(page, 'Auto-lock');
+  await autoLock.getByRole('switch', { name: 'Lock on reload' }).click();
+  await expect(autoLock.getByRole('switch', { name: 'Lock on reload' })).toBeChecked();
+  await page.reload();
+  await unlockWithPasskey(page);
+  await autoLock.getByRole('switch', { name: 'Lock on reload' }).click();
+  await expect(autoLock.getByRole('switch', { name: 'Lock on reload' })).not.toBeChecked();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Security', level: 1 })).toBeVisible();
+
   // Regenerate the recovery code: unlock with the current one, save, confirm.
   await page.getByRole('button', { name: 'Regenerate Recovery code' }).click();
   const dialog = page.getByRole('dialog');
@@ -395,9 +406,10 @@ test('own keys go straight from the browser to the provider', async ({ page, con
   const tx = page.locator('[data-component="ProviderCard"][data-capability="transcription"]');
   await tx.getByRole('radio', { name: 'Your own key' }).click();
   await tx.getByLabel('API key').fill('xi-e2e-key-0001');
+  // The new provider origin reaches the CSP with the next page load, which stays unlocked.
+  let reloaded = page.waitForEvent('load');
   await tx.getByRole('button', { name: 'Save' }).click();
-  // The new provider origin reaches the CSP with the next page load.
-  await unlockWithPasskey(page);
+  await reloaded;
   await expect(tx.locator('[data-component="MaskedSecret"]')).toBeVisible();
   await expect(tx.getByText('Billed by ElevenLabs')).toBeVisible();
   await tx.getByRole('button', { name: 'Test connection' }).click();
@@ -409,8 +421,9 @@ test('own keys go straight from the browser to the provider', async ({ page, con
   await page.getByRole('option', { name: 'OpenAI-compatible' }).click();
   await ask.getByLabel('Model').fill('llama3');
   await ask.getByLabel('Base URL').fill('https://llm.e2e.test/v1');
+  reloaded = page.waitForEvent('load');
   await ask.getByRole('button', { name: 'Save' }).click();
-  await unlockWithPasskey(page);
+  await reloaded;
   await ask.getByRole('button', { name: 'Test connection' }).click();
   await expect(ask.getByText(/Connected\. llama3 answered in/)).toBeVisible();
 

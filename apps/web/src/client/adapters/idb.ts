@@ -1,16 +1,17 @@
 /**
  * A small promise wrapper over one IndexedDB database. Stores hold wrapped key material,
- * non-extractable CryptoKeys, encrypted bulk-queue state and file handles: never plaintext
- * call content (spec 2.5).
+ * non-extractable CryptoKeys, encrypted bulk-queue state, file handles and reload resume keys:
+ * never plaintext call content (spec 2.5).
  */
 export const DEVICE_DB_NAME = 'askcalls-device';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const STORES = {
   secrets: 'secrets',
   deviceKey: 'device-key',
   bulk: 'bulk',
   handles: 'handles',
+  resume: 'resume',
 } as const;
 export type StoreName = (typeof STORES)[keyof typeof STORES];
 

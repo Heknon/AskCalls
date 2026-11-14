@@ -13,10 +13,14 @@ import {
 } from '@askcalls/ui/primitives/select';
 import { Lock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useId, useState } from 'react';
+import { lazy, Suspense, useId, useState } from 'react';
 import { useNotify } from '../../../../../../../client/notices/notices';
 import { useAppSession, useUnlocked } from '../../../../../../../client/session/session';
 import { useAsync } from '../../../../_shell/states';
+
+const LockOnReload = lazy(() =>
+  import('./lock-on-reload').then((m) => ({ default: m.LockOnReload })),
+);
 
 /** Spec 6.8 / S1: minutes of idle before locking; 0 never locks while the tab is open. */
 export const AUTO_LOCK_OPTIONS = [5, 15, 30, 60, 240, 480, 1440, 0] as const;
@@ -75,6 +79,9 @@ export function AutoLockSection() {
           </SelectContent>
         </Select>
       </div>
+      <Suspense fallback={null}>
+        <LockOnReload onFailed={setFailed} />
+      </Suspense>
       {failed ? (
         <div className="pb-3">
           <ErrorState scope="inline" title={ts('saveFailed')} />

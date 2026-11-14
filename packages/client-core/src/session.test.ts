@@ -102,4 +102,19 @@ describe('KeySession', () => {
     expect(first.locked).toBe(true);
     expect(s.userId).toBe('u2');
   });
+
+  it('tells a listener added while unlocked that it is unlocked', async () => {
+    const s = new KeySession({ idleTimeoutMs: 0 });
+    const before: SessionEvent[] = [];
+    s.subscribe((e) => before.push(e));
+    await s.unlock({ userId: 'u', rootKey: generateRootKey() });
+    const after: SessionEvent[] = [];
+    s.subscribe((e) => after.push(e));
+    expect(before).toEqual([{ type: 'unlocked', userId: 'u' }]);
+    expect(after).toEqual([{ type: 'unlocked', userId: 'u' }]);
+    s.lock();
+    const locked: SessionEvent[] = [];
+    s.subscribe((e) => locked.push(e));
+    expect(locked).toEqual([]);
+  });
 });

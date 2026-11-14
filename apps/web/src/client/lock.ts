@@ -9,7 +9,8 @@ import type { KeySession } from '@askcalls/client-core/session';
  *   not lock while the user works in another;
  * - background tabs get throttled or frozen timers, so on return the idle time is checked
  *   against the clock and an overdue session locks at once;
- * - closing the tab (`pagehide`, which also covers back/forward-cache entry) locks;
+ * - closing the tab (`pagehide`, which also covers back/forward-cache entry) locks; a reload
+ *   unlocks again through `ReloadResume`, which saves the key on this `closed` lock;
  * - a manual lock in one tab locks every tab of this origin (BroadcastChannel).
  */
 export const LOCK_CHANNEL = 'askcalls-lock';

@@ -82,9 +82,8 @@ test('fresh instance: wizard with the setup token, admin, env locks, mock LLM, o
   await page.goto('/setup');
   await expect(page).toHaveURL(/\/login|\/app/);
 
-  // A page load locks; the deep link opens after unlock.
+  // A page load right after keeps the session unlocked.
   await page.goto('/admin/instance');
-  await page.getByRole('button', { name: 'Unlock with passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Instance', level: 1 })).toBeVisible();
   expect(await page.content()).not.toContain(LLM_KEY);
 
