@@ -97,7 +97,7 @@ The remote MCP endpoint (`/api/mcp`) holds no keys: it offers inbox upload and c
 
 - **Marketing pages** (`/`, `/pricing`, `/security`, …) are public, with a per-request nonce CSP; Google One Tap may load only on `/` and `/login`.
 - **The app** (`/app/**`, `/admin/**`) requires a session. `apps/web/src/middleware.ts` sets a strict per-request nonce CSP (scripts from this origin and the nonce only; `connect-src` limited to this origin, the blob storage, the model host and the user's signed own-key origins). Pages render a client session provider that lazily loads the browser client (keys, adapters, the embedding worker), and an unlock gate in front of every page.
-- **Locking** wipes keys and decrypted state from memory; the service worker caches the static shell only.
+- **Locking** wipes keys and decrypted state from memory; the service worker caches the static shell only. A reload of the same tab within 30 seconds unlocks again from the root key encrypted under a non-extractable key (`apps/web/src/client/resume.ts`, [threat model](threat-model.md#unlocking)).
 - **i18n**: next-intl without locale routing, English and Hebrew, right-to-left by locale, `dir="auto"` on transcript text.
 
 ## Storage

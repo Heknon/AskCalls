@@ -115,8 +115,8 @@ export function AppSessionProvider({
     let cancelled = false;
     let created: BrowserClient | null = null;
     setError(null);
-    api
-      .request(getMe, {})
+    const loadMe = api.request(getMe, {});
+    loadMe
       .then((m) => !cancelled && setMe(m))
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -133,7 +133,9 @@ export function AppSessionProvider({
         // The new own-key origins reach the CSP on the next page load.
         onDirectAccessChange: () => window.location.reload(),
       });
-      setClient(created);
+      // A reload unlocks again before the client is shown, so the gate doesn't flash.
+      await created.resume.resume(loadMe.then((m) => m.user.id));
+      if (!cancelled) setClient(created);
     })().catch(() => !cancelled && setError('offline'));
     return () => {
       cancelled = true;

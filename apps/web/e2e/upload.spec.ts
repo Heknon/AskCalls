@@ -279,7 +279,7 @@ test('two calls dropped on the single tab are reviewed as a group and become con
   await expect(page.locator('[data-component="CallRow"]')).toHaveCount(2, { timeout: 30_000 });
 });
 
-test('pause, reload, unlock, pick the files again and resume', async ({ page, context }) => {
+test('pause, reload, pick the files again and resume', async ({ page, context }) => {
   await onboard(page, context, 'resume');
   await go(page, 'Upload');
   await page.getByRole('tab', { name: 'Bulk' }).click();
@@ -321,7 +321,6 @@ test('pause, reload, unlock, pick the files again and resume', async ({ page, co
 
   // Files from a file picker don't survive a reload: the queue asks for them again.
   await page.reload();
-  await page.getByRole('button', { name: 'Unlock with passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Upload', level: 1 })).toBeVisible();
   const banner = page.locator('[data-component="StatusBanner"]', { hasText: 'Import paused' });
   await expect(banner).toContainText(
