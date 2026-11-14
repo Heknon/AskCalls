@@ -1,3 +1,4 @@
+import { isNumberName, normalizeName } from '@askcalls/client-core/contact-names';
 import type { Contact } from '@askcalls/client-core/userdata';
 import { type CountryCode, parsePhone } from '@askcalls/indexing';
 
@@ -71,7 +72,9 @@ export function parseVcf(text: string): VCard[] {
 
 /**
  * Adds imported cards to the contact list: numbers become E.164, cards without a usable number
- * are skipped, and a card sharing a number with a saved contact counts as already there.
+ * are skipped, and a card sharing a number with a saved contact counts as already there. A
+ * contact made from calls takes the card's numbers when it has only the card's name, and the
+ * card's name when it has only a number for a name.
  */
 export function mergeVcards(
   existing: readonly Contact[],
@@ -79,22 +82,33 @@ export function mergeVcards(
   region: CountryCode,
   newId: () => string,
 ): { contacts: Contact[]; imported: number; existed: number } {
-  const known = new Set(existing.flatMap((c) => c.phones.map((p) => parsePhone(p, region) ?? p)));
-  const added: Contact[] = [];
+  const contacts = [...existing];
+  const known = new Set(contacts.flatMap((c) => c.phones.map((p) => parsePhone(p, region) ?? p)));
+  let imported = 0;
   let existed = 0;
   for (const card of cards) {
     const phones = [
       ...new Set(card.phones.map((p) => parsePhone(p, region)).filter((p): p is string => !!p)),
     ];
     if (phones.length === 0) continue;
+    const name = card.name.slice(0, 200);
     if (phones.some((p) => known.has(p))) {
+      const i = contacts.findIndex(
+        (c) => isNumberName(c.name) && c.phones.some((p) => phones.includes(p)),
+      );
+      if (i >= 0 && name.trim()) contacts[i] = { ...contacts[i]!, name };
       existed++;
       continue;
     }
     for (const p of phones) known.add(p);
-    added.push({ id: newId(), name: card.name.slice(0, 200), phones: phones.slice(0, 20) });
+    const i = contacts.findIndex(
+      (c) => c.phones.length === 0 && normalizeName(c.name) === normalizeName(name),
+    );
+    if (i >= 0) contacts[i] = { ...contacts[i]!, phones: phones.slice(0, 20) };
+    else contacts.push({ id: newId(), name, phones: phones.slice(0, 20), aliases: [] });
+    imported++;
   }
-  return { contacts: [...existing, ...added], imported: added.length, existed };
+  return { contacts, imported, existed };
 }
 
 /** Name or digits, as typed in the filter. */

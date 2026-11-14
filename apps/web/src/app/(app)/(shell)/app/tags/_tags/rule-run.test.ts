@@ -98,10 +98,11 @@ describe('applying a rule to existing calls on the device', () => {
       [],
     );
     const cache = new FactsCache();
+    await device.ctx.userData.update('contacts', (d) => ({ ...d, contacts: [] }));
     expect(await countMatches(device.ctx, rule, { cache })).toBe(0);
     await device.ctx.userData.update('contacts', (d) => ({
       ...d,
-      contacts: [{ id: 'c1', name: 'Dana', phones: ['+972525550134'] }],
+      contacts: [{ id: 'c1', name: 'Dana', phones: ['+972525550134'], aliases: [] }],
     }));
     expect(await countMatches(device.ctx, rule, { cache })).toBe(2);
 

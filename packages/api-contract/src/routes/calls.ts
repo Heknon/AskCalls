@@ -131,13 +131,11 @@ export const updateCall = defineRoute({
     .object({
       metaCt: BytesMax(64 * 1024).optional(),
       tagToks: z.array(TokCodec).max(256).optional(),
+      contactTok: TokCodec.nullable().optional(),
       /** Confirms an upload (`recording-upload`), points at an own bucket, or removes (null). */
       recording: RecordingRefSchema.nullable().optional(),
     })
-    .refine(
-      (b) => b.metaCt !== undefined || b.tagToks !== undefined || b.recording !== undefined,
-      'nothing to update',
-    ),
+    .refine((b) => Object.values(b).some((v) => v !== undefined), 'nothing to update'),
   response: CallFull,
 });
 

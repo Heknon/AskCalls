@@ -94,12 +94,16 @@ export function describeCallRepositoryContract(name: string, harness: Harness<Ca
       const c = makeCall(s.userA);
       await s.calls.create(c);
       const tag = randomTok();
+      const contact = randomTok();
       const updated = await s.calls.update(s.userA, c.id, {
         metaCt: rand(10),
         tagToks: [tag],
+        contactTok: contact,
         recording: { bucketRef: null, objectKey: 'obj', bytes: 1234 },
       });
       expect(updated.tagToks).toEqual([tag]);
+      expect(updated.contactTok).toBe(contact);
+      expect((await s.calls.update(s.userA, c.id, { contactTok: null })).contactTok).toBeNull();
       expect(updated.recording).toEqual({ bucketRef: null, objectKey: 'obj', bytes: 1234 });
       expect(await s.calls.totalRecordingBytes(s.userA)).toBe(1234);
       const list = await s.calls.list(s.userA, {}, { limit: 10 });

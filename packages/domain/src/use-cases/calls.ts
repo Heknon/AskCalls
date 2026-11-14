@@ -316,6 +316,7 @@ export interface RecordingInput {
 export interface UpdateCallInput {
   metaCt?: Bytes;
   tagToks?: Token[];
+  contactTok?: Token | null;
   recording?: RecordingInput | null;
 }
 
@@ -402,6 +403,7 @@ export async function updateCall(
   const updated = await ports.calls.update(userId, id, {
     ...(input.metaCt && { metaCt: input.metaCt }),
     ...(input.tagToks && { tagToks: [...new Set(input.tagToks)] }),
+    ...(input.contactTok !== undefined && { contactTok: input.contactTok }),
     ...(recording !== undefined && { recording }),
   });
   const old = current.recording;
@@ -415,6 +417,7 @@ export async function updateCall(
   await audit(ports, actor, userId, 'call.update', id, {
     meta: input.metaCt !== undefined,
     tags: input.tagToks !== undefined,
+    contact: input.contactTok !== undefined,
     recording: recording === undefined ? 'unchanged' : recording ? 'set' : 'removed',
   });
   return updated;

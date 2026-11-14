@@ -1,4 +1,5 @@
 import { ApiError } from '@askcalls/api-contract';
+import { updateCall as updateCallRoute } from '@askcalls/api-contract/routes/calls';
 import { uploadInbox } from '@askcalls/api-contract/routes/inbox';
 import { listKeyring } from '@askcalls/api-contract/routes/keyring';
 import {
@@ -34,6 +35,7 @@ import {
   updateCallMeta,
   updateCallTags,
 } from '@askcalls/client-core';
+import { backfillCallContacts } from '@askcalls/client-core/contact-backfill';
 import { intentTagId } from '@askcalls/client-core/tags';
 import {
   FakeEmbedder,
@@ -165,6 +167,62 @@ describe('client-core end to end against the route handlers', () => {
     expect(
       sortedIds(await searchCalls(ctx, { dateFrom: new Date('2026-06-11T00:00:00Z') })),
     ).toEqual([ids.he]);
+  });
+
+  it('adds each other party to the contact list and finds its calls by contact', async () => {
+    const ctx = browser.ctx;
+    const { contacts } = await ctx.userData.get('contacts');
+    const en = contacts.find((c) => c.phones.includes(ENGLISH_CALL.e164))!;
+    expect(en.name).toBe(ENGLISH_CALL.contactName);
+    const he = contacts.find((c) => c.phones.includes('+97235551290'))!;
+    expect(he.name).toBe('+97235551290');
+    expect(sortedIds(await searchCalls(ctx, { contacts: [en.id] }))).toEqual([ids.en]);
+
+    const named = await ingestCall(ctx, {
+      source: 'app',
+      transcript: 'Speaker 1: the greenhouse heaters arrive on Thursday morning.',
+      meta: { contactName: '  Mirabel Thornquist ' },
+    });
+    expect(named.status).toBe('done');
+    const id = (named as { callId: string }).callId;
+    const doc = await ctx.userData.get('contacts');
+    const mirabel = doc.contacts.find((c) => c.name === 'Mirabel Thornquist')!;
+    expect(mirabel.phones).toEqual([]);
+    expect(sortedIds(await searchCalls(ctx, { contacts: [mirabel.id] }))).toEqual([id]);
+
+    await ctx.userData.update('contacts', (d) => ({
+      ...d,
+      contacts: d.contacts.map((c) =>
+        c.id === mirabel.id ? { ...c, name: 'Mira T', aliases: ['Mirabel Thornquist'] } : c,
+      ),
+    }));
+    expect(sortedIds(await searchCalls(ctx, { contacts: [mirabel.id] }))).toEqual([id]);
+    await deleteCall(ctx, id, await getCall(ctx, id));
+  });
+
+  it('backfills contacts for calls stored before import made them', async () => {
+    const ctx = browser.ctx;
+    const named = await ingestCall(ctx, {
+      source: 'app',
+      transcript: 'Speaker 1: the orchard ladder needs a new rung before the harvest.',
+      meta: { contactName: 'Ottoline Brackenridge' },
+    });
+    const id = (named as { callId: string }).callId;
+    await ctx.api.request(updateCallRoute, { params: { id }, body: { contactTok: null } });
+    await ctx.userData.update('contacts', (d) => ({
+      ...d,
+      contacts: d.contacts.filter((c) => c.name !== 'Ottoline Brackenridge'),
+    }));
+
+    const result = await backfillCallContacts(ctx);
+    expect(result).toMatchObject({ contacts: 1, failed: 0 });
+    expect(result.linked).toBeGreaterThanOrEqual(1);
+    const contact = (await ctx.userData.get('contacts')).contacts.find(
+      (c) => c.name === 'Ottoline Brackenridge',
+    )!;
+    expect(sortedIds(await searchCalls(ctx, { contacts: [contact.id] }))).toEqual([id]);
+    expect((await ctx.userData.get('settings')).contactsFromCalls).toBe(true);
+    await deleteCall(ctx, id, await getCall(ctx, id));
   });
 
   it('ranks by meaning with decrypted, highlighted snippets', async () => {

@@ -40,19 +40,32 @@ describe('parseVcf', () => {
 describe('mergeVcards', () => {
   it('adds new contacts with E.164 numbers and counts ones already saved', () => {
     let n = 0;
-    const existing = [{ id: 'x', name: 'Dana', phones: ['+972525550134'] }];
+    const existing = [{ id: 'x', name: 'Dana', phones: ['+972525550134'], aliases: [] }];
     const result = mergeVcards(existing, parseVcf(VCF), 'IL', () => `id${++n}`);
     expect(result.imported).toBe(2);
     expect(result.existed).toBe(1);
     expect(result.contacts.slice(1)).toEqual([
-      { id: 'id1', name: 'Yossi Mizrahi', phones: ['+972545550000'] },
-      { id: 'id2', name: 'דנה', phones: ['+972501234567'] },
+      { id: 'id1', name: 'Yossi Mizrahi', phones: ['+972545550000'], aliases: [] },
+      { id: 'id2', name: 'דנה', phones: ['+972501234567'], aliases: [] },
     ]);
+  });
+
+  it('fills in contacts made from calls: numbers for a name, a name for a number', () => {
+    const existing = [
+      { id: 'a', name: 'yossi  mizrahi', phones: [], aliases: [] },
+      { id: 'b', name: '+972525550134', phones: ['+972525550134'], aliases: [] },
+    ];
+    const result = mergeVcards(existing, parseVcf(VCF), 'IL', () => 'new');
+    expect(result.contacts.slice(0, 2)).toEqual([
+      { id: 'a', name: 'yossi  mizrahi', phones: ['+972545550000'], aliases: [] },
+      { id: 'b', name: 'Dana Levi', phones: ['+972525550134'], aliases: [] },
+    ]);
+    expect(result.contacts).toHaveLength(3);
   });
 });
 
 describe('matchesFilter', () => {
-  const c = { id: 'x', name: 'Dana Levi', phones: ['+972525550134'] };
+  const c = { id: 'x', name: 'Dana Levi', phones: ['+972525550134'], aliases: [] };
   it('matches names and digits in any format', () => {
     expect(matchesFilter(c, 'lev')).toBe(true);
     expect(matchesFilter(c, '052-555')).toBe(true);

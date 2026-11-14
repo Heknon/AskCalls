@@ -123,7 +123,9 @@ beforeAll(async () => {
   await onboard(browser);
   await browser.ctx.userData.update('contacts', (d) => ({
     ...d,
-    contacts: [{ id: randomId(), name: HEBREW_CALL.contactName, phones: [HEBREW_CALL.phone] }],
+    contacts: [
+      { id: randomId(), name: HEBREW_CALL.contactName, phones: [HEBREW_CALL.phone], aliases: [] },
+    ],
   }));
   dir = await mkdtemp(join(tmpdir(), 'askcalls-agent-'));
   deps = {
@@ -359,6 +361,7 @@ describe('askcalls agent against the route handlers', () => {
     expect(tags.intents).toContain('intent:complaint');
     expect((await call('list_contacts')).json.contacts).toEqual([
       { name: HEBREW_CALL.contactName, phones: [HEBREW_CALL.phone] },
+      { name: ENGLISH_CALL.e164, phones: [ENGLISH_CALL.e164] },
     ]);
 
     const recent = (await call('list_recent_calls', { days: 3650 })).json.calls;

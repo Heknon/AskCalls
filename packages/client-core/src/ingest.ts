@@ -29,6 +29,7 @@ import {
   DEFAULT_PHONE_REGION,
   indexCall,
   isPhoneRegion,
+  parsePhone,
   parseRules,
 } from '@askcalls/indexing';
 import { buildTranscript, parseTranscript } from '@askcalls/transcript-formats';
@@ -312,13 +313,20 @@ async function runIngest(
   const translatedTo = Object.keys(full.translations ?? {}).sort();
 
   return gates.indexing(async () => {
-    // 4. Index (spec 7).
+    // 4. Index (spec 7), with the other party in the contact list first: its name wins over a
+    // contact named only by its number, and search by contact finds the call.
+    const meta = input.meta ?? {};
+    const { callContact, ensureCallContact } = await import('./contacts');
+    await ensureCallContact(
+      ctx.userData,
+      { phoneE164: parsePhone(meta.phone, region), name: meta.contactName ?? null },
+      region,
+    ).catch(() => {});
     const [contacts, synonyms, rules] = await Promise.all([
       ctx.userData.get('contacts'),
       ctx.userData.get('synonyms'),
       ctx.userData.get('rules'),
     ]);
-    const meta = input.meta ?? {};
     const intents = await ctx.intents.get(settings.customIntents);
     const decodedAudio = decoded;
     onStatus('indexing');
@@ -365,10 +373,11 @@ async function runIngest(
           ),
         }
       : null;
+    const contact = callContact(session, indexed.contactE164, indexed.contactName);
     const startedAt = isoOrNull(meta.startedAt);
     const callMeta: CallMeta = {
       phoneE164: indexed.contactE164,
-      contactName: indexed.contactName,
+      contactName: contact.name,
       direction: indexed.direction,
       startedAt,
       durationSec: indexed.durationSec,
@@ -394,7 +403,7 @@ async function runIngest(
       ),
       tokenSet(index, 'w', indexed.keywords),
       tokenSet(index, 't', tagIds),
-      indexed.contactE164 ? token(index, 'c', indexed.contactE164) : Promise.resolve(null),
+      contact.token,
     ]);
     plaintext.fill(0);
 

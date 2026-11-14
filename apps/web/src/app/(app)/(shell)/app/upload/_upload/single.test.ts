@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { defaultsFor, fromLocalInput, phoneValid, pickFiles, toLocalInput } from './single';
+import {
+  callCount,
+  defaultsFor,
+  fromLocalInput,
+  phoneValid,
+  pickFiles,
+  toLocalInput,
+} from './single';
 
 const file = (name: string, lastModified = Date.UTC(2026, 10, 1, 8, 0)) =>
   new File(['x'], name, { lastModified });
+
+describe('callCount', () => {
+  it('counts an audio file and its transcript as one call', () => {
+    expect(callCount([file('a.m4a'), file('a.srt'), file('notes.pdf')])).toBe(1);
+    expect(callCount([file('a.m4a'), file('b.m4a')])).toBe(2);
+    expect(callCount([])).toBe(0);
+  });
+});
 
 describe('pickFiles', () => {
   it('keeps one audio and one transcript, the newest of each, and flags other files', () => {
@@ -19,7 +34,7 @@ describe('pickFiles', () => {
 });
 
 describe('defaultsFor', () => {
-  const contacts = [{ id: 'c1', name: 'Dana Levi', phones: ['+972525550134'] }];
+  const contacts = [{ id: 'c1', name: 'Dana Levi', phones: ['+972525550134'], aliases: [] }];
 
   it('reads the number and time from a Samsung name, and the saved contact for it', () => {
     const f = defaultsFor(

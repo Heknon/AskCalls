@@ -1,5 +1,6 @@
 'use client';
 
+import { isNumberName, normalizeName } from '@askcalls/client-core/contact-names';
 import { type SearchResultItem, searchCalls } from '@askcalls/client-core/search';
 import type { Contact } from '@askcalls/client-core/userdata';
 import { dateFromDay } from '@askcalls/domain';
@@ -33,6 +34,21 @@ export interface ContactPanelProps {
   onDelete: (id: string) => Promise<void>;
 }
 
+/** The edited contact; a rename keeps the old name, so calls that carry only it still match. */
+export function renamed(contact: Contact, name: string, phones: string[]): Contact {
+  const old = contact.name.trim();
+  const aliases =
+    old && normalizeName(old) !== normalizeName(name) && !isNumberName(old)
+      ? [...new Set([old, ...contact.aliases])].slice(0, 20)
+      : contact.aliases;
+  return {
+    ...contact,
+    name,
+    phones,
+    aliases: aliases.filter((a) => normalizeName(a) !== normalizeName(name)),
+  };
+}
+
 /** K1 detail: the contact's name and numbers, and its calls (found by number on the server). */
 export function ContactPanel({
   contact,
@@ -60,20 +76,14 @@ export function ContactPanel({
   const parsed = phones.map((p) => (p.trim() ? parsePhone(p, region) : null));
   const bad = phones.map((p, i) => p.trim() !== '' && parsed[i] === null);
   const numbers = [...new Set(parsed.filter((p): p is string => p !== null))];
-  const problem = !name.trim()
-    ? 'needName'
-    : bad.some(Boolean)
-      ? null
-      : numbers.length === 0
-        ? 'needNumber'
-        : null;
+  const problem = name.trim() ? null : 'needName';
   const invalid = problem !== null || bad.some(Boolean);
 
   const save = async () => {
     setTouched(true);
     if (!contact || invalid) return;
     setSaving(true);
-    const ok = await onSave({ ...contact, name: name.trim(), phones: numbers });
+    const ok = await onSave(renamed(contact, name.trim(), numbers));
     setSaving(false);
     if (ok && isNew) onClose();
   };
@@ -184,7 +194,7 @@ function ContactCalls({ contact }: { contact: Contact }) {
   const { ctx } = useUnlocked();
   const locale = intlLocale(useLocale());
   const [calls, setCalls] = useState<SearchResultItem[] | null | 'error'>(null);
-  const key = contact.phones.join(',');
+  const key = [contact.name, ...contact.phones].join(',');
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refetch when the numbers change
   useEffect(() => {

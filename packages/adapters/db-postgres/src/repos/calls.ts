@@ -173,6 +173,7 @@ export function createCallRepository(d: Driver): CallRepository {
       const set: Partial<typeof calls.$inferInsert> = { updatedAt: new Date() };
       if (patch.metaCt !== undefined) set.metaCt = patch.metaCt;
       if (patch.tagToks !== undefined) set.tagToks = [...patch.tagToks];
+      if (patch.contactTok !== undefined) set.contactTok = patch.contactTok;
       if (patch.recording !== undefined) Object.assign(set, recordingColumns(patch.recording));
       const [r] = await d.asUser(userId, (tx) =>
         tx

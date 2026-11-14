@@ -144,7 +144,7 @@ test('leave out a contact and a single call before the import starts', async ({
   await expect(count(page, 'transcript only')).toHaveText('2');
   await expect(page.getByRole('button', { name: 'Import 2 calls' })).toBeVisible();
 
-  await dana.getByRole('button', { name: /^Dana Levi/ }).click();
+  await expect(dana).toHaveAttribute('data-state', 'open');
   await page.getByRole('checkbox', { name: 'Include dana-2.txt' }).click();
   await expect(dana).toContainText('1 of 2');
   await expect(dana.getByRole('checkbox', { name: 'Include Dana Levi' })).toHaveAttribute(
@@ -202,7 +202,8 @@ test('fix the contact of a group and a single call before the import starts', as
   await expect(groups).toHaveCount(2, { timeout: 30_000 });
   const alon = groups.filter({ hasText: 'אלון שני' });
   await expect(alon).toContainText('2 calls');
-  await expect(alon).not.toContainText('Call');
+  await expect(alon).toHaveAttribute('data-state', 'open');
+  await expect(alon.locator('tr').first()).not.toContainText('Call');
 
   const dialog = page.getByRole('dialog');
   await page.getByRole('button', { name: 'Edit אלון שני' }).click();
@@ -236,6 +237,46 @@ test('fix the contact of a group and a single call before the import starts', as
   await expect(
     page.locator('[data-component="CallRow"]').filter({ hasText: 'אלון שני' }),
   ).toHaveCount(2, { timeout: 30_000 });
+});
+
+test('two calls dropped on the single tab are reviewed as a group and become contacts', async ({
+  page,
+  context,
+}) => {
+  await onboard(page, context, 'handoff');
+  await go(page, 'Upload');
+  const txt = (name: string, text: string) => ({
+    name,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(text),
+  });
+  await page
+    .locator('[data-component="FileDropZone"] input[type="file"]')
+    .first()
+    .setInputFiles([
+      txt('Call Noa Peretz_240601_101500.txt', 'Noa: The boiler is fixed.'),
+      txt('Call Noa Peretz_240602_111500.txt', 'Noa: The invoice is attached.'),
+    ]);
+  await expect(page.getByRole('tab', { name: 'Bulk' })).toHaveAttribute('aria-selected', 'true');
+  const groups = page.locator('[data-component="ImportGroup"]');
+  await expect(groups).toHaveCount(1, { timeout: 30_000 });
+  await expect(groups.first()).toContainText('2 calls');
+
+  const dialog = page.getByRole('dialog');
+  await page.getByRole('button', { name: 'Edit Noa Peretz' }).click();
+  await dialog.getByLabel('Phone number').fill('052-555-0188');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Import 2 calls' }).click();
+  await expect(page.getByText('2 calls imported. 0 failed, 0 duplicates.')).toBeVisible({
+    timeout: 60_000,
+  });
+  await go(page, 'Contacts');
+  const row = page.locator('[data-component="ContactRow"]').filter({ hasText: 'Noa Peretz' });
+  await expect(row).toHaveCount(1, { timeout: 30_000 });
+  await row.getByRole('link').first().click();
+  await expect(page.locator('[data-component="CallRow"]')).toHaveCount(2, { timeout: 30_000 });
 });
 
 test('pause, reload, unlock, pick the files again and resume', async ({ page, context }) => {

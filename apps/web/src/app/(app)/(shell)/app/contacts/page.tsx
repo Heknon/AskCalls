@@ -57,6 +57,10 @@ export default function ContactsPage() {
   const t = useTranslations('contacts');
   const { ctx } = useUnlocked();
   const data = useAsync(async () => {
+    if (!(await ctx.userData.get('settings')).contactsFromCalls) {
+      const { backfillCallContacts } = await import('@askcalls/client-core/contact-backfill');
+      await backfillCallContacts(ctx).catch(() => null);
+    }
     const [contacts, settings] = await Promise.all([
       ctx.userData.get('contacts', { fresh: true }),
       ctx.userData.get('settings'),
@@ -121,7 +125,7 @@ function Contacts({
   }, []);
 
   const startNew = () =>
-    setOpen({ contact: { id: randomId(), name: '', phones: [] }, isNew: true });
+    setOpen({ contact: { id: randomId(), name: '', phones: [], aliases: [] }, isNew: true });
 
   const save = async (contact: Contact) => {
     try {
