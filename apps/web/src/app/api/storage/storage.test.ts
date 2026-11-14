@@ -11,6 +11,7 @@ const GOOGLE = { STORAGE_GOOGLE_ID: 'drive-client', STORAGE_GOOGLE_SECRET: 'driv
 const REFRESH = 'rt-0123456789-secret';
 const ACCESS = 'ya29.access-0123456789';
 const DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_READONLY = 'https://www.googleapis.com/auth/drive.readonly';
 
 let app: TestApp;
 afterEach(() => {
@@ -35,8 +36,9 @@ function fakeGoogle(answer: (s: Seen) => Response): Seen[] {
 
 const cookiePair = (setCookie: string | null) => setCookie?.split(';')[0] ?? '';
 
-async function connect(cookie: string, ticket = 't'.repeat(24)) {
-  const res = await app.req('GET', `/api/storage/connect/google?ticket=${ticket}`, {
+async function connect(cookie: string, ticket = 't'.repeat(24), purpose = '') {
+  const q = purpose ? `&purpose=${purpose}` : '';
+  const res = await app.req('GET', `/api/storage/connect/google?ticket=${ticket}${q}`, {
     as: { cookie },
   });
   const location = new URL(res.headers.get('location') ?? 'http://x');
@@ -169,10 +171,41 @@ describe('Google Drive OAuth', () => {
       state: 's',
       verifier: 'v',
       ticket: 't'.repeat(24),
+      purpose: 'backup',
       expiresAt: now + 1000,
     });
     expect(await verifyFlow(AUTH_SECRET, b.id, signed, now)).toBeNull();
     expect(await verifyFlow('another-secret', a.id, signed, now)).toBeNull();
+  });
+
+  it('grants an import read-only and online: an access token, never a refresh token', async () => {
+    app = startTestApp({ env: GOOGLE });
+    const u = await app.ports.users.create({ email: 'a@example.test' });
+    const cookie = await sessionCookie(u.id);
+    const { location, flow } = await connect(cookie, 'i'.repeat(24), 'import');
+    const q = location.searchParams;
+    expect(q.get('scope')).toBe(DRIVE_READONLY);
+    expect(q.get('access_type')).toBe('online');
+    expect(q.get('prompt')).toBe('select_account');
+    const state = q.get('state')!;
+    const callback = () =>
+      app.req('GET', `/api/storage/callback/google?code=c0de&state=${state}`, {
+        as: { cookie: `${cookie}; ${flow}` },
+      });
+
+    fakeGoogle(() => Response.json({ access_token: ACCESS, expires_in: 3599, scope: DRIVE_FILE }));
+    expect(await (await callback()).text()).toContain('"error":"scope"');
+
+    vi.restoreAllMocks();
+    fakeGoogle(() =>
+      Response.json({ access_token: ACCESS, expires_in: 3599, scope: DRIVE_READONLY }),
+    );
+    const html = await (await callback()).text();
+    expect(html).toContain('"purpose":"import"');
+    expect(html).toContain('"refreshToken":null');
+    expect(html).toContain(ACCESS);
+    expect(JSON.stringify(app.ports.db.audit)).not.toContain(ACCESS);
+    expect(app.ports.db.audit.some((e) => e.meta.purpose === 'import')).toBe(true);
   });
 
   it('tells the opener when the user declined', async () => {

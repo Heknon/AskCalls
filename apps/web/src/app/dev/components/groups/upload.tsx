@@ -2,6 +2,7 @@
 
 import { ContactLabel } from '@askcalls/ui/components/ContactLabel';
 import { DataFlowNote } from '@askcalls/ui/components/DataFlowNote';
+import { DrivePicker, type DrivePickerEntry } from '@askcalls/ui/components/DrivePicker';
 import { FileDropZone } from '@askcalls/ui/components/FileDropZone';
 import { ImportFormatGuide } from '@askcalls/ui/components/ImportFormatGuide';
 import { ImportGroup } from '@askcalls/ui/components/ImportGroup';
@@ -29,7 +30,23 @@ const copy = {
       title: 'Drop files, a folder or a ZIP',
       browse: 'Choose files',
       folder: 'Choose a folder',
+      drive: 'Google Drive',
       hint: 'M4A, MP3, WAV, OGG, AMR · TXT, SRT, VTT, JSON',
+    },
+    drive: {
+      title: 'Choose calls in Google Drive',
+      root: 'My Drive',
+      path: 'Folder path',
+      empty: 'No recordings or transcripts in this folder.',
+      failed: "Couldn't open this folder. Try again.",
+      retry: 'Try again',
+      more: 'Show more',
+      cancel: 'Cancel',
+      close: 'Close',
+      importN: (n: number) => (n === 1 ? 'Import 1 item' : `Import ${n} items`),
+      include: (name: string) => `Include ${name}`,
+      openFolder: (name: string) => `Open ${name}`,
+      open: 'Open the picker',
     },
     manifest: {
       title: 'Drop a manifest CSV',
@@ -104,7 +121,23 @@ const copy = {
       title: 'גרירת קבצים, תיקייה או ZIP',
       browse: 'בחירת קבצים',
       folder: 'בחירת תיקייה',
+      drive: 'Google Drive',
       hint: 'M4A, MP3, WAV, OGG, AMR · TXT, SRT, VTT, JSON',
+    },
+    drive: {
+      title: 'בחירת שיחות ב-Google Drive',
+      root: 'האחסון שלי',
+      path: 'נתיב התיקייה',
+      empty: 'אין בתיקייה הקלטות או תמלולים.',
+      failed: 'לא ניתן לפתוח את התיקייה. אפשר לנסות שוב.',
+      retry: 'ניסיון חוזר',
+      more: 'עוד',
+      cancel: 'ביטול',
+      close: 'סגירה',
+      importN: (n: number) => (n === 1 ? 'ייבוא פריט אחד' : `ייבוא ${n} פריטים`),
+      include: (name: string) => `הכללת ${name}`,
+      openFolder: (name: string) => `פתיחת ${name}`,
+      open: 'פתיחת הבורר',
     },
     manifest: {
       title: 'גרירת קובץ CSV מלווה',
@@ -241,9 +274,21 @@ export function UploadGroup() {
             labels={c.drop}
           />
         </State>
+        <State label="with Google Drive">
+          <FileDropZone
+            accept="audio+transcript"
+            multiple
+            onFiles={() => {}}
+            onPickDrive={() => {}}
+            labels={c.drop}
+          />
+        </State>
         <State label="manifest">
           <FileDropZone accept="manifest" onFiles={() => {}} labels={c.manifest} />
         </State>
+      </Specimen>
+      <Specimen name="DrivePicker">
+        <DrivePickerSpecimen labels={c.drive} locale={locale} />
       </Specimen>
       <Specimen name="PreflightSummary">
         <PreflightSummary
@@ -422,6 +467,46 @@ export function UploadGroup() {
           />
         ))}
       </Specimen>
+    </>
+  );
+}
+
+const DRIVE: Record<string, DrivePickerEntry[]> = {
+  root: [
+    { id: 'calls', name: 'Call recordings', kind: 'folder', size: 0 },
+    { id: 'empty', name: 'Archive', kind: 'folder', size: 0 },
+    { id: 'z', name: 'export-2026.zip', kind: 'zip', size: 48_200_000 },
+    { id: 'm', name: 'manifest.csv', kind: 'manifest', size: 2_300 },
+  ],
+  calls: [
+    { id: 'a', name: 'Call recording Maya_260412_101532.m4a', kind: 'audio', size: 1_840_000 },
+    { id: 'b', name: 'Call recording Maya_260412_101532.txt', kind: 'transcript', size: 6_100 },
+    { id: 'c', name: '+972541234567_20260413.mp3', kind: 'audio', size: 3_120_000 },
+  ],
+  empty: [],
+};
+
+function DrivePickerSpecimen({
+  labels,
+  locale,
+}: {
+  labels: (typeof copy)['en']['drive'];
+  locale: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        {labels.open}
+      </Button>
+      <DrivePicker
+        open={open}
+        onOpenChange={setOpen}
+        load={async (id) => ({ entries: DRIVE[id ?? 'root'] ?? [], nextPageToken: null })}
+        onImport={() => {}}
+        locale={locale}
+        labels={labels}
+      />
     </>
   );
 }

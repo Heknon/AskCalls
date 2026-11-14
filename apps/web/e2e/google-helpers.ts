@@ -56,3 +56,22 @@ export interface DriveState {
 export async function driveState(): Promise<DriveState> {
   return (await fetch(`${GOOGLE_URL}/state`)).json() as Promise<DriveState>;
 }
+
+/** Puts a file (or, with `folder`, a folder) in the fake Drive; returns its id. */
+export async function seedDrive(f: {
+  name: string;
+  parents?: string[];
+  folder?: true;
+  bytes?: Buffer | string;
+}): Promise<string> {
+  const res = await fetch(`${GOOGLE_URL}/seed`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: f.name,
+      parents: f.parents,
+      folder: f.folder,
+      ...(f.bytes !== undefined && { b64: Buffer.from(f.bytes).toString('base64') }),
+    }),
+  });
+  return ((await res.json()) as { id: string }).id;
+}

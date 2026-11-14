@@ -36,6 +36,7 @@ import { supportsDirectoryPicker } from '../../../../../../client/adapters/bulk-
 import { type Me, useAppSession } from '../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../i18n/locales';
 import { type BulkController, bulkController, type QueueView } from './bulk-controller';
+import { type DriveSource, useDriveSource } from './drive-source';
 import {
   failureKey,
   minutesLeft,
@@ -48,13 +49,27 @@ import { selectionSummary } from './selection';
 import { TranscriptionNote, TranslationNote } from './transcription-note';
 import { useWakeLock } from './use-wake-lock';
 
-/** Loaded with the screen that shows them: neither is needed at first paint. */
-const ReviewTable = lazy(() => import('./review-table').then((m) => ({ default: m.ReviewTable })));
-const Guide = lazy(() => import('./format-guide').then((m) => ({ default: m.Guide })));
-/** Shares the review table's chunk: one fewer chunk for every page's loader to know about. */
-const EmptyCallDialog = lazy(() =>
-  import('./review-table').then((m) => ({ default: m.EmptyCallDialog })),
+/**
+ * Loaded with the screen that shows them, none needed at first paint. The review table, the
+ * empty-call dialog and the Drive import share one chunk (`u2`, after the screen): one entry, not
+ * several, in every page's chunk loader.
+ */
+const ReviewTable = lazy(() =>
+  import(/* webpackChunkName: "u2" */ './later').then((m) => ({
+    default: m.ReviewTable,
+  })),
 );
+const EmptyCallDialog = lazy(() =>
+  import(/* webpackChunkName: "u2" */ './later').then((m) => ({
+    default: m.EmptyCallDialog,
+  })),
+);
+const DriveDialogs = lazy(() =>
+  import(/* webpackChunkName: "u2" */ './later').then((m) => ({
+    default: m.DriveDialogs,
+  })),
+);
+const Guide = lazy(() => import('./format-guide').then((m) => ({ default: m.Guide })));
 
 const isEmptyRecording = (i: BulkItemState) =>
   i.status === 'failed' && i.reason === 'transcript_empty' && i.audio !== null;
@@ -104,12 +119,20 @@ export function BulkUpload({
   const [backup, setBackup] = useState(settings.backupRecordings && !recordingsOff);
   const [folderPicker, setFolderPicker] = useState(false);
   useEffect(() => setFolderPicker(supportsDirectoryPicker()), []);
+  const drive = useDriveSource(controller);
   useEffect(() => {
     if (!handoff || snap.phase === 'queue' || snap.phase === 'loading') return;
     onHandoff?.();
     void controller.addFiles(handoff);
   }, [handoff, snap.phase, controller, onHandoff]);
   if (!me) return null;
+  const driveOn = me.features.storage.googleDrive;
+  const dialogs =
+    drive.picker || drive.enabling ? (
+      <Suspense fallback={null}>
+        <DriveDialogs controller={controller} drive={drive} />
+      </Suspense>
+    ) : null;
 
   const drop = (
     <FileDropZone
@@ -118,10 +141,12 @@ export function BulkUpload({
       directory
       onFiles={(files) => void controller.addFiles(files)}
       {...(folderPicker && { onPickFolder: () => void controller.pickFolder() })}
+      {...(driveOn && { onPickDrive: drive.pick })}
       labels={{
         title: t('drop'),
         browse: t('chooseFiles'),
         folder: t('chooseFolder'),
+        drive: t('drive.pick'),
         hint: tu('formats'),
       }}
     />
@@ -133,9 +158,11 @@ export function BulkUpload({
       <div className="flex flex-col gap-4">
         {drop}
         {snap.error ? <ErrorState scope="inline" title={t(snap.error)} /> : null}
+        {drive.notice ? <ErrorState scope="inline" title={t(`drive.${drive.notice}`)} /> : null}
         <Suspense fallback={null}>
           <Guide />
         </Suspense>
+        {dialogs}
       </div>
     );
   }
@@ -209,6 +236,7 @@ export function BulkUpload({
       me={me}
       region={settings.phoneRegion}
       folderPicker={folderPicker}
+      drive={drive}
     />
   );
 }
@@ -411,6 +439,7 @@ function QueuePanel({
   me,
   region,
   folderPicker,
+  drive,
 }: {
   controller: BulkController;
   queue: QueueView;
@@ -418,6 +447,7 @@ function QueuePanel({
   me: Me;
   region: string;
   folderPicker: boolean;
+  drive: DriveSource;
 }) {
   const t = useTranslations('upload.bulk');
   const tu = useTranslations('upload');
@@ -466,12 +496,21 @@ function QueuePanel({
         />
       }
     >
-      {queue.restored ? (
+      {queue.restored || queue.missing === 'drive' ? (
         <StatusBanner
           condition="import"
           action={
             queue.missing === 'files' ? (
               <Reattach controller={controller} folderPicker={folderPicker} />
+            ) : queue.missing === 'drive' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                loading={drive.connecting}
+                onClick={drive.reconnect}
+              >
+                {t('drive.connect')}
+              </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={() => void controller.resume()}>
                 {t('resume')}
@@ -484,9 +523,12 @@ function QueuePanel({
             ? t('repick')
             : queue.missing === 'access'
               ? t('access')
-              : null}
+              : queue.missing === 'drive'
+                ? t('drive.again')
+                : null}
         </StatusBanner>
       ) : null}
+      {drive.notice ? <ErrorState scope="inline" title={t(`drive.${drive.notice}`)} /> : null}
       <Card className="flex flex-col gap-3 p-5">
         {finished ? (
           <div className="flex flex-col gap-3" aria-live="polite">
@@ -522,7 +564,12 @@ function QueuePanel({
               paused={queue.paused}
               {...(!queue.restored && {
                 onPause: () => controller.pause(),
-                onResume: () => (pausing ? controller.cancelPause() : void controller.resume()),
+                onResume: () =>
+                  pausing
+                    ? controller.cancelPause()
+                    : queue.missing === 'drive'
+                      ? drive.reconnect()
+                      : void controller.resume(),
               })}
               labels={{
                 pause: t('pause'),

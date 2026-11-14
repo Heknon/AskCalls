@@ -569,8 +569,16 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### FileDropZone
 - **Purpose:** where files, folders or a ZIP are dropped or picked.
-- **Props:** `accept="audio+transcript" | "manifest" | "contacts"`, `multiple`, `directory`, `onPickFolder` (opens the File System Access folder picker instead of the `webkitdirectory` input, so a bulk import can read the folder again after a reload; the screen passes it only where the browser supports it).
+- **Props:** `accept="audio+transcript" | "manifest" | "contacts"`, `multiple`, `directory`, `onPickFolder` (opens the File System Access folder picker instead of the `webkitdirectory` input, so a bulk import can read the folder again after a reload; the screen passes it only where the browser supports it), `onPickDrive` (a "Google Drive" button that opens `DrivePicker`; the screen passes it only where the instance has Google Drive set up).
 - **Composes:** custom + `Button`. **Screens:** U1, U2. **A11y:** a real button opens the picker; drop is an enhancement. **RTL:** none.
+
+#### DrivePicker
+- **Purpose:** choose recordings, transcripts, ZIPs and whole folders in the user's Google Drive for a bulk import, browsed inside AskCalls (no Google script). Ticks persist while moving between folders; a ticked folder brings everything under it.
+- **Props:** `open`, `onOpenChange`, `load(folderId, pageToken)` (one page of a folder, `null` for the top), `onImport(entries)`, `locale`, `labels`.
+- **Composes:** `Dialog`, `Checkbox`, `Skeleton`, `ErrorState`, `Button`. **Screens:** U2.
+- **States:** loading (skeleton rows), empty folder ("No recordings or transcripts in this folder."), failed ("Couldn't open this folder. Try again." + Try again), more pages ("Show more").
+- **A11y:** the path is a `nav` with the current folder `aria-current="page"`; each checkbox is labelled "Include {name}", each folder name is a button "Open {name}". **RTL:** names `dir="auto"`, chevrons mirror.
+- **Not to be confused with:** `FileDropZone` (files on this device).
 
 #### PreflightSummary
 - **Purpose:** what an import will do before it starts: counts, transcription minutes and the data flow.
@@ -824,7 +832,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
 | U1 | Upload: single | FileDropZone, PhoneNumber, CallDirection, DataFlowNote, QueueItemStatus, ErrorState |
-| U2 | Upload: bulk | FileDropZone, ImportFormatGuide, PreflightSummary, ImportGroup, ImportEditDialog, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
+| U2 | Upload: bulk | FileDropZone, DrivePicker, ImportFormatGuide, PreflightSummary, ImportGroup, ImportEditDialog, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
 | T1 | Tags | TagManagerRow, TagChip, ConfirmDialog, SaveStatus, EmptyState |
 | T2 | Intents | IntentEditor, SaveStatus |
 | T3 | Rules | RuleListItem, RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |

@@ -99,6 +99,9 @@ export function directAccessFor(p: Providers): DirectAccess {
     if (s.kind === 's3-compatible') origins.push(bucketOrigin(s.config));
     else if (!providers.includes(GOOGLE_DRIVE_PROVIDER)) providers.push(GOOGLE_DRIVE_PROVIDER);
   }
+  // Upload from Drive: the device lists and downloads the picked files itself.
+  if (p.driveImport && !providers.includes(GOOGLE_DRIVE_PROVIDER))
+    providers.push(GOOGLE_DRIVE_PROVIDER);
   return { providers, origins };
 }
 

@@ -17,6 +17,8 @@ export type FileDropZoneProps = {
    * input, so the folder can be read again after a reload.
    */
   onPickFolder?: () => void;
+  /** Opens the Google Drive picker; shown with `labels.drive` where Drive is set up. */
+  onPickDrive?: () => void;
   labels: {
     /** "Drop files, a folder or a ZIP". */
     title: string;
@@ -24,6 +26,8 @@ export type FileDropZoneProps = {
     browse: string;
     /** "Choose a folder". */
     folder?: string;
+    /** "Google Drive". */
+    drive?: string;
     /** "M4A, MP3, WAV, OGG · TXT, SRT, VTT, JSON". */
     hint?: string;
   };
@@ -43,6 +47,7 @@ export function FileDropZone({
   directory = false,
   onFiles,
   onPickFolder,
+  onPickDrive,
   labels,
   disabled,
 }: FileDropZoneProps) {
@@ -87,6 +92,11 @@ export function FileDropZone({
             className="max-md:hidden"
           >
             {labels.folder}
+          </Button>
+        ) : null}
+        {onPickDrive && labels.drive ? (
+          <Button variant="outline" disabled={disabled} onClick={onPickDrive}>
+            {labels.drive}
           </Button>
         ) : null}
       </div>

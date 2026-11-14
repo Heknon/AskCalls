@@ -56,7 +56,7 @@ Read the full [threat model](docs/threat-model.md).
 - Every call is signed by the device that ingested it, and the call view verifies the signature
 
 **Import**
-- Single upload or bulk upload of a folder, files or a ZIP
+- Single upload or bulk upload of a folder, files or a ZIP, or straight from Google Drive
 - Audio and transcript pairing by file name, an optional `manifest.csv`, and iPhone and Samsung file-name parsing
 - A resumable queue with pause, retry and per-file status
 - Transcript formats: TXT, SRT, VTT, and JSON from Whisper, Deepgram, AssemblyAI or generic segments

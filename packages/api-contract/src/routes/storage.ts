@@ -12,6 +12,14 @@ export type StorageProvider = z.output<typeof StorageProvider>;
 const Ticket = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/);
 
 /**
+ * `backup`: recording backups (scope `drive.file`, refresh token kept by the device).
+ * `import`: choosing calls in Drive to upload (scope `drive.readonly`, one access token, no
+ * refresh token).
+ */
+export const GrantPurpose = z.enum(['backup', 'import']);
+export type GrantPurpose = z.output<typeof GrantPurpose>;
+
+/**
  * Opens in a popup: sets a short-lived signed cookie holding state and the PKCE verifier, then
  * redirects to the provider's consent screen.
  */
@@ -20,7 +28,7 @@ export const connectStorage = defineRoute({
   path: '/api/storage/connect/:provider',
   auth: 'session',
   params: z.object({ provider: StorageProvider }),
-  query: z.object({ ticket: Ticket }),
+  query: z.object({ ticket: Ticket, purpose: GrantPurpose.default('backup') }),
 });
 
 /**
@@ -46,7 +54,9 @@ export const StorageConnectMessage = z.discriminatedUnion('ok', [
     type: z.literal('askcalls:storage'),
     ticket: Ticket,
     ok: z.literal(true),
-    refreshToken: z.string().min(1).max(4_096),
+    purpose: GrantPurpose,
+    /** Backup grants only. */
+    refreshToken: z.string().min(1).max(4_096).nullable(),
     accessToken: z.string().min(1).max(4_096),
     expiresInSec: z.number().int().positive(),
   }),

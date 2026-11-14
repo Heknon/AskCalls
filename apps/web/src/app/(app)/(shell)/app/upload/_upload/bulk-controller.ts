@@ -1,3 +1,4 @@
+import { DRIVE_REF_PREFIX, isDriveRef } from '@askcalls/client-core/bulk/drive-ref';
 import type { Manifest } from '@askcalls/client-core/bulk/manifest';
 import type { FileRef, Pairing } from '@askcalls/client-core/bulk/pairing';
 import type {
@@ -11,10 +12,11 @@ import { deviceTimeZone, isTimeZone } from '@askcalls/client-core/bulk/time-zone
 import type { ActiveStatus, IngestMeta, MetaEdits } from '@askcalls/client-core/ingest';
 import { isDomainError } from '@askcalls/domain';
 import type { BrowserClient } from '../../../../../../client/browser-client';
+import { DriveSession } from './drive-session';
 import { remainingSeconds } from './plan';
 import { pendingSources, remapRefs } from './refs';
 
-export type BulkError = 'emptyFolder' | 'zipError' | 'manifestError' | 'pickFailed';
+export type BulkError = 'emptyFolder' | 'zipError' | 'manifestError' | 'pickFailed' | 'driveFailed';
 
 export interface Plan {
   pairing: Pairing;
@@ -33,8 +35,11 @@ export interface QueueView {
   paused: boolean;
   /** Restored after a reload and not resumed yet. */
   restored: boolean;
-  /** Files the rest of the batch needs: lost with the page, or the folder needs access again. */
-  missing: 'files' | 'access' | null;
+  /**
+   * Files the rest of the batch needs: lost with the page, the folder needs access again, or
+   * Google Drive needs connecting again (after a reload, or once its hour-long access ended).
+   */
+  missing: 'files' | 'access' | 'drive' | null;
   etaSec: number | null;
   meta: ReadonlyMap<string, IngestMeta>;
   /** The step each failed item was at, for this page only. */
@@ -104,11 +109,15 @@ export class BulkController {
   #code: BulkCode | null = null;
   #metaOptions: { manifest: Manifest | null; region: string; timeZone: string } | null = null;
   #timeZone = deviceTimeZone();
+  /** Google Drive as a source of this session's files; gone with the controller on lock. */
+  readonly drive = new DriveSession();
+  #unsource: () => void;
 
   constructor(
     private readonly client: BrowserClient,
     private readonly onProgress: () => void,
   ) {
+    this.#unsource = client.bulkFiles.addSource(DRIVE_REF_PREFIX, this.drive);
     void this.#init();
   }
 
@@ -128,6 +137,8 @@ export class BulkController {
 
   dispose() {
     this.#disposed = true;
+    this.drive.clear();
+    this.#unsource();
     this.#queue?.pause();
     this.#unsubscribe?.();
     this.#listeners.clear();
@@ -187,7 +198,12 @@ export class BulkController {
   /** Whether the files the rest of a batch needs can be read now. */
   async #checkSources(state: BulkState): Promise<QueueView['missing']> {
     let missing: QueueView['missing'] = null;
+    let drive = false;
     for (const ref of pendingSources(state).values()) {
+      if (isDriveRef(ref.ref)) {
+        drive = !this.drive.connected();
+        continue;
+      }
       try {
         await this.client.bulkFiles.audio(ref);
       } catch (e) {
@@ -195,7 +211,7 @@ export class BulkController {
         else return 'files';
       }
     }
-    return missing;
+    return missing ?? (drive ? 'drive' : null);
   }
 
   async #open(state: BulkState, opts: { create?: boolean } = {}) {
@@ -237,6 +253,14 @@ export class BulkController {
       );
     }
     this.#unsubscribe = queue.subscribe((item) => {
+      if (item.status === 'failed' && this.#lostDrive(item)) {
+        // Drive's access ended mid-import: hold the batch until the user connects again.
+        queue.pause();
+        this.#missing = 'drive';
+        queueMicrotask(() => queue.retry([item.id]));
+        this.#emitQueue();
+        return;
+      }
       if (!isTerminal(item.status) && item.status !== 'queued') {
         this.#lastStep.set(item.id, item.status as ActiveStatus);
       } else if (isTerminal(item.status)) {
@@ -248,7 +272,41 @@ export class BulkController {
     this.#publishQueue();
   }
 
+  #lostDrive(item: Readonly<BulkItemState>): boolean {
+    const fromDrive = [item.audio, item.transcript].some((f) => f && isDriveRef(f.ref));
+    return fromDrive && !this.drive.connected();
+  }
+
   // Picking
+
+  /** Files read somewhere else: Google Drive's picks (drive-dialogs). */
+  async addRefs(read: Promise<FileRef[]>) {
+    this.#set({ phase: 'planning' });
+    try {
+      this.#refs.push(...(await read));
+    } catch {
+      return this.#refs.length
+        ? this.#plan('driveFailed')
+        : this.#set({ phase: 'empty', error: 'driveFailed' });
+    }
+    await this.#plan(null);
+  }
+
+  /**
+   * Takes the access token the consent popup returned (opened by the click, answered in
+   * drive-finish) and, when the queue waited only for Drive, carries on.
+   */
+  async driveConnected(token: { accessToken: string; expiresInSec: number }) {
+    (await this.drive.load()).connect(token);
+    if (this.#missing !== 'drive') return;
+    const state = await this.client.bulkState.load();
+    this.#missing = state ? await this.#checkSources(state) : null;
+    if (this.#missing) return this.#publishQueue();
+    // A manifest.csv in Drive couldn't be read before.
+    if (!this.#manifest && state?.manifest) await this.#open(state);
+    this.#restored = false;
+    this.#run();
+  }
 
   async addFiles(files: readonly File[]) {
     const bulk = this.client.bulkFiles;
@@ -521,6 +579,7 @@ export class BulkController {
     await this.#queue?.clear();
     this.#unsubscribe?.();
     this.#queue = null;
+    this.drive.clear();
     await this.client.bulkFiles.forgetAll().catch(() => {});
     this.reset();
   }

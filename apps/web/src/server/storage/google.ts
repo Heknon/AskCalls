@@ -9,6 +9,19 @@ import type { ResolvedConfig } from '../config/config-service';
 export const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_OAUTH = 'https://oauth2.googleapis.com';
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+export const DRIVE_READONLY_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+
+/**
+ * `backup`: recording backups, `drive.file` with a refresh token the device keeps.
+ * `import`: picking calls to upload, `drive.readonly`, online access only: one access token
+ * that lives in the tab's memory for an hour, no refresh token anywhere.
+ */
+export type GrantPurpose = 'backup' | 'import';
+
+const SCOPES: Record<GrantPurpose, string> = {
+  backup: DRIVE_FILE_SCOPE,
+  import: DRIVE_READONLY_SCOPE,
+};
 
 export interface GoogleStorageClient {
   id: string;
@@ -70,15 +83,16 @@ export function authorizationUrl(
   client: GoogleStorageClient,
   state: string,
   challenge: string,
+  purpose: GrantPurpose = 'backup',
 ): string {
   const u = new URL(GOOGLE_AUTH_URL);
   u.search = new URLSearchParams({
     client_id: client.id,
     redirect_uri: client.redirectUri,
     response_type: 'code',
-    scope: DRIVE_FILE_SCOPE,
-    access_type: 'offline',
-    prompt: 'consent',
+    scope: SCOPES[purpose],
+    access_type: purpose === 'backup' ? 'offline' : 'online',
+    prompt: purpose === 'backup' ? 'consent' : 'select_account',
     include_granted_scopes: 'false',
     state,
     code_challenge: challenge,
@@ -92,6 +106,7 @@ export interface OAuthFlow {
   state: string;
   verifier: string;
   ticket: string;
+  purpose: GrantPurpose;
   expiresAt: number;
 }
 
@@ -146,7 +161,8 @@ export async function verifyFlow(
   if (!ok) return null;
   try {
     const flow = JSON.parse(value) as OAuthFlow;
-    return typeof flow.expiresAt === 'number' && flow.expiresAt > now ? flow : null;
+    if (typeof flow.expiresAt !== 'number' || flow.expiresAt <= now) return null;
+    return { ...flow, purpose: flow.purpose === 'import' ? 'import' : 'backup' };
   } catch {
     return null;
   }
@@ -206,17 +222,22 @@ async function tokenRequest(fetchImpl: Fetch, url: string, form: Record<string, 
 }
 
 export interface GrantedTokens {
-  refreshToken: string;
+  /** Only for `backup`. */
+  refreshToken: string | null;
   accessToken: string;
   expiresInSec: number;
 }
 
-/** Authorization code + PKCE verifier → tokens. Requires that drive.file was granted. */
+/**
+ * Authorization code + PKCE verifier → tokens. Requires the purpose's scope; a backup grant
+ * also needs its refresh token, an import grant never keeps one.
+ */
 export async function exchangeCode(
   fetchImpl: Fetch,
   client: GoogleStorageClient,
   code: string,
   verifier: string,
+  purpose: GrantPurpose = 'backup',
 ): Promise<GrantedTokens> {
   const { status, json } = await tokenRequest(fetchImpl, client.tokenUrl, {
     grant_type: 'authorization_code',
@@ -226,14 +247,15 @@ export async function exchangeCode(
     client_secret: client.secret,
     redirect_uri: client.redirectUri,
   });
-  if (status !== 200 || !json.access_token || !json.refresh_token) {
+  const backup = purpose === 'backup';
+  if (status !== 200 || !json.access_token || (backup && !json.refresh_token)) {
     throw new DomainError('provider_error', 'google refused the code', { status });
   }
-  if (!(json.scope ?? '').split(' ').includes(DRIVE_FILE_SCOPE)) {
-    throw new DomainError('forbidden', 'drive.file was not granted');
+  if (!(json.scope ?? '').split(' ').includes(SCOPES[purpose])) {
+    throw new DomainError('forbidden', 'the drive scope was not granted');
   }
   return {
-    refreshToken: json.refresh_token,
+    refreshToken: backup ? json.refresh_token! : null,
     accessToken: json.access_token,
     expiresInSec: Math.max(60, Math.floor(json.expires_in ?? 3600)),
   };

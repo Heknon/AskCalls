@@ -563,7 +563,9 @@ Tabs: Single, Bulk. The active transcription provider and its `DataFlowNote` app
 
 Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 
-**Flow:** pick (folder picker, files, or ZIP; optional `manifest.csv`) → review and pre-flight summary → queue.
+**Flow:** pick (folder picker, files, or ZIP; optional `manifest.csv`; or Google Drive) → review and pre-flight summary → queue.
+
+**Google Drive** (only where the instance has Drive set up): "Google Drive" in the drop zone. The first time on an account it asks "Allow Google Drive" (the browser may then call `www.googleapis.com`; AskCalls reloads and asks to unlock), then Google's consent opens in a popup (read-only Drive access, one hour, no refresh token), then `DrivePicker`. Picked files download from Drive to the device as each call runs, never through AskCalls; folders are read with their tree, so pairing and grouping work as with a local folder; ZIPs are opened on the device. When the hour ends mid-import, or after a reload, the queue pauses with "Connect Google Drive again to continue." + "Connect Google Drive".
 
 **Pick:** under the drop zone, `ImportFormatGuide` ("Folder layout and manifest.csv", closed): how recordings and transcripts pair, an example folder, an example `manifest.csv` to copy or download, and what each column takes.
 
@@ -581,6 +583,10 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 | --- | --- | --- |
 | `bulk.pick` | Choose a folder · Choose files · Choose a ZIP | בחירת תיקייה · בחירת קבצים · בחירת ZIP |
 | `bulk.manifest` | Add manifest.csv (optional) | הוספת manifest.csv (לא חובה) |
+| `bulk.drive.pick` / `title` / `root` | Google Drive / Choose calls in Google Drive / My Drive | Google Drive / בחירת שיחות ב-Google Drive / האחסון שלי |
+| `bulk.drive.import` | Import {n} items | ייבוא {n} פריטים |
+| `bulk.drive.again` / `connect` | Connect Google Drive again to continue. / Connect Google Drive | כדי להמשיך יש לחבר שוב את Google Drive. / חיבור Google Drive |
+| `bulk.drive.enableTitle` / `enableBody` | Allow Google Drive / AskCalls reloads so this browser can read from Google Drive, then asks you to unlock. Choose Google Drive again after that. | הרשאה ל-Google Drive / AskCalls ייטען מחדש כדי שהדפדפן יוכל לקרוא מ-Google Drive, ואז יבקש לבטל את הנעילה. אחר כך אפשר לבחור שוב ב-Google Drive. |
 | `bulk.summary` | Import summary | סיכום הייבוא |
 | `bulk.sum.audio` / `paired` / `tx` / `dup` | audio only, will be transcribed / audio with transcript / transcript only / likely duplicates, skipped | שמע בלבד, יתומללו / שמע עם תמלול / תמלול בלבד / כפילויות אפשריות, ידולגו |
 | `bulk.minutes` | About {n} minutes of audio to transcribe. | כ-{n} דקות שמע לתמלול. |

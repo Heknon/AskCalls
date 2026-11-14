@@ -138,6 +138,11 @@ export const ProvidersDocSchema = z.object({
     .array(z.union([BucketSchema, DriveSchema]))
     .max(16)
     .default([]),
+  /**
+   * Upload offers Google Drive as a source: the browser may call Drive (CSP `connect-src`),
+   * which the device turns on the first time the user chooses it.
+   */
+  driveImport: z.boolean().default(false),
 });
 
 export const USER_DATA_SCHEMAS = {

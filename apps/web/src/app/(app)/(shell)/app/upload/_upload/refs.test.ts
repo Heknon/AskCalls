@@ -31,6 +31,7 @@ describe('sources', () => {
     expect(sourceOf('dir:abc:x/y.wav')).toBe('dir:abc');
     expect(sourceOf('file:s1:y.wav')).toBe('file:s1');
     expect(sourceOf('zip:s1:calls.zip!a/b.txt')).toBe('zip:s1:calls.zip');
+    expect(sourceOf('gdrive:1AbC_d-9:Calls/x.m4a')).toBe('gdrive');
   });
 
   it('lists one reference per source the unfinished items need', () => {

@@ -6,9 +6,11 @@ const settled = (s: BulkItemState['status']) => s === 'done' || s === 'duplicate
 
 /**
  * Where a reference's content lives: one picked folder (`dir:<id>`), one page's files
- * (`file:<session>`) or one ZIP (`zip:<session>:<name>`). A source is available or not as a whole.
+ * (`file:<session>`), one ZIP (`zip:<session>:<name>`) or Google Drive (`gdrive`, as long as its
+ * access token lasts). A source is available or not as a whole.
  */
 export function sourceOf(ref: string): string {
+  if (ref.startsWith('gdrive:')) return 'gdrive';
   if (ref.startsWith('zip:')) return ref.slice(0, ref.indexOf('!'));
   const second = ref.indexOf(':', ref.indexOf(':') + 1);
   return second < 0 ? ref : ref.slice(0, second);

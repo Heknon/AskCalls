@@ -89,6 +89,7 @@ describe('direct origins', () => {
           },
         },
         previousStores: [],
+        driveImport: false,
       }),
     ).toEqual({
       providers: ['elevenlabs'],
@@ -102,6 +103,7 @@ describe('direct origins', () => {
         translation: { rules: [] },
         recordings: { mode: 'managed' },
         previousStores: [],
+        driveImport: false,
       }),
     ).toEqual({ providers: [], origins: [] });
   });
@@ -113,6 +115,7 @@ describe('direct origins', () => {
       transcription: { mode: 'managed' as const },
       llm: { mode: 'off' as const },
       translation: { rules: [] },
+      driveImport: false,
     };
     const active = directAccessFor({
       ...doc,
@@ -128,6 +131,22 @@ describe('direct origins', () => {
         previousStores: [drive],
       }).providers,
     ).toEqual(['google-drive']);
+    expect(
+      directAccessFor({
+        ...doc,
+        recordings: { mode: 'drive', drive },
+        previousStores: [],
+        driveImport: true,
+      }).providers,
+    ).toEqual(['google-drive']);
+    expect(
+      directAccessFor({
+        ...doc,
+        recordings: { mode: 'managed' },
+        previousStores: [],
+        driveImport: true,
+      }),
+    ).toEqual({ providers: ['google-drive'], origins: [] });
   });
 
   it('registers only known provider origins by id', () => {

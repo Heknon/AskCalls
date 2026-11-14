@@ -65,9 +65,13 @@ export const GET = route(
         client,
         query.code,
         flow.verifier,
+        flow.purpose,
       );
-      await audit(ports, actor, actor.userId, 'storage.link', null, { provider: 'google' });
-      return handOff({ ...base, ok: true, ...tokens }, secure);
+      await audit(ports, actor, actor.userId, 'storage.link', null, {
+        provider: 'google',
+        purpose: flow.purpose,
+      });
+      return handOff({ ...base, ok: true, purpose: flow.purpose, ...tokens }, secure);
     } catch (e) {
       const error = isDomainError(e) && e.code === 'forbidden' ? 'scope' : 'failed';
       return handOff({ ...base, ok: false, error }, secure);

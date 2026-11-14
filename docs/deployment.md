@@ -374,10 +374,10 @@ Google Cloud (one project, APIs & Services → Credentials → OAuth client IDs,
   `http://localhost:3000/api/auth/callback/google`; origins `https://<DEV_DOMAIN>` and
   `http://localhost:3000`.
 
-### Google Drive as a recording store
+### Google Drive: recording store and upload source
 
 Users can keep recording backups in their own Google Drive (Settings → Providers → Recording
-backups). The device uploads ciphertext to Drive itself; the server only runs the OAuth code
+backups), and pick calls in their Drive to upload (Upload → Bulk → Google Drive). The device uploads ciphertext to Drive itself; the server only runs the OAuth code
 exchange and trades refresh tokens for access tokens, because the client secret can't live in
 the browser or the agent. It never stores the tokens.
 
@@ -390,15 +390,21 @@ Drive (the callback must be a registered redirect URI); dev and production can.
 In the same Google Cloud project:
 
 1. **APIs & Services → Library:** enable the **Google Drive API**.
-2. **OAuth consent screen → Data access:** add the scope
-   `https://www.googleapis.com/auth/drive.file` (non-sensitive: the app sees only files it
-   created). No other Drive scope.
+2. **OAuth consent screen → Data access:** add the scopes
+   - `https://www.googleapis.com/auth/drive.file` (non-sensitive: backups; the app sees only
+     files it created).
+   - `https://www.googleapis.com/auth/drive.readonly` (upload from Drive: the device lists and
+     downloads the files the user picks). Google classes it as **restricted**: until the app
+     passes Google's verification and the yearly security assessment (CASA), only the consent
+     screen's test users (up to 100) can grant it, and others see "Google hasn't verified this
+     app". Import grants are online only: one access token, no refresh token.
+   No other Drive scope.
 3. **Credentials → the OAuth client (Web application):** add the redirect URIs
    - prod client: `https://askcalls.com/api/storage/callback/google`
    - non-prod client: `https://<DEV_DOMAIN>/api/storage/callback/google` and
      `http://localhost:3000/api/storage/callback/google`
-   No JavaScript origin is needed: the browser never loads Google's script and calls Drive at
-   `https://www.googleapis.com` with a bearer token.
+   The import uses the same redirect URIs. No JavaScript origin is needed: the browser never
+   loads Google's script and calls Drive at `https://www.googleapis.com` with a bearer token.
 4. With a dedicated client, set `STORAGE_GOOGLE_ID` / `STORAGE_GOOGLE_SECRET` per environment
    (prod client for Production, non-prod client for Preview).
 

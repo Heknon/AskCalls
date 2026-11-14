@@ -13,6 +13,8 @@ import { type DeviceDb, STORES } from './idb';
  *   kept in IndexedDB, so after a reload the queue can resume once the user grants access again.
  * - `file:<session>:<path>`: files from an `<input>` or a drop, held in memory for this page.
  * - `zip:<session>:<name>!<entry>`: a ZIP unzipped on the device with client-core's `openZip`.
+ * - Any prefix registered with `addSource` (Google Drive's `gdrive:<fileId>:<path>`, registered by
+ *   the upload screen's import while it holds an access token).
  *
  * Contents are read only when an item runs; nothing but handles reaches IndexedDB.
  */
@@ -39,8 +41,19 @@ export class BrowserBulkFiles implements BulkFileReader {
   #files = new Map<string, File>();
   #dirs = new Map<string, DirHandle>();
   #zips = new Map<string, BulkFileReader>();
+  #sources = new Map<string, BulkFileReader>();
 
   constructor(private readonly db: DeviceDb) {}
+
+  /** Another place files come from, by reference prefix. Returns the unregister function. */
+  addSource(prefix: string, reader: BulkFileReader): () => void {
+    this.#sources.set(prefix, reader);
+    return () => this.#sources.delete(prefix);
+  }
+
+  #source(ref: string): BulkFileReader | undefined {
+    for (const [prefix, r] of this.#sources) if (ref.startsWith(prefix)) return r;
+  }
 
   /** Opens the folder picker (needs a user gesture) and lists audio and transcript files. */
   async pickDirectory(): Promise<FileRef[]> {
@@ -75,8 +88,13 @@ export class BrowserBulkFiles implements BulkFileReader {
   }
 
   async addZip(file: File): Promise<FileRef[]> {
-    const zipRef = `zip:${this.#session}:${file.name}`;
-    const { files, reader } = openZip(new Uint8Array(await file.arrayBuffer()), zipRef);
+    return this.addZipBytes(file.name, new Uint8Array(await file.arrayBuffer()));
+  }
+
+  /** A ZIP read from somewhere else (Google Drive), opened on the device. */
+  addZipBytes(name: string, bytes: Uint8Array): FileRef[] {
+    const zipRef = `zip:${this.#session}:${name}`;
+    const { files, reader } = openZip(bytes, zipRef);
     this.#zips.set(zipRef, reader);
     return files;
   }
@@ -115,12 +133,16 @@ export class BrowserBulkFiles implements BulkFileReader {
 
   async audio(file: FileRef): Promise<AudioSource> {
     if (file.ref.startsWith('zip:')) return this.#zip(file).audio(file);
+    const source = this.#source(file.ref);
+    if (source) return source.audio(file);
     const f = await this.#file(file);
     return f.type ? f : new Blob([f], { type: audioMimeType(file.name) });
   }
 
   async bytes(file: FileRef): Promise<Uint8Array> {
     if (file.ref.startsWith('zip:')) return this.#zip(file).bytes(file);
+    const source = this.#source(file.ref);
+    if (source) return source.bytes(file);
     return new Uint8Array(await (await this.#file(file)).arrayBuffer());
   }
 

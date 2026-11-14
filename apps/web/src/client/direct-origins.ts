@@ -24,7 +24,10 @@ export function readDirectCookie(
   return get(DIRECT_COOKIE_SECURE) ?? (secureRequest ? undefined : get(DIRECT_COOKIE));
 }
 
-/** Google Drive as a recording store: metadata, resumable uploads and ranged downloads. */
+/**
+ * Google Drive as a recording store (metadata, resumable uploads, ranged downloads) and as an
+ * upload source (folder listings, downloads).
+ */
 export const GOOGLE_DRIVE_PROVIDER = 'google-drive';
 
 /**

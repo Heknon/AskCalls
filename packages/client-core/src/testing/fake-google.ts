@@ -1,7 +1,7 @@
 /**
- * An in-memory stand-in for the parts of Google that Drive as a recording store uses: the
- * OAuth consent redirect and token endpoint, and Drive API v3 (folders, resumable uploads,
- * ranged downloads, delete, about). Request in, Response out, so it serves as a `fetch` in unit
+ * An in-memory stand-in for the parts of Google that Drive as a recording store and the Drive
+ * import use: the OAuth consent redirect and token endpoint, and Drive API v3 (folders, folder
+ * listings, resumable uploads, ranged downloads, delete, about). Request in, Response out, so it serves as a `fetch` in unit
  * tests and behind a local HTTP server in the e2e suite. Never for production use.
  */
 
@@ -29,7 +29,7 @@ export interface FakeGoogleOptions {
   quota?: { limit: number | null };
   /** Base of the upload session URLs it hands out. */
   driveOrigin?: string;
-  /** Scope granted on code exchange. */
+  /** Scope granted on code exchange; by default the one the consent URL asks for. */
   grantScope?: string;
 }
 
@@ -40,20 +40,23 @@ export class FakeGoogle {
   readonly accessTokens = new Set<string>();
   readonly refreshTokens = new Set<string>();
   readonly revoked = new Set<string>();
-  readonly codes = new Map<string, { verifierChallenge: string; redirectUri: string }>();
+  readonly codes = new Map<
+    string,
+    { verifierChallenge: string; redirectUri: string; scope: string }
+  >();
   /** Every Drive request, for assertions (method, path, auth). */
   readonly log: Array<{ method: string; path: string; authorized: boolean }> = [];
   private seq = 0;
   private readonly email: string;
   private readonly limit: number | null;
   private readonly driveOrigin: string;
-  private readonly grantScope: string;
+  private readonly grantScope: string | null;
 
   constructor(opts: FakeGoogleOptions = {}) {
     this.email = opts.email ?? 'dana@example.test';
     this.limit = opts.quota ? opts.quota.limit : 15e9;
     this.driveOrigin = opts.driveOrigin ?? 'https://www.googleapis.com';
-    this.grantScope = opts.grantScope ?? DRIVE_FILE;
+    this.grantScope = opts.grantScope ?? null;
   }
 
   #id(prefix: string) {
@@ -68,6 +71,19 @@ export class FakeGoogle {
     this.refreshTokens.add(refreshToken);
     this.accessTokens.add(accessToken);
     return { refreshToken, accessToken };
+  }
+
+  /** Puts a file (or a folder) in Drive as the user would; `parents` empty means My Drive. */
+  addFile(f: { name: string; parents?: string[]; bytes?: Uint8Array; mimeType?: string }): string {
+    const id = this.#id('f');
+    this.files.set(id, {
+      id,
+      name: f.name,
+      mimeType: f.mimeType ?? 'application/octet-stream',
+      parents: f.parents ?? [],
+      bytes: f.bytes ?? new Uint8Array(),
+    });
+    return id;
   }
 
   /** Expires every access token (the next Drive call gets 401). */
@@ -90,13 +106,15 @@ export class FakeGoogle {
   #consent(url: URL): Response {
     const redirect = new URL(url.searchParams.get('redirect_uri') ?? '');
     const code = this.#id('code-');
+    const scope = this.grantScope ?? url.searchParams.get('scope') ?? DRIVE_FILE;
     this.codes.set(code, {
       verifierChallenge: url.searchParams.get('code_challenge') ?? '',
       redirectUri: redirect.href,
+      scope,
     });
     redirect.searchParams.set('code', code);
     redirect.searchParams.set('state', url.searchParams.get('state') ?? '');
-    redirect.searchParams.set('scope', this.grantScope);
+    redirect.searchParams.set('scope', scope);
     return new Response(null, { status: 302, headers: { location: redirect.href } });
   }
 
@@ -114,7 +132,7 @@ export class FakeGoogle {
         access_token: t.accessToken,
         refresh_token: t.refreshToken,
         expires_in: 3599,
-        scope: this.grantScope,
+        scope: code.scope,
         token_type: 'Bearer',
       });
     }
@@ -180,6 +198,28 @@ export class FakeGoogle {
     }
     if (path === '/drive/v3/files' && req.method === 'GET') {
       const q = url.searchParams.get('q') ?? '';
+      const parent = /^'([^']+)' in parents/.exec(q)?.[1];
+      if (parent) {
+        const children = [...this.files.values()]
+          .filter((f) => (parent === 'root' ? f.parents.length === 0 : f.parents.includes(parent)))
+          .sort((a, b) =>
+            a.mimeType === FOLDER_MIME && b.mimeType !== FOLDER_MIME
+              ? -1
+              : b.mimeType === FOLDER_MIME && a.mimeType !== FOLDER_MIME
+                ? 1
+                : a.name.localeCompare(b.name),
+          );
+        const size = Number(url.searchParams.get('pageSize') ?? '100');
+        const start = Number(url.searchParams.get('pageToken') ?? '0');
+        const page = children.slice(start, start + size).map((f) => ({
+          id: f.id,
+          name: f.name,
+          mimeType: f.mimeType,
+          ...(f.mimeType !== FOLDER_MIME && { size: String(f.bytes.length) }),
+        }));
+        const next = start + size < children.length ? String(start + size) : undefined;
+        return Response.json({ files: page, ...(next && { nextPageToken: next }) });
+      }
       const name = /name = '([^']*)'/.exec(q)?.[1];
       const files = [...this.files.values()]
         .filter((f) => f.mimeType === FOLDER_MIME && f.name === name)

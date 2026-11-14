@@ -2,7 +2,8 @@
  * The e2e suite's Google: OAuth consent and token endpoints and Drive API v3, in memory. The
  * app server reaches its token endpoint through STORAGE_GOOGLE_TEST_OAUTH_URL (honoured only
  * with NODE_ENV=test); the browser reaches it through Playwright routes for accounts.google.com
- * and www.googleapis.com. GET /state reports what Drive holds, for assertions.
+ * and www.googleapis.com. GET /state reports what Drive holds, for assertions; POST /seed puts a
+ * file or folder in Drive as the user would.
  */
 import { createServer } from 'node:http';
 import { FakeGoogle } from '@askcalls/client-core/testing/fake-google';
@@ -13,6 +14,21 @@ const google = new FakeGoogle();
 async function answer(req: Request): Promise<Response> {
   const path = new URL(req.url).pathname;
   if (path === '/health') return new Response('ok');
+  if (path === '/seed' && req.method === 'POST') {
+    const f = (await req.json()) as {
+      name: string;
+      parents?: string[];
+      folder?: true;
+      b64?: string;
+    };
+    const id = google.addFile({
+      name: f.name,
+      parents: f.parents ?? [],
+      ...(f.folder && { mimeType: 'application/vnd.google-apps.folder' }),
+      ...(f.b64 && { bytes: new Uint8Array(Buffer.from(f.b64, 'base64')) }),
+    });
+    return Response.json({ id });
+  }
   if (path === '/state') {
     return Response.json({
       files: [...google.files.values()].map((f) => ({

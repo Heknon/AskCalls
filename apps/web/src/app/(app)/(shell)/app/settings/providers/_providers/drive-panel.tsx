@@ -1,6 +1,5 @@
 'use client';
 
-import { StorageConnectMessage } from '@askcalls/api-contract/routes/storage';
 import type { RecordingStoreInfo } from '@askcalls/client-core/ports/index';
 import { forgetStore, switchRecordings } from '@askcalls/client-core/recording-stores/choice';
 import {
@@ -18,6 +17,7 @@ import { UsageMeter } from '@askcalls/ui/components/UsageMeter';
 import { Button } from '@askcalls/ui/primitives/button';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
+import { connectDrivePopup } from '../../../../../../../client/drive-connect';
 import { useAppSession, useUnlocked } from '../../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../../i18n/locales';
 import type { TestOutcome } from './connection-test';
@@ -25,54 +25,9 @@ import { testDetail } from './key-card';
 import { useSaveProviders } from './save';
 
 const DRIVE_HOST = 'www.googleapis.com';
-const CHANNEL = 'askcalls-storage';
 const GB = 1e9;
 
 type ConnectError = 'denied' | 'scope' | 'failed' | 'popup';
-
-const newTicket = () =>
-  Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .slice(0, 32);
-
-/**
- * Opens the consent popup on our own routes (no Google script on this page) and waits for the
- * callback page's message: from this origin, carrying this ticket. Null when the user closed it.
- */
-function connectPopup(): Promise<StorageConnectMessage | null> | null {
-  const ticket = newTicket();
-  const popup = window.open(
-    `/api/storage/connect/google?ticket=${ticket}`,
-    'askcalls-storage',
-    'popup,width=520,height=680',
-  );
-  if (!popup) return null;
-  return new Promise((resolve) => {
-    let channel: BroadcastChannel | null = null;
-    const finish = (m: StorageConnectMessage | null) => {
-      window.removeEventListener('message', onMessage);
-      channel?.close();
-      clearInterval(timer);
-      resolve(m);
-    };
-    const accept = (data: unknown) => {
-      const m = StorageConnectMessage.safeParse(data);
-      if (m.success && m.data.ticket === ticket) finish(m.data);
-    };
-    const onMessage = (e: MessageEvent) => {
-      if (e.origin === location.origin && e.source === popup) accept(e.data);
-    };
-    window.addEventListener('message', onMessage);
-    if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel(CHANNEL);
-      channel.onmessage = (e) => accept(e.data);
-    }
-    const timer = setInterval(() => {
-      // The callback posts before it closes; give a late message one more tick.
-      if (popup.closed) setTimeout(() => finish(null), 300);
-    }, 500);
-  });
-}
 
 /** Settings → Providers → Recording backups → Google Drive. */
 export function DrivePanel({
@@ -97,12 +52,13 @@ function Connect({ onSaved }: { onSaved: (doc: Providers) => void }) {
   const [state, setState] = useState<'idle' | 'connecting' | { error: ConnectError }>('idle');
 
   const connect = async () => {
-    const pending = connectPopup();
+    const pending = connectDrivePopup('backup');
     if (!pending) return setState({ error: 'popup' });
     setState('connecting');
     const m = await pending;
     if (!m) return setState('idle');
     if (!m.ok) return setState({ error: m.error });
+    if (!m.refreshToken) return setState({ error: 'failed' });
     try {
       const drive = { id: randomId(), refreshToken: m.refreshToken, folderId: null };
       (await client.ownStores.drive()).seedToken(m.refreshToken, m);
