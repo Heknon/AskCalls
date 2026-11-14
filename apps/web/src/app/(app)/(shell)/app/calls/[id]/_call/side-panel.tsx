@@ -11,7 +11,7 @@ import { Button } from '@askcalls/ui/primitives/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@askcalls/ui/primitives/tabs';
 import { MessageSquareText, NotebookPen } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Me } from '../../../../../../../client/session/session';
 import { hasConsent, rememberConsent } from '../../../_calls/memory';
@@ -29,6 +29,14 @@ export type SidePanelProps = {
 };
 
 const NOTES_DELAY = 800;
+
+/** Asks count per UTC day; the next one starts at the coming UTC midnight. */
+function quotaReset() {
+  const at = new Date();
+  at.setUTCHours(24, 0, 0, 0);
+  return at;
+}
+const RESET_TIME = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } as const;
 
 function Notes({ ctx, call, onMetaChange }: Pick<SidePanelProps, 'ctx' | 'call' | 'onMetaChange'>) {
   const t = useTranslations('call.notes');
@@ -80,6 +88,7 @@ function Ask({ ctx, me, call, onSeek }: Pick<SidePanelProps, 'ctx' | 'me' | 'cal
   const t = useTranslations('call');
   const tc = useTranslations('common');
   const tf = useTranslations('dataFlow');
+  const format = useFormatter();
   const route = useAskRoute(ctx, me);
   const transcriptText = useMemo(() => transcriptFile(call, 'txt').content, [call]);
   const quota = me.usage.asksToday >= me.limits.asksPerDay;
@@ -191,7 +200,10 @@ function Ask({ ctx, me, call, onSeek }: Pick<SidePanelProps, 'ctx' | 'me' | 'cal
         send: t('ask.send'),
         playFrom: (clock) => t('playFrom', { t: clock }),
         error: t('ask.error', { provider }),
-        quota: t('ask.quota', { n: me.limits.asksPerDay }),
+        quota: t('ask.quota', {
+          n: me.limits.asksPerDay,
+          time: format.dateTime(quotaReset(), RESET_TIME),
+        }),
         off: t('ask.off'),
         retry: tc('retry'),
       }}

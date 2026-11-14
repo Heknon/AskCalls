@@ -245,9 +245,13 @@ export interface TranscriptFile {
   content: string;
 }
 
+/** Named by the local date the call started, else by its UTC day. */
 function baseFileName(call: Pick<DecryptedCall, 'id' | 'day' | 'meta'>): string {
-  const date = (call.meta.startedAt ?? dateFromDay(call.day).toISOString()).slice(0, 10);
-  return `call-${date}-${call.id.slice(-12)}`;
+  const at = call.meta.startedAt ? new Date(call.meta.startedAt) : null;
+  const date = at
+    ? new Date(at.getTime() - at.getTimezoneOffset() * 60_000)
+    : dateFromDay(call.day);
+  return `call-${date.toISOString().slice(0, 10)}-${call.id.slice(-12)}`;
 }
 
 /** TXT or SRT, generated on the device (spec 11.2). */

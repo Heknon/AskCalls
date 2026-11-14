@@ -457,7 +457,7 @@ Mock: [`call-view.html`](mocks/call-view.html).
 - No recording: no player; timestamps still scroll and highlight but don't play (tooltip "No recording saved for this call").
 - Number hidden or missing: WhatsApp and Call back disabled with tooltip "No phone number for this call".
 - Ask off on this instance or for this user: Ask tab shows `EmptyState` "Ask is turned off." + "Settings → Providers" (link only for users who can change it).
-- Ask quota: "You've used today's 50 questions. More at 00:00 UTC."
+- Ask quota: "You've used today's 50 questions. More at 02:00." (the next UTC midnight, in local time)
 - Ask error: "Anthropic didn't respond. Try again." (provider name from config).
 - Delete: `ConfirmDialog` "Delete this call?" / "The transcript, notes, tags and recording are deleted for good." / Cancel · Delete call; then navigate back with a toast with Undo (5 s; the delete request is sent when the toast closes).
 
@@ -501,7 +501,7 @@ Mock: [`call-view.html`](mocks/call-view.html).
 | `ask.route.managed` | {model} via AskCalls · sends this call to {provider} | {model} דרך AskCalls · השיחה נשלחת ל-{provider} |
 | `ask.route.direct` | {model} with your key · sends this call to {provider} | {model} עם המפתח שלך · השיחה נשלחת ל-{provider} |
 | `ask.off` | Ask is turned off. | שאלות כבויות. |
-| `ask.quota` | You've used today's {n} questions. More at 00:00 UTC. | ניצלת את {n} השאלות של היום. עוד שאלות ב-00:00 UTC. |
+| `ask.quota` | You've used today's {n} questions. More at {time}. | ניצלת את {n} השאלות של היום. עוד שאלות ב-{time}. |
 | `ask.error` | {provider} didn't respond. Try again. | {provider} לא הגיבה. כדאי לנסות שוב. |
 | `notes.placeholder` | Notes | הערות |
 | `notes.saving` / `saved` / `error` | Saving… / Saved / Couldn't save. Retry | שומר… / נשמר / השמירה נכשלה. ניסיון חוזר |

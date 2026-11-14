@@ -82,7 +82,7 @@
     },
     "off": "Ask is turned off.",
     "offAction": "Settings → Providers",
-    "quota": "You've used today's {n} questions. More at 00:00 UTC.",
+    "quota": "You've used today's {n} questions. More at {time}.",
     "error": "{provider} didn't respond. Try again."
   },
   "notes": {
