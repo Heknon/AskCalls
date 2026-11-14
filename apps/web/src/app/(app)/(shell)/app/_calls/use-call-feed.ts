@@ -4,7 +4,7 @@ import { listCalls } from '@askcalls/client-core/calls';
 import type { ClientContext } from '@askcalls/client-core/context';
 import { type HighlightRange, searchCalls } from '@askcalls/client-core/search';
 import { intentTagId, type ResolvedTag } from '@askcalls/client-core/tags';
-import type { CallMeta, DurationBucket } from '@askcalls/domain';
+import { type CallMeta, callStartedAt, type DurationBucket } from '@askcalls/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLockWipe } from '../../../../../client/session/session';
 import { dateRange, type Filters, filterByDirection } from './filters';
@@ -378,8 +378,8 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
       (i) => metas.current.get(i.id),
       direction,
     );
-    const at = (i: FeedItem) => metas.current.get(i.id)?.startedAt ?? '';
-    const byDate = (a: FeedItem, b: FeedItem) => a.day - b.day || at(a).localeCompare(at(b));
+    const at = (i: FeedItem) => callStartedAt(i, metas.current.get(i.id)?.startedAt).getTime();
+    const byDate = (a: FeedItem, b: FeedItem) => a.day - b.day || at(a) - at(b);
     if (sort === 'oldest') return visible.sort(byDate);
     if (sort === 'longest') {
       const len = (i: FeedItem) => metas.current.get(i.id)?.durationSec ?? i.durationBucket * 60;

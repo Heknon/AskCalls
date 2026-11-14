@@ -1,5 +1,6 @@
 import { type CountryCode, DEFAULT_PHONE_REGION, parsePhone } from '@askcalls/indexing';
 import { baseName } from './pairing';
+import { fromZonedTime } from './time-zone';
 
 export interface FileNameMeta {
   /** E.164 when the name holds a parsable number. */
@@ -36,6 +37,7 @@ interface Stamp {
   startedAt: string;
 }
 
+/** `toInstant` turns the wall-clock fields, read as UTC, into the instant they name. */
 function utcIso(
   y: number,
   mo: number,
@@ -43,15 +45,16 @@ function utcIso(
   h: number,
   mi: number,
   s: number,
-  offsetMinutes: number,
+  toInstant: (wall: number) => number,
 ): string | null {
   if (mo < 1 || mo > 12 || h > 23 || mi > 59 || s > 59) return null;
-  const local = Date.UTC(y, mo - 1, d, h, mi, s);
-  if (Number.isNaN(local) || new Date(local).getUTCDate() !== d) return null;
-  return new Date(local - offsetMinutes * 60_000).toISOString();
+  const wall = Date.UTC(y, mo - 1, d, h, mi, s);
+  if (Number.isNaN(wall) || new Date(wall).getUTCDate() !== d) return null;
+  return new Date(toInstant(wall)).toISOString();
 }
 
-function findStamp(text: string, offset: number): Stamp | null {
+function findStamp(text: string, timeZone: string): Stamp | null {
+  const inZone = (wall: number) => fromZonedTime(wall, timeZone);
   const sep = SEPARATED.exec(text);
   if (sep) {
     const n = (i: number) => +(sep[i] ?? 0);
@@ -62,7 +65,7 @@ function findStamp(text: string, offset: number): Stamp | null {
       sep[4] ? n(4) : n(7),
       sep[5] ? n(5) : n(8),
       sep[6] ? n(6) : n(9),
-      offset,
+      inZone,
     );
     if (startedAt) return { index: sep.index, length: sep[0].length, startedAt };
   }
@@ -72,7 +75,7 @@ function findStamp(text: string, offset: number): Stamp | null {
     const time = c[3]!;
     const y = date.length === 8 ? +date.slice(0, 4) : 2000 + +date.slice(0, 2);
     const md = date.slice(-4);
-    const own = c[4] ? (c[4] === '-' ? -1 : 1) * (+c[5]! * 60 + +c[6]!) : offset;
+    const own = c[4] ? (c[4] === '-' ? -1 : 1) * (+c[5]! * 60 + +c[6]!) * 60_000 : null;
     const startedAt = utcIso(
       y,
       +md.slice(0, 2),
@@ -80,7 +83,7 @@ function findStamp(text: string, offset: number): Stamp | null {
       +time.slice(0, 2),
       +time.slice(2, 4),
       +time.slice(4, 6),
-      own,
+      own === null ? inZone : (wall) => wall - own,
     );
     if (startedAt) return { index: c.index, length: c[0].length, startedAt };
   }
@@ -117,12 +120,12 @@ function who(
  * Reads the date and number or contact name from call-recording file names: Samsung
  * (`Call recording <who>_YYMMDD_HHMMSS`), iPhone exports (`Call with <who> YYYY-MM-DD at HH.MM`),
  * and Android recorders that put the stamp first, last or around `<name>(<number>)`.
- * Times in names are local to the phone: `utcOffsetMinutes` converts them (default UTC), unless
+ * Times in names are the phone's clock: they are read in `timeZone` (IANA, default UTC), unless
  * the name carries its own `+HHMM` offset.
  */
 export function parseRecordingFileName(
   path: string,
-  opts: { region?: CountryCode; utcOffsetMinutes?: number } = {},
+  opts: { region?: CountryCode; timeZone?: string } = {},
 ): FileNameMeta | null {
   const region = opts.region ?? DEFAULT_PHONE_REGION;
   // Samsung appends `_1`, `_2` to repeated names.
@@ -131,7 +134,7 @@ export function parseRecordingFileName(
     .replace(/(?<=\d{6})_\d{1,2}$/, '');
   const prefixed = PREFIX.test(stem);
   const rest = prefixed ? stem.replace(PREFIX, '') : stem.replace(BARE_CALL, '');
-  const stamp = findStamp(rest, opts.utcOffsetMinutes ?? 0);
+  const stamp = findStamp(rest, opts.timeZone ?? 'UTC');
   if (stamp) {
     const part = `${rest.slice(0, stamp.index)} ${rest.slice(stamp.index + stamp.length)}`;
     return { ...who(part, region), startedAt: stamp.startedAt };

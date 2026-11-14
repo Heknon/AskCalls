@@ -8,10 +8,11 @@ import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { LimitOverrideField } from '@askcalls/ui/components/LimitOverrideField';
 import { SettingsSection } from '@askcalls/ui/components/SettingsSection';
 import { UsageMeter } from '@askcalls/ui/components/UsageMeter';
+import { formatDate } from '@askcalls/ui/lib/dates';
 import { Badge } from '@askcalls/ui/primitives/badge';
 import { Button } from '@askcalls/ui/primitives/button';
 import { useParams } from 'next/navigation';
-import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useUnlocked } from '../../../../../../client/session/session';
 import { intlLocale } from '../../../../../../i18n/locales';
@@ -61,7 +62,6 @@ export default function AccountPage() {
 
 function Detail({ account, onSaved }: { account: Account; onSaved: (a: Account) => void }) {
   const t = useTranslations('admin.accounts');
-  const format = useFormatter();
   const locale = intlLocale(useLocale());
   const n = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   const { client } = useUnlocked();
@@ -99,7 +99,7 @@ function Detail({ account, onSaved }: { account: Account; onSaved: (a: Account) 
         <span className="text-muted-foreground">
           {t('joined', {
             plan: t(`plan.${account.plan}`),
-            date: format.dateTime(account.createdAt, { dateStyle: 'medium' }),
+            date: formatDate(account.createdAt, locale),
           })}
         </span>
         {account.role === 'admin' ? <Badge variant="accent">{t('admin')}</Badge> : null}

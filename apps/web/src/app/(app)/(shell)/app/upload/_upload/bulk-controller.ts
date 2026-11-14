@@ -7,6 +7,7 @@ import type {
   BulkState,
 } from '@askcalls/client-core/bulk/queue';
 import type { PreflightSummary } from '@askcalls/client-core/bulk/runner';
+import { deviceTimeZone, isTimeZone } from '@askcalls/client-core/bulk/time-zone';
 import type { ActiveStatus, IngestMeta, MetaEdits } from '@askcalls/client-core/ingest';
 import { isDomainError } from '@askcalls/domain';
 import type { BrowserClient } from '../../../../../../client/browser-client';
@@ -49,11 +50,11 @@ export type BulkSnapshot =
       plan: Plan;
       /** Keys of the items the user left out; everything else is imported. */
       excluded: ReadonlySet<string>;
+      /** IANA zone the times in file names and the manifest are read in. */
+      timeZone: string;
       error: BulkError | null;
     }
   | { phase: 'queue'; queue: QueueView };
-
-const utcOffsetMinutes = () => -new Date().getTimezoneOffset();
 
 /** The queue and the ingest runner: loaded once there are files, not with the upload screen. */
 const loadBulkCode = () => import('./bulk-code');
@@ -101,8 +102,8 @@ export class BulkController {
   #disposed = false;
   #planRun = 0;
   #code: BulkCode | null = null;
-  #metaOptions: { manifest: Manifest | null; region: string; utcOffsetMinutes: number } | null =
-    null;
+  #metaOptions: { manifest: Manifest | null; region: string; timeZone: string } | null = null;
+  #timeZone = deviceTimeZone();
 
   constructor(
     private readonly client: BrowserClient,
@@ -203,16 +204,18 @@ export class BulkController {
       await this.#load();
     const settings = await ctx.userData.get('settings');
     const reader = this.client.bulkFiles;
+    const timeZone = isTimeZone(state.timeZone) ? state.timeZone : deviceTimeZone();
+    this.#timeZone = timeZone;
     this.#manifest =
       this.#missing === 'files'
         ? null
-        : await loadManifest(reader, state.manifest).catch(() => null);
+        : await loadManifest(reader, state.manifest, timeZone).catch(() => null);
     const run = createBulkRunner(ctx, {
       reader,
       manifest: this.#manifest,
       backupRecordings: state.backupRecordings,
       region: settings.phoneRegion,
-      utcOffsetMinutes: utcOffsetMinutes(),
+      timeZone,
     });
     const device = navigator as Navigator & { deviceMemory?: number };
     const options = {
@@ -230,11 +233,7 @@ export class BulkController {
     for (const item of queue.items) {
       this.#meta.set(
         item.id,
-        itemMeta(item, {
-          manifest: this.#manifest,
-          region: settings.phoneRegion,
-          utcOffsetMinutes: utcOffsetMinutes(),
-        }),
+        itemMeta(item, { manifest: this.#manifest, region: settings.phoneRegion, timeZone }),
       );
     }
     this.#unsubscribe = queue.subscribe((item) => {
@@ -306,10 +305,11 @@ export class BulkController {
     }
     this.#set({ phase: 'planning' });
     const { ctx, bulkFiles } = this.client;
+    const timeZone = this.#timeZone;
     let manifest: Manifest | null = null;
     let manifestError = false;
     try {
-      manifest = await loadManifest(bulkFiles, pairing.manifest);
+      manifest = await loadManifest(bulkFiles, pairing.manifest, timeZone);
     } catch {
       manifestError = true;
     }
@@ -326,7 +326,7 @@ export class BulkController {
         : [],
     );
     const region = (await ctx.userData.get('settings')).phoneRegion;
-    const options = { manifest, region, utcOffsetMinutes: utcOffsetMinutes() };
+    const options = { manifest, region, timeZone };
     const meta = new Map(pairing.items.map((i) => [i.key, itemMeta(i, options)]));
     if (run !== this.#planRun) return;
     this.#metaOptions = options;
@@ -334,6 +334,7 @@ export class BulkController {
       phase: 'preflight',
       plan: { pairing, summary, manifestKeys, meta, edits: new Map() },
       excluded: new Set(),
+      timeZone,
       error: error ?? (manifestError ? 'manifestError' : null),
     });
   }
@@ -372,6 +373,30 @@ export class BulkController {
     this.#set({ ...s, plan: { ...s.plan, meta, edits } });
   }
 
+  /** Reads the times in file names and the manifest in another zone; edits are kept. */
+  async setTimeZone(timeZone: string) {
+    const options = this.#metaOptions;
+    const code = this.#code;
+    const s = this.#snapshot;
+    if (s.phase !== 'preflight' || !options || !code || !isTimeZone(timeZone)) return;
+    this.#timeZone = timeZone;
+    const manifest = await code
+      .loadManifest(this.client.bulkFiles, s.plan.pairing.manifest, timeZone)
+      .catch(() => options.manifest);
+    const now = this.#snapshot;
+    if (now.phase !== 'preflight' || now.plan.pairing !== s.plan.pairing) return;
+    if (this.#timeZone !== timeZone) return;
+    const next = { ...options, manifest, timeZone };
+    this.#metaOptions = next;
+    const meta = new Map(
+      now.plan.pairing.items.map((i) => {
+        const edits = now.plan.edits.get(i.key);
+        return [i.key, code.itemMeta(edits ? { ...i, edits } : i, next)];
+      }),
+    );
+    this.#set({ ...now, plan: { ...now.plan, meta }, timeZone });
+  }
+
   /** Drops the edits of planned calls: back to what file names and the manifest say. */
   revertMeta(keys: readonly string[]) {
     const s = this.#snapshot;
@@ -399,7 +424,7 @@ export class BulkController {
     const { planBatch } = await this.#load();
     const state = planBatch(
       { ...s.plan.pairing, items },
-      { backupRecordings, edits: s.plan.edits },
+      { backupRecordings, edits: s.plan.edits, timeZone: this.#timeZone },
     );
     this.#restored = false;
     this.#missing = null;

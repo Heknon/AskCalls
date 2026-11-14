@@ -249,16 +249,17 @@ test.describe('in a time zone 14 hours from the server', () => {
     await expect(time).toBeVisible();
     const [device, utc] = await time.evaluate((el) => {
       const at = new Date(el.getAttribute('datetime') ?? '');
-      const format = (timeZone?: string) =>
-        new Intl.DateTimeFormat(document.documentElement.lang, {
-          dateStyle: 'medium',
-          timeStyle: 'short',
+      const clock = (timeZone?: string) =>
+        new Intl.DateTimeFormat('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23',
           timeZone,
         }).format(at);
-      return [format(), format('UTC')];
+      return [clock(), clock('UTC')];
     });
     expect(device).not.toBe(utc);
-    await expect(time).toHaveText(device);
+    await expect(time).toHaveText(new RegExp(`^Today, ${device}$`));
   });
 });
 

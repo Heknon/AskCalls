@@ -5,10 +5,12 @@ import { CodeGroupInput } from '@askcalls/ui/components/CodeGroupInput';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { GateHeading, GateNote } from '@askcalls/ui/components/Gate';
 import { RecoveryCodeGrid } from '@askcalls/ui/components/RecoveryCodeGrid';
+import { formatDate } from '@askcalls/ui/lib/dates';
 import { Button } from '@askcalls/ui/primitives/button';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { intlLocale } from '../../../../../../i18n/locales';
 
 /** The text of the downloaded and printed copy: code, account, date, where to use it. */
 function recoveryText(lines: {
@@ -35,7 +37,7 @@ export function RecoveryStep({
   onFinish: () => Promise<void>;
 }) {
   const t = useTranslations('onboarding');
-  const format = useFormatter();
+  const locale = intlLocale(useLocale());
   const [view, setView] = useState<'show' | 'confirm'>('show');
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -54,7 +56,7 @@ export function RecoveryStep({
       heading: t('rc.file.heading'),
       code,
       account: t('rc.file.account', { email }),
-      created: t('rc.file.created', { date: format.dateTime(new Date(), { dateStyle: 'long' }) }),
+      created: t('rc.file.created', { date: formatDate(new Date(), locale) }),
       use: t('rc.file.use', { url: `${location.origin}/app` }),
     });
 

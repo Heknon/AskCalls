@@ -64,16 +64,11 @@ export function contactFor(
  */
 export function defaultsFor(
   picked: Picked,
-  opts: { region: CountryCode; contacts: readonly Contact[]; utcOffsetMinutes: number },
+  opts: { region: CountryCode; contacts: readonly Contact[]; timeZone: string },
 ): SingleForm {
   const files = [picked.audio, picked.transcript].filter((f): f is File => f !== null);
   const parsed = files
-    .map((f) =>
-      parseRecordingFileName(f.name, {
-        region: opts.region,
-        utcOffsetMinutes: opts.utcOffsetMinutes,
-      }),
-    )
+    .map((f) => parseRecordingFileName(f.name, { region: opts.region, timeZone: opts.timeZone }))
     .find((m) => m !== null);
   const phone = parsed?.phone ?? '';
   const modified = files[0]?.lastModified;

@@ -71,6 +71,8 @@ export interface BulkState {
   v: typeof BULK_STATE_VERSION;
   manifest: FileRef | null;
   backupRecordings: boolean;
+  /** IANA zone file names and the manifest were read in. Absent on batches saved before it. */
+  timeZone?: string;
   paused: boolean;
   items: BulkItemState[];
 }
@@ -102,12 +104,17 @@ export const isTerminal = (s: IngestStatus) => TERMINAL.includes(s);
 
 export function planBatch(
   pairing: Pairing,
-  opts: { backupRecordings?: boolean; edits?: ReadonlyMap<string, MetaEdits> } = {},
+  opts: {
+    backupRecordings?: boolean;
+    edits?: ReadonlyMap<string, MetaEdits>;
+    timeZone?: string;
+  } = {},
 ): BulkState {
   return {
     v: BULK_STATE_VERSION,
     manifest: pairing.manifest,
     backupRecordings: opts.backupRecordings ?? false,
+    ...(opts.timeZone && { timeZone: opts.timeZone }),
     paused: false,
     items: pairing.items.map((p) => ({
       id: p.key,

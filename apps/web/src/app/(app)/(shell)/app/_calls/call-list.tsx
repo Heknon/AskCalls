@@ -4,9 +4,10 @@ import { getCall } from '@askcalls/client-core/calls';
 import type { ClientContext } from '@askcalls/client-core/context';
 import { findPassage as passageIn } from '@askcalls/client-core/search';
 import type { Contact } from '@askcalls/client-core/userdata';
-import type { CallMeta } from '@askcalls/domain';
+import { type CallMeta, callStartedAt } from '@askcalls/domain';
 import { CallRow, type CallRowAction } from '@askcalls/ui/components/CallRow';
-import { formatDuration, formatWhen } from '@askcalls/ui/lib/format';
+import { formatWhen } from '@askcalls/ui/lib/dates';
+import { formatDuration } from '@askcalls/ui/lib/format';
 import { Card } from '@askcalls/ui/primitives/card';
 import { Spinner } from '@askcalls/ui/primitives/spinner';
 import { ExternalLink, FolderOpen, Star, Tag, Trash2 } from 'lucide-react';
@@ -14,7 +15,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { localName } from '../../../../../client/i18n/language-names';
-import { contactName, DIRECTION, startedAt, tagChips, whatsappHref } from './present';
+import { contactName, DIRECTION, tagChips, whatsappHref } from './present';
 import type { Feed, FeedItem } from './use-call-feed';
 import { useWindowList } from './use-window-list';
 
@@ -156,7 +157,7 @@ export function CallList({
               detail={(m) =>
                 t('row.detail', {
                   direction: labels.direction[DIRECTION[m.direction]],
-                  when: formatWhen(startedAt(m, item.day), locale),
+                  when: formatWhen(callStartedAt(item, m.startedAt), locale),
                   duration: formatDuration(m.durationSec ?? 0, locale, true),
                 })
               }
@@ -317,7 +318,7 @@ function FeedRow({
         name: contactName(meta, contacts),
         phone: meta.phoneE164 ?? undefined,
         direction: DIRECTION[meta.direction],
-        startedAt: startedAt(meta, item.day),
+        startedAt: callStartedAt(item, meta.startedAt),
         durationSec: meta.durationSec ?? 0,
         starred: item.starred,
         tags: tagChips(item.tags, intentLabel),

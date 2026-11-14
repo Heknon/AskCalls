@@ -9,6 +9,7 @@ import { AuditEventRow } from '@askcalls/ui/components/AuditEventRow';
 import { EmptyState } from '@askcalls/ui/components/EmptyState';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { SettingsSection } from '@askcalls/ui/components/SettingsSection';
+import { formatWhen } from '@askcalls/ui/lib/dates';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Label } from '@askcalls/ui/primitives/label';
 import {
@@ -19,9 +20,10 @@ import {
   SelectValue,
 } from '@askcalls/ui/primitives/select';
 import { Table, TableHead } from '@askcalls/ui/primitives/table';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { useUnlocked } from '../../../../../../client/session/session';
+import { intlLocale } from '../../../../../../i18n/locales';
 import { PanelSkeleton, useSkeletonDelay } from '../../../_shell/states';
 import { SectionScreen } from '../_settings/section-screen';
 import { type ActorKind, applyFilters, type Period } from './_audit/filter';
@@ -103,7 +105,7 @@ function Filter<T extends string>({
 export default function AuditSettingsPage() {
   const t = useTranslations('settings.audit');
   const tc = useTranslations('common');
-  const format = useFormatter();
+  const locale = intlLocale(useLocale());
   const { client } = useUnlocked();
   const [action, setAction] = useState<AuditAction | 'any'>('any');
   const [actor, setActor] = useState<ActorKind | 'any'>('any');
@@ -230,7 +232,7 @@ export default function AuditSettingsPage() {
                   <AuditEventRow
                     key={e.id}
                     at={{
-                      label: format.dateTime(e.at, { dateStyle: 'medium', timeStyle: 'short' }),
+                      label: formatWhen(e.at, locale),
                       iso: e.at.toISOString(),
                     }}
                     actor={actorLabel(e.actor)}

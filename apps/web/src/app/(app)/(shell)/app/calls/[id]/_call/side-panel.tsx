@@ -7,13 +7,15 @@ import { AskPanel } from '@askcalls/ui/components/AskPanel';
 import { ConsentSheet } from '@askcalls/ui/components/ConsentSheet';
 import { DataFlowNote } from '@askcalls/ui/components/DataFlowNote';
 import { NotesEditor } from '@askcalls/ui/components/NotesEditor';
+import { formatTime } from '@askcalls/ui/lib/dates';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@askcalls/ui/primitives/tabs';
 import { MessageSquareText, NotebookPen } from 'lucide-react';
 import Link from 'next/link';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Me } from '../../../../../../../client/session/session';
+import { intlLocale } from '../../../../../../../i18n/locales';
 import { hasConsent, rememberConsent } from '../../../_calls/memory';
 import { parseCitations } from './citations';
 import { consentKeyOf, providerName, useAsk, useAskRoute } from './use-ask';
@@ -36,7 +38,6 @@ function quotaReset() {
   at.setUTCHours(24, 0, 0, 0);
   return at;
 }
-const RESET_TIME = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } as const;
 
 function Notes({ ctx, call, onMetaChange }: Pick<SidePanelProps, 'ctx' | 'call' | 'onMetaChange'>) {
   const t = useTranslations('call.notes');
@@ -88,7 +89,7 @@ function Ask({ ctx, me, call, onSeek }: Pick<SidePanelProps, 'ctx' | 'me' | 'cal
   const t = useTranslations('call');
   const tc = useTranslations('common');
   const tf = useTranslations('dataFlow');
-  const format = useFormatter();
+  const locale = intlLocale(useLocale());
   const route = useAskRoute(ctx, me);
   const transcriptText = useMemo(() => transcriptFile(call, 'txt').content, [call]);
   const quota = me.usage.asksToday >= me.limits.asksPerDay;
@@ -202,7 +203,7 @@ function Ask({ ctx, me, call, onSeek }: Pick<SidePanelProps, 'ctx' | 'me' | 'cal
         error: t('ask.error', { provider }),
         quota: t('ask.quota', {
           n: me.limits.asksPerDay,
-          time: format.dateTime(quotaReset(), RESET_TIME),
+          time: formatTime(quotaReset(), locale),
         }),
         off: t('ask.off'),
         retry: tc('retry'),

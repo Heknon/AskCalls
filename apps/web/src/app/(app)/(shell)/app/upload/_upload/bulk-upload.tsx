@@ -2,9 +2,10 @@
 
 import type { FileRef } from '@askcalls/client-core/bulk/pairing';
 import type { BulkItemState } from '@askcalls/client-core/bulk/queue';
+import { timeZones } from '@askcalls/client-core/bulk/time-zone';
 import { getCall } from '@askcalls/client-core/calls';
 import type { Contact, Settings } from '@askcalls/client-core/userdata';
-import { dateFromDay } from '@askcalls/domain';
+import { callStartedAt } from '@askcalls/domain';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { FileDropZone } from '@askcalls/ui/components/FileDropZone';
 import { JobProgress } from '@askcalls/ui/components/JobProgress';
@@ -12,7 +13,8 @@ import { PreflightSummary } from '@askcalls/ui/components/PreflightSummary';
 import { QueueRow } from '@askcalls/ui/components/QueueRow';
 import { StatusBanner } from '@askcalls/ui/components/StatusBanner';
 import { UsageMeter } from '@askcalls/ui/components/UsageMeter';
-import { formatDateTime, formatDuration } from '@askcalls/ui/lib/format';
+import { formatDateTime } from '@askcalls/ui/lib/dates';
+import { formatDuration } from '@askcalls/ui/lib/format';
 import { Badge } from '@askcalls/ui/primitives/badge';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Card } from '@askcalls/ui/primitives/card';
@@ -131,6 +133,9 @@ export function BulkUpload({
   if (snap.phase === 'preflight') {
     const { plan, excluded } = snap;
     const sel = selectionSummary(plan.pairing.items, plan.summary, plan.manifestKeys, excluded);
+    const timed = plan.pairing.items.some(
+      (i) => plan.meta.get(i.key)?.startedAt && plan.edits.get(i.key)?.startedAt === undefined,
+    );
     return (
       <Layout
         side={
@@ -143,6 +148,13 @@ export function BulkUpload({
             manifestCovered={sel.manifestCovered}
             unreadable={sel.unreadable}
             backup={recordingsOff ? undefined : { checked: backup, onChange: setBackup }}
+            {...(timed && {
+              timeZone: {
+                value: snap.timeZone,
+                options: timeZones(snap.timeZone),
+                onChange: (zone: string) => void controller.setTimeZone(zone),
+              },
+            })}
             footer={
               <div className="flex flex-col gap-2">
                 <Button
@@ -257,6 +269,7 @@ function Summary({
   manifestCovered,
   unreadable = 0,
   backup,
+  timeZone,
   footer,
   collapsible = false,
 }: {
@@ -269,6 +282,8 @@ function Summary({
   manifestCovered: number;
   unreadable?: number;
   backup?: { checked: boolean; onChange: (v: boolean) => void };
+  /** Shown when some call takes its time from a file name or the manifest. */
+  timeZone?: { value: string; options: readonly string[]; onChange: (v: string) => void };
   footer?: ReactNode;
   collapsible?: boolean;
 }) {
@@ -328,6 +343,7 @@ function Summary({
           </div>
         ) : null
       }
+      {...(timeZone && { timeZone: { ...timeZone, label: t('timeZone') } })}
       {...(backup && { backup: { ...backup, label: t('backup') } })}
     />
   );
@@ -672,8 +688,7 @@ function DuplicateLink({ id }: { id: string }) {
     getCall(client!.ctx, id).then(
       (call) => {
         if (stale) return;
-        const at = call.meta.startedAt ? new Date(call.meta.startedAt) : dateFromDay(call.day);
-        setWhen(formatDateTime(at, locale));
+        setWhen(formatDateTime(callStartedAt(call, call.meta.startedAt), locale));
       },
       () => {},
     );

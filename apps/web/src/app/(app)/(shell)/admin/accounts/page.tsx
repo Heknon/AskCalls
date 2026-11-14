@@ -6,11 +6,12 @@ import { AccountRow } from '@askcalls/ui/components/AccountRow';
 import { EmptyState } from '@askcalls/ui/components/EmptyState';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { SearchBox } from '@askcalls/ui/components/SearchBox';
+import { formatDate } from '@askcalls/ui/lib/dates';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Table, TableHead } from '@askcalls/ui/primitives/table';
 import { Users } from 'lucide-react';
 import Link from 'next/link';
-import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { useUnlocked } from '../../../../../client/session/session';
 import { intlLocale } from '../../../../../i18n/locales';
@@ -27,8 +28,8 @@ const COLUMNS = ['calls', 'recordings', 'transcription', 'asks', 'translation', 
 export default function AccountsPage() {
   const t = useTranslations('admin.accounts');
   const tc = useTranslations('common');
-  const format = useFormatter();
-  const n = new Intl.NumberFormat(intlLocale(useLocale()), { maximumFractionDigits: 2 });
+  const locale = intlLocale(useLocale());
+  const n = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   const { client } = useUnlocked();
   const [text, setText] = useState('');
   const [email, setEmail] = useState('');
@@ -130,7 +131,7 @@ export default function AccountsPage() {
                     {...(a.role === 'admin' && { admin: t('admin') })}
                     {...(a.overridden.length > 0 && { custom: t('custom') })}
                     created={{
-                      label: format.dateTime(a.createdAt, { dateStyle: 'medium' }),
+                      label: formatDate(a.createdAt, locale),
                       iso: a.createdAt.toISOString(),
                     }}
                     usage={usage(a)}

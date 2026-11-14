@@ -1,5 +1,6 @@
 'use client';
 
+import { deviceTimeZone } from '@askcalls/client-core/bulk/time-zone';
 import type { FailureReason } from '@askcalls/client-core/errors';
 import { type ActiveStatus, type IngestResult, ingestCall } from '@askcalls/client-core/ingest';
 import type { Contact, Settings } from '@askcalls/client-core/userdata';
@@ -78,15 +79,7 @@ export function SingleUpload({
     setUnsupported(next.unsupported);
     if (!next.picked.audio && !next.picked.transcript) return;
     setPicked(next.picked);
-    setForm(
-      (f) =>
-        f ??
-        defaultsFor(next.picked, {
-          region,
-          contacts,
-          utcOffsetMinutes: -new Date().getTimezoneOffset(),
-        }),
-    );
+    setForm((f) => f ?? defaultsFor(next.picked, { region, contacts, timeZone: deviceTimeZone() }));
   };
   const removeFile = (kind: keyof Picked) => {
     const next = { ...picked, [kind]: null };

@@ -436,6 +436,7 @@ shadcn/ui primitive (Radix underneath) or "custom" when composed. All live in `p
 | Button (primary, secondary, outline, ghost, destructive, link; sm, default, lg, icon) | `Button` | Loading state with spinner; `asChild` for links |
 | Input, Textarea, Label | `Input`, `Textarea`, `Label` | 16 px text on mobile |
 | Select | `Select` | Model pickers, auto-lock timeout |
+| Select of hundreds of options | `NativeSelect` (platform `<select>` styled like `SelectTrigger`) | Recording time zone; the platform picker scrolls and finds by typing |
 | Checkbox, Switch, Radio group | `Checkbox`, `Switch`, `RadioGroup` | |
 | Choice card (radio card) | custom on `RadioGroup` | Wizard and provider choices |
 | Segmented control | `ToggleGroup` (type single) | Managed / Own key / Off |

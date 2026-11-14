@@ -574,7 +574,8 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### PreflightSummary
 - **Purpose:** what an import will do before it starts: counts, transcription minutes and the data flow.
-- **Composes:** `Card`, `DataFlowNote`, `UsageMeter`. **Screens:** U2.
+- **Props:** `timeZone` (the IANA zone the times in file names and `manifest.csv` are read in, with the zones to pick from; the screen passes it only when some call takes its time from them), `backup` (the "Back up recordings" switch).
+- **Composes:** `Card`, `DataFlowNote`, `UsageMeter`, `NativeSelect`, `Switch`. **Screens:** U2.
 
 #### QueueItemStatus
 - **Purpose:** the state of one file in an import.

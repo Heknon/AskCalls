@@ -16,18 +16,20 @@ export interface BulkFileReader {
   bytes(file: FileRef): Promise<Uint8Array>;
 }
 
+/** `timeZone`: the zone of `started_at` values without an offset (IANA, default UTC). */
 export async function loadManifest(
   reader: BulkFileReader,
   file: FileRef | null,
+  timeZone?: string,
 ): Promise<Manifest | null> {
-  return file ? parseManifest(await reader.bytes(file)) : null;
+  return file ? parseManifest(await reader.bytes(file), timeZone ? { timeZone } : {}) : null;
 }
 
 export interface MetaOptions {
   manifest: Manifest | null;
   region?: string;
-  /** Offset of the phone's clock for times in file names. */
-  utcOffsetMinutes?: number;
+  /** IANA zone of the phone's clock, for times in file names (default UTC). */
+  timeZone?: string;
 }
 
 /**
@@ -41,7 +43,9 @@ export function itemMeta(
   const region = opts.region && isPhoneRegion(opts.region) ? opts.region : DEFAULT_PHONE_REGION;
   const names = [item.audio?.name, item.transcript?.name].filter((n): n is string => !!n);
   const fromName = names
-    .map((n) => parseRecordingFileName(n, { region, utcOffsetMinutes: opts.utcOffsetMinutes ?? 0 }))
+    .map((n) =>
+      parseRecordingFileName(n, { region, ...(opts.timeZone && { timeZone: opts.timeZone }) }),
+    )
     .find((m) => m !== null);
   const row = names.map((n) => opts.manifest?.lookup(n)).find((r) => r !== undefined);
   return {

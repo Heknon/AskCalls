@@ -32,6 +32,7 @@ The bundle budget (`scripts/checks/bundle-budget.json`) caps each page's first-l
 - Tests sit next to the code: `*.test.ts` (unit, contract with in-memory or PGlite), `*.int.test.ts` (needs Docker services).
 - Errors are `DomainError(code, message)`. Messages and logs are content-free: ids, counts and codes only.
 - No `console.log` outside the agent CLI and tests (Biome enforces it).
+- Dates and times go through `@askcalls/ui/lib/dates` with `intlLocale(locale)`: the regional locale and the device's time zone. Not next-intl's `format.dateTime`, which formats in the bare language (US style for `en`) and the server's time zone (UTC).
 - UI strings live in message files (next-intl); no hard-coded copy in components. Use logical CSS properties (`ms-`, `pe-`, `start-`) so RTL works. Transcript text uses `dir="auto"`.
 - Design system and screen specs: `docs/design/`.
 - Deployment (GitHub Actions → Vercel, Neon, AWS S3 + CloudFront via CDK in `infra/`), pipelines and one-time setup: `docs/deployment.md`.

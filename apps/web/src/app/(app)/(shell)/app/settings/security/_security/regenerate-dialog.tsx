@@ -13,6 +13,7 @@ import { CodeGroupInput } from '@askcalls/ui/components/CodeGroupInput';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { PassphraseField } from '@askcalls/ui/components/PassphraseField';
 import { RecoveryCodeGrid } from '@askcalls/ui/components/RecoveryCodeGrid';
+import { formatDate } from '@askcalls/ui/lib/dates';
 import { Button } from '@askcalls/ui/primitives/button';
 import {
   Dialog,
@@ -24,11 +25,12 @@ import {
   DialogTitle,
 } from '@askcalls/ui/primitives/dialog';
 import { FileKey, KeyRound } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotify } from '../../../../../../../client/notices/notices';
 import { useUnlocked } from '../../../../../../../client/session/session';
+import { intlLocale } from '../../../../../../../i18n/locales';
 
 const GROUPS = 8;
 
@@ -59,7 +61,7 @@ export function RegenerateDialog({
 }) {
   const t = useTranslations('settings.sec.regen');
   const tc = useTranslations('common');
-  const format = useFormatter();
+  const locale = intlLocale(useLocale());
   const { client, me } = useUnlocked();
   const notify = useNotify();
   const [step, setStep] = useState<Step>({ name: 'verify', method: 'choose' });
@@ -165,7 +167,7 @@ export function RegenerateDialog({
       recoveryCodeGroups(c).join('-'),
       '',
       t('file.account', { email: me.user.email ?? '' }),
-      t('file.created', { date: format.dateTime(new Date(), { dateStyle: 'long' }) }),
+      t('file.created', { date: formatDate(new Date(), locale) }),
       t('file.use', { url: `${location.origin}/app` }),
       '',
     ].join('\n');

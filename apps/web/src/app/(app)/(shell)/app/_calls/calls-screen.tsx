@@ -2,6 +2,7 @@
 
 import { getCall, starCall } from '@askcalls/client-core/calls';
 import { ingestCall } from '@askcalls/client-core/ingest';
+import { callStartedAt } from '@askcalls/domain';
 import { CallRow } from '@askcalls/ui/components/CallRow';
 import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
 import { EmptyState } from '@askcalls/ui/components/EmptyState';
@@ -11,7 +12,8 @@ import { ResultLine } from '@askcalls/ui/components/ResultLine';
 import { SearchBox } from '@askcalls/ui/components/SearchBox';
 import type { FilterFacet } from '@askcalls/ui/components/SearchSuggestion';
 import { StatusBanner } from '@askcalls/ui/components/StatusBanner';
-import { formatDuration, formatPhone, formatWhen } from '@askcalls/ui/lib/format';
+import { formatWhen } from '@askcalls/ui/lib/dates';
+import { formatDuration, formatPhone } from '@askcalls/ui/lib/format';
 import { Button } from '@askcalls/ui/primitives/button';
 import { Card } from '@askcalls/ui/primitives/card';
 import { Spinner } from '@askcalls/ui/primitives/spinner';
@@ -42,7 +44,7 @@ import {
   parseFilters,
 } from './filters';
 import { type LastSearch, recalledSearch, rememberSearch } from './memory';
-import { contactName, startedAt, tagColour } from './present';
+import { contactName, tagColour } from './present';
 import { buildSuggestions } from './suggestions';
 import { TagDialog } from './tag-dialog';
 import { type FeedItem, isSearchQuery, useCallFeed } from './use-call-feed';
@@ -210,7 +212,7 @@ export function CallsScreen() {
           id,
           contact: name ?? (meta.phoneE164 ? formatPhone(meta.phoneE164) : tc('hiddenNumber')),
           numeric: !name,
-          meta: `${formatWhen(startedAt(meta, day), locale)} · ${formatDuration(meta.durationSec ?? 0, locale)}`,
+          meta: `${formatWhen(callStartedAt({ id, day }, meta.startedAt), locale)} · ${formatDuration(meta.durationSec ?? 0, locale)}`,
         };
       }),
       dates: DATE_PRESETS.map((p) => ({ preset: p, label: t(`picker.options.${p}`) })),
