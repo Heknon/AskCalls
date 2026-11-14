@@ -44,6 +44,7 @@ import {
 import { contactOf, PAGE, parts, QueueTable, ShowMore } from './queue-parts';
 import { selectionSummary } from './selection';
 import { TranscriptionNote, TranslationNote } from './transcription-note';
+import { useWakeLock } from './use-wake-lock';
 
 /** Loaded with the screen that shows them: neither is needed at first paint. */
 const ReviewTable = lazy(() => import('./review-table').then((m) => ({ default: m.ReviewTable })));
@@ -406,6 +407,7 @@ function QueuePanel({
   const remaining = counts.queued + counts.active;
   const finished = remaining === 0 && !queue.restored;
   const pausing = queue.paused && counts.active > 0;
+  useWakeLock(remaining > 0 && !queue.paused && !queue.restored);
   const tabCounts: Record<Filter, number> = {
     all: counts.total,
     active: counts.active,

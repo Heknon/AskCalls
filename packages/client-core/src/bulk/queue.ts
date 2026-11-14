@@ -4,8 +4,49 @@ import type { FileRef, Pairing } from './pairing';
 
 export const BULK_STATE_VERSION = 1;
 
-/** Spec 8: 2 transcriptions and 4 local indexing jobs at a time. */
-export const DEFAULT_CONCURRENCY = { transcription: 2, indexing: 4 } as const;
+export interface Concurrency {
+  /** Transcriptions at a time (provider round trips); halves when rate limited, then recovers. */
+  transcription: number;
+  /** Local indexing jobs (embedding, encryption, upload). */
+  indexing: number;
+  /** Audio decodes at a time (CPU and memory); defaults to `indexing`. */
+  decoding?: number;
+  /** Translations at a time (LLM round trips); defaults to `transcription`. */
+  translation?: number;
+  /**
+   * Files in progress at once. Each holds its decoded audio until it is stored, so this is what
+   * bounds memory. Defaults to transcriptions + 2.
+   */
+  inFlight?: number;
+}
+
+/** Spec 8, for a device with about 8 GB of memory or more (`concurrencyFor`). */
+export const DEFAULT_CONCURRENCY: Required<Concurrency> = {
+  transcription: 6,
+  indexing: 4,
+  decoding: 2,
+  translation: 4,
+  inFlight: 8,
+};
+
+/**
+ * Limits for this device: `memoryGb` is `navigator.deviceMemory` (Chromium rounds it, at most 8)
+ * and `cores` `navigator.hardwareConcurrency`. Unknown values count as a modest phone.
+ */
+export function concurrencyFor(memoryGb?: number, cores?: number): Required<Concurrency> {
+  const mem = memoryGb ?? 4;
+  const cpu = cores ?? 4;
+  if (mem >= 8) return { ...DEFAULT_CONCURRENCY, decoding: cpu >= 8 ? 3 : 2 };
+  if (mem >= 4) {
+    return { transcription: 4, indexing: 2, decoding: 2, translation: 3, inFlight: 5 };
+  }
+  return { transcription: 2, indexing: 1, decoding: 1, translation: 2, inFlight: 3 };
+}
+
+/** Rate-limited retries before an item fails with `rate_limited`. */
+const MAX_RATE_LIMITED = 6;
+/** Done items in a row before a halved transcription limit grows by one again. */
+const RECOVER_AFTER = 8;
 
 /** What the queue persists per file: references and status only, never content. */
 export interface BulkItemState {
@@ -18,6 +59,8 @@ export interface BulkItemState {
   callId: string | null;
   existingId: string | null;
   attempts: number;
+  /** Times the provider or the server said "too many requests" for this item. */
+  rateLimited?: number;
   /** Corrections made before the import started; they win over file names and the manifest. */
   edits?: MetaEdits;
   /** The user listened and chose to keep it as a call with no transcript. */
@@ -42,8 +85,12 @@ export interface BulkStateStore {
 export interface BulkQueueOptions {
   store: BulkStateStore;
   run: BulkRunner;
-  concurrency?: { transcription: number; indexing: number };
+  concurrency?: Concurrency;
+  /** Wait before a rate-limited item is retried, by how many times it was. */
+  backoffMs?: (times: number) => number;
 }
+
+const defaultBackoff = (times: number) => Math.min(60_000, 2_000 * 2 ** (times - 1));
 
 export type BulkRunner = (
   item: Readonly<BulkItemState>,
@@ -77,28 +124,45 @@ export function planBatch(
   };
 }
 
-/** A counting semaphore. */
+/** A counting semaphore whose size can change while it is in use. */
 export class Semaphore {
-  #free: number;
+  #size: number;
+  #held = 0;
   #waiting: Array<() => void> = [];
 
-  constructor(readonly size: number) {
-    this.#free = size;
+  constructor(size: number) {
+    this.#size = size;
+  }
+
+  get size(): number {
+    return this.#size;
   }
 
   get available(): number {
-    return this.#free;
+    return Math.max(0, this.#size - this.#held);
+  }
+
+  /** A smaller size takes effect as holders finish; a larger one admits waiters now. */
+  resize(size: number): void {
+    this.#size = Math.max(1, size);
+    this.#admit();
   }
 
   async run<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.#free > 0) this.#free--;
+    if (this.#held < this.#size) this.#held++;
     else await new Promise<void>((resolve) => this.#waiting.push(resolve));
     try {
       return await fn();
     } finally {
-      const next = this.#waiting.shift();
-      if (next) next();
-      else this.#free++;
+      this.#held--;
+      this.#admit();
+    }
+  }
+
+  #admit(): void {
+    while (this.#held < this.#size && this.#waiting.length) {
+      this.#held++;
+      this.#waiting.shift()!();
     }
   }
 }
@@ -124,6 +188,11 @@ export class BulkQueue {
   #run: BulkRunner;
   #gates: IngestGates;
   #maxActive: number;
+  #transcription: Semaphore;
+  #transcriptionMax: number;
+  #doneInARow = 0;
+  #backoffMs: (times: number) => number;
+  #cooldown: ReturnType<typeof setTimeout> | null = null;
   #running = new Set<string>();
   #saving: Promise<void> = Promise.resolve();
   #listeners = new Set<(item: Readonly<BulkItemState>) => void>();
@@ -136,11 +205,18 @@ export class BulkQueue {
     const c = opts.concurrency ?? DEFAULT_CONCURRENCY;
     const transcription = new Semaphore(c.transcription);
     const indexing = new Semaphore(c.indexing);
+    const decoding = new Semaphore(c.decoding ?? c.indexing);
+    const translation = new Semaphore(c.translation ?? c.transcription);
     this.#gates = {
       transcription: (fn) => transcription.run(fn),
       indexing: (fn) => indexing.run(fn),
+      decoding: (fn) => decoding.run(fn),
+      translation: (fn) => translation.run(fn),
     };
-    this.#maxActive = c.transcription + c.indexing;
+    this.#transcription = transcription;
+    this.#transcriptionMax = c.transcription;
+    this.#maxActive = c.inFlight ?? c.transcription + 2;
+    this.#backoffMs = opts.backoffMs ?? defaultBackoff;
   }
 
   /** A new batch; persisted before it starts. */
@@ -168,6 +244,11 @@ export class BulkQueue {
 
   get paused(): boolean {
     return this.#state.paused;
+  }
+
+  /** Transcriptions allowed at once now: lower after a rate limit, back up as calls finish. */
+  get transcriptionLimit(): number {
+    return this.#transcription.size;
   }
 
   get backupRecordings(): boolean {
@@ -281,7 +362,7 @@ export class BulkQueue {
   }
 
   #pump(): void {
-    while (!this.#state.paused && this.#running.size < this.#maxActive) {
+    while (!this.#state.paused && !this.#cooldown && this.#running.size < this.#maxActive) {
       const next = this.#nextQueued();
       if (!next) break;
       this.#running.add(next.id);
@@ -306,8 +387,30 @@ export class BulkQueue {
     } catch {
       result = { status: 'failed', reason: 'unknown' };
     }
+    if (result.status === 'failed' && result.reason === 'rate_limited') {
+      const times = (item.rateLimited ?? 0) + 1;
+      if (times < MAX_RATE_LIMITED) {
+        this.#doneInARow = 0;
+        this.#transcription.resize(Math.floor(this.#transcription.size / 2));
+        this.#update(item, { status: 'queued', reason: null, rateLimited: times });
+        this.#running.delete(item.id);
+        if (this.#cooldown) clearTimeout(this.#cooldown);
+        this.#cooldown = setTimeout(() => {
+          this.#cooldown = null;
+          this.#pump();
+        }, this.#backoffMs(times));
+        return;
+      }
+    }
     if (result.status === 'done') {
       this.#update(item, { status: 'done', callId: result.callId, reason: null });
+      if (
+        ++this.#doneInARow >= RECOVER_AFTER &&
+        this.#transcription.size < this.#transcriptionMax
+      ) {
+        this.#doneInARow = 0;
+        this.#transcription.resize(this.#transcription.size + 1);
+      }
     } else if (result.status === 'duplicate') {
       this.#update(item, { status: 'duplicate', existingId: result.existingId, reason: null });
     } else {

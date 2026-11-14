@@ -3,7 +3,15 @@ import type { IngestResult } from '../ingest';
 import { MemoryBulkStateStore } from '../testing/fakes';
 import type { FileRef } from './pairing';
 import { pairFiles } from './pairing';
-import { type BulkItemState, BulkQueue, type BulkRunner, planBatch, Semaphore } from './queue';
+import {
+  type BulkItemState,
+  BulkQueue,
+  type BulkRunner,
+  concurrencyFor,
+  DEFAULT_CONCURRENCY,
+  planBatch,
+  Semaphore,
+} from './queue';
 
 const ref = (name: string): FileRef => ({ ref: `h:${name}`, name, size: 10 });
 
@@ -88,6 +96,43 @@ describe('Semaphore', () => {
     expect(max).toBe(2);
     expect(s.available).toBe(2);
   });
+
+  it('resizes while in use: smaller as holders finish, larger at once', async () => {
+    const s = new Semaphore(3);
+    const gates = [deferred<void>(), deferred<void>(), deferred<void>(), deferred<void>()];
+    let active = 0;
+    const runs = gates.map((g) =>
+      s.run(async () => {
+        active++;
+        await g.promise;
+        active--;
+      }),
+    );
+    await tick();
+    expect(active).toBe(3);
+    s.resize(1);
+    gates[0]!.resolve();
+    gates[1]!.resolve();
+    await tick();
+    expect(active).toBe(1);
+    s.resize(4);
+    await tick();
+    expect(active).toBe(2);
+    gates[2]!.resolve();
+    gates[3]!.resolve();
+    await Promise.all(runs);
+    expect(s.available).toBe(4);
+  });
+});
+
+describe('concurrencyFor', () => {
+  it('scales with device memory and assumes a modest phone when unknown', () => {
+    expect(concurrencyFor(8, 8)).toMatchObject({ transcription: 6, inFlight: 8, decoding: 3 });
+    expect(concurrencyFor(8, 4)).toEqual(DEFAULT_CONCURRENCY);
+    expect(concurrencyFor(4)).toMatchObject({ transcription: 4, inFlight: 5 });
+    expect(concurrencyFor()).toEqual(concurrencyFor(4));
+    expect(concurrencyFor(2)).toMatchObject({ transcription: 2, inFlight: 3 });
+  });
 });
 
 describe('BulkQueue', () => {
@@ -95,7 +140,11 @@ describe('BulkQueue', () => {
     const files = Array.from({ length: 6 }, (_, i) => ref(`audio${i}.mp3`));
     const store = new MemoryBulkStateStore();
     const r = controlledRunner();
-    const q = await BulkQueue.create(planBatch(pairFiles(files)), { store, run: r.run });
+    const q = await BulkQueue.create(planBatch(pairFiles(files)), {
+      store,
+      run: r.run,
+      concurrency: { transcription: 2, indexing: 4, inFlight: 6 },
+    });
     const seen: string[] = [];
     q.subscribe((i) => seen.push(`${i.id}:${i.status}`));
     q.start();
@@ -117,6 +166,56 @@ describe('BulkQueue', () => {
     expect(seen).toContain('audio0:transcribing');
     expect(seen).toContain('audio0:done');
     expect(store.state?.items.map((i) => i.status)).toEqual(q.items.map((i) => i.status));
+  });
+
+  it('backs off when rate limited: requeues, halves transcription, then fails after six', async () => {
+    const store = new MemoryBulkStateStore();
+    let limited = 0;
+    const run: BulkRunner = async (item, opts) =>
+      opts.gates!.transcription(async () =>
+        item.id === 'busy' || limited++ < 1
+          ? { status: 'failed', reason: 'rate_limited' }
+          : done(`call-${item.id}`),
+      );
+    const waits: number[] = [];
+    const q = await BulkQueue.create(planBatch(pairFiles([ref('ok.txt'), ref('busy.txt')])), {
+      store,
+      run,
+      concurrency: { transcription: 4, indexing: 1, inFlight: 1 },
+      backoffMs: (times) => {
+        waits.push(times);
+        return 1;
+      },
+    });
+    q.start();
+    await q.whenIdle();
+    const byId = Object.fromEntries(q.items.map((i) => [i.id, i]));
+    expect(byId.ok).toMatchObject({ status: 'done', rateLimited: 1, attempts: 2 });
+    expect(byId.busy).toMatchObject({ status: 'failed', reason: 'rate_limited', rateLimited: 5 });
+    expect(byId.busy!.attempts).toBe(6);
+    expect([...waits].sort()).toEqual([1, 1, 2, 3, 4, 5]);
+  });
+
+  it('grows the transcription limit back after calls succeed again', async () => {
+    let first = true;
+    const run: BulkRunner = async (item) => {
+      if (first) {
+        first = false;
+        return { status: 'failed', reason: 'rate_limited' };
+      }
+      return done(`call-${item.id}`);
+    };
+    const files = Array.from({ length: 18 }, (_, i) => ref(`c${String(i).padStart(2, '0')}.txt`));
+    const q = await BulkQueue.create(planBatch(pairFiles(files)), {
+      store: new MemoryBulkStateStore(),
+      run,
+      concurrency: { transcription: 4, indexing: 1, inFlight: 1 },
+      backoffMs: () => 1,
+    });
+    q.start();
+    await q.whenIdle();
+    expect(q.counts()).toMatchObject({ done: 18 });
+    expect(q.transcriptionLimit).toBe(4);
   });
 
   it('pauses, resumes, retries failed items and persists only references and status', async () => {
