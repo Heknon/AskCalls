@@ -1,5 +1,6 @@
 'use client';
 
+import type { FileRef } from '@askcalls/client-core/bulk/pairing';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { Button } from '@askcalls/ui/primitives/button';
 import {
@@ -13,6 +14,7 @@ import {
 } from '@askcalls/ui/primitives/dialog';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { useAppSession } from '../../../../../../client/session/session';
 import type { BulkController } from './bulk-controller';
 
 /**
@@ -25,11 +27,12 @@ export function EmptyCallDialog({
   onClose,
 }: {
   controller: BulkController;
-  item: { id: string; fileName: string };
+  item: { id: string; fileName: string; audio: FileRef };
   onClose: () => void;
 }) {
   const t = useTranslations('upload.bulk');
   const tc = useTranslations('common');
+  const { client } = useAppSession();
   const [audio, setAudio] = useState<{ state: 'loading' | 'ready' | 'error'; src?: string }>({
     state: 'loading',
   });
@@ -37,23 +40,26 @@ export function EmptyCallDialog({
   useEffect(() => {
     let url: string | null = null;
     let stale = false;
-    controller.audioUrl(item.id).then(
+    client!.bulkFiles.audio(item.audio).then(
       (src) => {
-        if (stale || !src) {
-          if (src) controller.revokeUrl(src);
-          if (!stale) setAudio({ state: 'error' });
-          return;
-        }
-        url = src;
-        setAudio({ state: 'ready', src });
+        const blob =
+          src instanceof Blob
+            ? src
+            : 'bytes' in src
+              ? new Blob([src.bytes as BlobPart], { type: src.mimeType })
+              : null;
+        if (stale) return;
+        if (!blob) return setAudio({ state: 'error' });
+        url = client!.blobUrls.create(blob);
+        setAudio({ state: 'ready', src: url });
       },
       () => !stale && setAudio({ state: 'error' }),
     );
     return () => {
       stale = true;
-      if (url) controller.revokeUrl(url);
+      if (url) client!.blobUrls.revoke(url);
     };
-  }, [controller, item.id]);
+  }, [client, item.audio]);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>

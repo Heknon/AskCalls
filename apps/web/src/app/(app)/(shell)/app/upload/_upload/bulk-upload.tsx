@@ -1,5 +1,6 @@
 'use client';
 
+import type { FileRef } from '@askcalls/client-core/bulk/pairing';
 import type { BulkItemState } from '@askcalls/client-core/bulk/queue';
 import { getCall } from '@askcalls/client-core/calls';
 import type { Contact, Settings } from '@askcalls/client-core/userdata';
@@ -47,8 +48,9 @@ import { TranscriptionNote, TranslationNote } from './transcription-note';
 /** Loaded with the screen that shows them: neither is needed at first paint. */
 const ReviewTable = lazy(() => import('./review-table').then((m) => ({ default: m.ReviewTable })));
 const Guide = lazy(() => import('./format-guide').then((m) => ({ default: m.Guide })));
+/** Shares the review table's chunk: one fewer chunk for every page's loader to know about. */
 const EmptyCallDialog = lazy(() =>
-  import('./empty-call-dialog').then((m) => ({ default: m.EmptyCallDialog })),
+  import('./review-table').then((m) => ({ default: m.EmptyCallDialog })),
 );
 
 const isEmptyRecording = (i: BulkItemState) =>
@@ -395,7 +397,11 @@ function QueuePanel({
   const locale = intlLocale(useLocale());
   const [filter, setFilter] = useState<Filter>('all');
   const [shown, setShown] = useState(PAGE);
-  const [listening, setListening] = useState<{ id: string; fileName: string } | null>(null);
+  const [listening, setListening] = useState<{
+    id: string;
+    fileName: string;
+    audio: FileRef;
+  } | null>(null);
   const { counts, items } = queue;
   const remaining = counts.queued + counts.active;
   const finished = remaining === 0 && !queue.restored;
@@ -576,7 +582,9 @@ function QueuePanel({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setListening({ id: item.id, fileName })}
+                          onClick={() =>
+                            setListening({ id: item.id, fileName, audio: item.audio! })
+                          }
                         >
                           {t('listen')}
                         </Button>

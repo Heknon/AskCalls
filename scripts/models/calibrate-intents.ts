@@ -18,8 +18,8 @@ import {
   DEFAULT_INTENT_MARGIN,
   DEFAULT_INTENT_THRESHOLD,
   meanVector,
-  NEUTRAL_EXAMPLES,
 } from '../../packages/indexing/src/intents';
+import { NEUTRAL_EXAMPLES } from '../../packages/indexing/src/neutral';
 import corpus from './intent-corpus.json';
 
 const THRESHOLDS = [0.8, 0.82, 0.84, 0.86, 0.88];

@@ -21,6 +21,9 @@ import type { BulkController } from './bulk-controller';
 import { editValues, toEdits } from './edit';
 import { type GroupBy, type GroupLabel, groupItems, groupState, type ItemGroup } from './grouping';
 import { contactOf, PAGE, parts, QueueTable } from './queue-parts';
+
+export { EmptyCallDialog } from './empty-call-dialog';
+
 import { phoneValid } from './single';
 
 const GROUP_PAGE = 30;

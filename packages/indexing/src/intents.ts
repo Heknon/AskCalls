@@ -4,7 +4,7 @@ import { EMBEDDING_PASSAGE_PREFIX } from './constants';
 /**
  * Zero-shot intent tags (spec 7.10). An intent's prototype is the normalized mean of its example
  * embeddings; a call gets the intent when some chunk is closer to the prototype than to everyday
- * chatter (`NEUTRAL_EXAMPLES`) by the margin. Examples are embedded with the `passage: ` prefix,
+ * chatter (`NEUTRAL_EXAMPLES` in neutral.ts) by the margin. Examples are embedded with the `passage: ` prefix,
  * like chunks, so both sides of the comparison are the same kind of vector.
  */
 export type EmbedFn = (texts: string[]) => Promise<Float32Array[]>;
@@ -32,30 +32,6 @@ export const MIN_INTENT_SIMILARITY = 0.75;
 export function intentMargin(threshold: number): number {
   return DEFAULT_INTENT_MARGIN + (threshold - DEFAULT_INTENT_THRESHOLD) * 0.1;
 }
-
-/** Everyday phone chatter in Hebrew and English: the baseline every intent must beat. */
-export const NEUTRAL_EXAMPLES: readonly string[] = [
-  'מה נשמע? הכל טוב, ברוך השם',
-  'רגע, אני לא שומע אותך, אני בחניון',
-  'תגיד לאמא שאני אתקשר בערב',
-  'הילדים כבר ישנים, היה יום ארוך',
-  'וואלה, איזה משחק היה אתמול',
-  'אני בדרך, יש פקקים מטורפים',
-  'מה אכלתם בסוף? הזמנו פיצה',
-  'סבבה אחי, יאללה ביי',
-  'כן, כן, אני פה, תמשיך',
-  'אוי, רפואה שלמה, שיהיה בריא',
-  "How's it going? Yeah, all good here",
-  "Sorry, you're breaking up, I'm in the car",
-  "Tell your mom I'll call her tonight",
-  'The kids are finally asleep, long day',
-  'Did you see the game last night?',
-  "I'm on my way, traffic is crazy",
-  'We just ordered pizza for dinner',
-  'Okay, talk later, bye',
-  "Yeah, yeah, I'm listening, go on",
-  'Oh no, I hope she feels better soon',
-];
 
 export const IntentDefinitionSchema = z.object({
   id: z.string().min(1).max(64),
@@ -263,6 +239,8 @@ export async function buildIntentPrototypes(
 ): Promise<IntentPrototype[]> {
   const texts = intents.flatMap((i) => i.examples.map((e) => EMBEDDING_PASSAGE_PREFIX + e));
   if (texts.length === 0) return [];
+  // Loaded here, not at startup: the sentences are only needed when prototypes are built.
+  const { NEUTRAL_EXAMPLES } = await import('./neutral');
   texts.push(...NEUTRAL_EXAMPLES.map((e) => EMBEDDING_PASSAGE_PREFIX + e));
   const vectors = await embed(texts);
   if (vectors.length !== texts.length) throw new RangeError('Embedder returned a different count');
@@ -286,13 +264,9 @@ export function classifyIntents(
   const threshold = opts.threshold ?? DEFAULT_INTENT_THRESHOLD;
   const floor = opts.minSimilarity ?? MIN_INTENT_SIMILARITY;
   const out: IntentMatch[] = [];
-  const baseline = new Map<Float32Array, number[]>();
+  const neutral = prototypes[0]?.neutral;
+  const base = neutral ? chunkVectors.map((v) => cosine(v, neutral)) : [];
   for (const p of prototypes) {
-    let base = baseline.get(p.neutral);
-    if (!base) {
-      base = chunkVectors.map((v) => cosine(v, p.neutral));
-      baseline.set(p.neutral, base);
-    }
     let best = Number.NEGATIVE_INFINITY;
     let ord = -1;
     chunkVectors.forEach((v, i) => {

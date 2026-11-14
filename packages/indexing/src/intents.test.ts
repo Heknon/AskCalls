@@ -11,8 +11,8 @@ import {
   intentMargin,
   l2normalize,
   meanVector,
-  NEUTRAL_EXAMPLES,
 } from './intents';
+import { NEUTRAL_EXAMPLES } from './neutral';
 
 const vec = (...xs: number[]) => Float32Array.from(xs);
 
