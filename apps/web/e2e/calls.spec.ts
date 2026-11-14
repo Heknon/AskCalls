@@ -150,7 +150,7 @@ test('search, open, act on and ask about calls; lock wipes the list', async ({ p
   const byMeaning = rows(page).filter({ hasText: 'Related by meaning' });
   await expect(byMeaning).toHaveCount(1, { timeout: 60_000 });
   await expect(rows(page).nth(1)).toContainText('Related by meaning');
-  await expect(byMeaning.locator('mark', { hasText: /\w+ \w+ \w+/ })).toBeVisible();
+  await expect(byMeaning.locator('mark', { hasText: /\S+ \S+ \S+/ })).toBeVisible();
   await clearSearch(page);
 
   // In meaning mode the calls that contain the word come first, translations included, and

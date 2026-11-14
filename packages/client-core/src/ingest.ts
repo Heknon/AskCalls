@@ -137,6 +137,10 @@ export type TranslationOutcome = 'done' | 'none' | 'failed' | 'off';
 export interface IngestGates {
   transcription<T>(fn: () => Promise<T>): Promise<T>;
   indexing<T>(fn: () => Promise<T>): Promise<T>;
+  /** Audio decoding; `indexing` when absent. */
+  decoding?<T>(fn: () => Promise<T>): Promise<T>;
+  /** Translation; `transcription` when absent. */
+  translation?<T>(fn: () => Promise<T>): Promise<T>;
 }
 
 const immediate: IngestGates = { transcription: (fn) => fn(), indexing: (fn) => fn() };
@@ -229,7 +233,8 @@ async function runIngest(
   let audioTok: bigint | null = null;
   if (input.audio) {
     onStatus('decoding');
-    const fp = await gates.indexing(() => fingerprintAudio(ctx, input.audio!));
+    const decode = gates.decoding ?? gates.indexing;
+    const fp = await decode(() => fingerprintAudio(ctx, input.audio!));
     decoded = fp.decoded;
     audioTok = fp.audioTok;
     if (fp.existingId) return { status: 'duplicate', existingId: fp.existingId, match: 'audio' };
@@ -252,7 +257,8 @@ async function runIngest(
     onStatus('transcribing');
     const result = await gates.transcription(() =>
       transcribeAudio(codec, transcriber, audio, input.language ?? settings.language).catch((e) => {
-        if (failureReason(e) === 'quota_exceeded') throw e;
+        const reason = failureReason(e);
+        if (reason === 'quota_exceeded' || reason === 'rate_limited') throw e;
         throw new IngestError(providerRefusal(e) ?? 'transcription_failed', 'transcription failed');
       }),
     );
@@ -292,7 +298,8 @@ async function runIngest(
       onStatus('translating');
       // Loaded only when a rule asks for a translation.
       const { translateTranscript } = await import('./translation');
-      full = await gates.transcription(() =>
+      const translate = gates.translation ?? gates.transcription;
+      full = await translate(() =>
         translateTranscript(translator, transcript, language, targets, {
           clock: ctx.clock,
           onError: () => {

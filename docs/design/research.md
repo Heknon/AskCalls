@@ -204,7 +204,7 @@ Contents
 
 - **D27. Pre-flight summary before anything runs** (spec 8): counts of audio-only (will be transcribed, estimated minutes and quota impact), paired, transcript-only and likely duplicates, plus the active transcription provider and its data-flow line. One primary button "Start import".
 - **D28. Queue table with per-file status** using the spec's states (Queued, Decoding, Transcribing, Indexing, Encrypting, Uploading, Done, Duplicate, Failed). Overall progress counts finished files and shows remaining transcription minutes. Filter tabs: All, In progress, Failed, Duplicates.
-- **D29. Pause is global; retry is per file and "Retry all failed".** Pause shows "Pausing" until the two transcription and four indexing workers finish their current step. Failed reasons are content-free ("Couldn't decode audio. The file may be damaged."), never quoting transcript text.
+- **D29. Pause is global; retry is per file and "Retry all failed".** Pause shows "Pausing…" until the calls in flight finish their current step, and the pause can be cancelled meanwhile. How many run at once depends on the device (`concurrencyFor`: up to six transcriptions on 8 GB or more); a "too many requests" from the provider or the server requeues the call, halves the transcriptions and waits before trying again. Failed reasons are content-free ("Couldn't decode audio. The file may be damaged."), never quoting transcript text.
 - **D30. Resumable after reload.** A banner on return: "You have an import in progress: 38 of 138 done. Resume". File handles that the browser no longer allows show "Pick the folder again to continue".
 
 ---
