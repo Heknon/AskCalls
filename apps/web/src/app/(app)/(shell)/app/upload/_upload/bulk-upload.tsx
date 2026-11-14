@@ -47,6 +47,12 @@ import { TranscriptionNote, TranslationNote } from './transcription-note';
 /** Loaded with the screen that shows them: neither is needed at first paint. */
 const ReviewTable = lazy(() => import('./review-table').then((m) => ({ default: m.ReviewTable })));
 const Guide = lazy(() => import('./format-guide').then((m) => ({ default: m.Guide })));
+const EmptyCallDialog = lazy(() =>
+  import('./empty-call-dialog').then((m) => ({ default: m.EmptyCallDialog })),
+);
+
+const isEmptyRecording = (i: BulkItemState) =>
+  i.status === 'failed' && i.reason === 'transcript_empty' && i.audio !== null;
 
 /** The session's bulk import, created on first use and kept across screens until lock. */
 export function useBulk(): BulkController {
@@ -389,6 +395,7 @@ function QueuePanel({
   const locale = intlLocale(useLocale());
   const [filter, setFilter] = useState<Filter>('all');
   const [shown, setShown] = useState(PAGE);
+  const [listening, setListening] = useState<{ id: string; fileName: string } | null>(null);
   const { counts, items } = queue;
   const remaining = counts.queued + counts.active;
   const finished = remaining === 0 && !queue.restored;
@@ -400,6 +407,7 @@ function QueuePanel({
     dup: counts.duplicate,
   };
   const visible = items.filter((i) => inFilter(filter, i));
+  const emptyCount = items.filter(isEmptyRecording).length;
   const done = counts.done + counts.duplicate + counts.failed;
 
   const progressLabel = (
@@ -460,6 +468,11 @@ function QueuePanel({
                   {t('retryAll')}
                 </Button>
               ) : null}
+              {emptyCount > 0 ? (
+                <Button variant="outline" onClick={() => controller.saveEmpty()}>
+                  {t('saveAllEmpty', { n: emptyCount })}
+                </Button>
+              ) : null}
               <Button variant="ghost" onClick={() => void controller.clear()}>
                 {t('newImport')}
               </Button>
@@ -510,23 +523,27 @@ function QueuePanel({
               ))}
             </TabsList>
           </Tabs>
-          {counts.failed > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ms-auto"
-              onClick={() => controller.retry()}
-            >
-              <RotateCcw className="size-4" aria-hidden />
-              {t('retryAll')}
-            </Button>
-          ) : null}
+          <span className="ms-auto flex flex-wrap gap-1">
+            {emptyCount > 0 ? (
+              <Button variant="ghost" size="sm" onClick={() => controller.saveEmpty()}>
+                {t('saveAllEmpty', { n: emptyCount })}
+              </Button>
+            ) : null}
+            {counts.failed > emptyCount ? (
+              <Button variant="ghost" size="sm" onClick={() => controller.retry()}>
+                <RotateCcw className="size-4" aria-hidden />
+                {t('retryAll')}
+              </Button>
+            ) : null}
+          </span>
         </div>
         {visible.length === 0 ? (
           <p className="p-5 text-muted-foreground">{t('noneInTab')}</p>
         ) : (
           <QueueTable>
             {visible.slice(0, shown).map((item) => {
+              const fileName = (item.audio ?? item.transcript)!.name;
+              const empty = isEmptyRecording(item);
               const reason =
                 item.status === 'failed' && item.reason
                   ? tu(
@@ -539,7 +556,7 @@ function QueuePanel({
               return (
                 <QueueRow
                   key={item.id}
-                  fileName={(item.audio ?? item.transcript)!.name}
+                  fileName={fileName}
                   parts={parts(item, tu)}
                   contact={contactOf(queue.meta.get(item.id), region)}
                   status={{ state: item.status, label: tu(`queue.${item.status}`), reason }}
@@ -549,9 +566,29 @@ function QueuePanel({
                     ) : undefined
                   }
                   retry={
-                    item.status === 'failed'
+                    item.status === 'failed' && !empty
                       ? { label: t('retry'), onRetry: () => controller.retry(item.id) }
                       : undefined
+                  }
+                  actions={
+                    empty ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setListening({ id: item.id, fileName })}
+                        >
+                          {t('listen')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => controller.saveEmpty(item.id)}
+                        >
+                          {t('saveEmpty')}
+                        </Button>
+                      </>
+                    ) : undefined
                   }
                 />
               );
@@ -560,6 +597,15 @@ function QueuePanel({
         )}
         <ShowMore total={visible.length} shown={shown} onMore={() => setShown(shown + PAGE)} />
       </Card>
+      {listening ? (
+        <Suspense fallback={null}>
+          <EmptyCallDialog
+            controller={controller}
+            item={listening}
+            onClose={() => setListening(null)}
+          />
+        </Suspense>
+      ) : null}
     </Layout>
   );
 }

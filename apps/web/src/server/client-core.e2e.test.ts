@@ -396,6 +396,56 @@ describe('client-core end to end against the route handlers', () => {
     expect(JSON.stringify(store.state)).not.toContain('Gondolieri');
   });
 
+  it('keeps recordings with no speech as calls without a transcript when asked', async () => {
+    const silent = (seed: number) =>
+      fakeAudio(new Uint8Array(16_000 * 4).map((_, i) => (i * seed) % 7));
+    let transcribed = 0;
+    const hearsNothing = {
+      ...browser.ctx,
+      transcriber: {
+        id: 'silence',
+        maxChunkBytes: 4 * 1024 * 1024,
+        transcribe: async () => {
+          transcribed++;
+          return { segments: [], language: 'en', durationSec: 4 };
+        },
+      },
+    };
+    const files = new Map<string, Uint8Array>([
+      ['quiet/a.wav', silent(3)],
+      ['quiet/b.wav', silent(5)],
+    ]);
+    const refs = [...files].map(([name, b]) => ({ ref: name, name, size: b.length }));
+    const reader = {
+      bytes: async (f: { ref: string }) => files.get(f.ref)!,
+      audio: async (f: { ref: string }) => ({ bytes: files.get(f.ref)!, mimeType: 'audio/wav' }),
+    };
+    const q = await BulkQueue.create(planBatch(pairFiles(refs)), {
+      store: new MemoryBulkStateStore(),
+      run: createBulkRunner(hearsNothing, { reader, manifest: null, backupRecordings: false }),
+    });
+    q.start();
+    await q.whenIdle();
+    expect(transcribed).toBe(2);
+    expect(q.items.map((i) => [i.status, i.reason])).toEqual([
+      ['failed', 'transcript_empty'],
+      ['failed', 'transcript_empty'],
+    ]);
+
+    expect(q.saveEmpty(['quiet/a'])).toBe(1);
+    await q.whenIdle();
+    expect(q.saveEmpty()).toBe(1);
+    await q.whenIdle();
+    expect(q.items.map((i) => i.status)).toEqual(['done', 'done']);
+    expect(transcribed).toBe(2);
+    for (const item of q.items) {
+      const call = await getCall(browser.ctx, item.callId!);
+      expect(call.transcript.segments).toEqual([]);
+      expect(call.meta.segmentsFormat).toBe('empty');
+      expect(call.meta.durationSec).toBeCloseTo(4, 0);
+    }
+  });
+
   it('links an agent: fingerprints match, the agent unlocks from its keychain and signs calls', async () => {
     const agent = await h.agent();
     const started = await startDeviceLink(browser.ctx);

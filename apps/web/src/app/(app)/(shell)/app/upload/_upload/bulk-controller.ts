@@ -460,6 +460,34 @@ export class BulkController {
     this.#publishQueue();
   }
 
+  /** Keeps recordings whose transcript came back empty as calls with no transcript. */
+  saveEmpty(id?: string) {
+    const q = this.#queue;
+    if (!q) return;
+    if (this.#restored && !this.#missing) this.#restored = false;
+    q.saveEmpty(id ? [id] : undefined);
+    if (!this.#started) this.#started = Date.now();
+    this.#publishQueue();
+  }
+
+  /** A queued file's audio, for playing it on this device. */
+  async audioUrl(id: string): Promise<string | null> {
+    const item = this.#queue?.items.find((i) => i.id === id);
+    if (!item?.audio) return null;
+    const src = await this.client.bulkFiles.audio(item.audio);
+    const blob =
+      src instanceof Blob
+        ? src
+        : 'bytes' in src
+          ? new Blob([src.bytes as BlobPart], { type: src.mimeType })
+          : null;
+    return blob ? this.client.blobUrls.create(blob) : null;
+  }
+
+  revokeUrl(url: string) {
+    this.client.blobUrls.revoke(url);
+  }
+
   /** After a finished batch: forget it and its files. */
   async clear() {
     await this.#queue?.clear();

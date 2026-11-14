@@ -220,7 +220,7 @@ export function ReviewTable({
                           state: 'queued',
                           label: t(included ? 'queue.queued' : 'queue.excluded'),
                         }}
-                        edit={
+                        actions={
                           <Button
                             variant="ghost"
                             size="icon-sm"
