@@ -142,6 +142,7 @@ describe('indexCall', () => {
       contacts: [{ name: 'רונית כהן', phones: ['054-765-4321'] }],
       intents,
       intentThreshold: 0.3,
+      minSimilarity: 0,
       rules,
       embed: fake.embed,
     });

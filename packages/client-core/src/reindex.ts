@@ -17,14 +17,16 @@ import {
   type Vocabulary,
 } from '@askcalls/indexing';
 import { encryptMeta, encryptSnippet, encryptTranscript, transcriptPlaintext } from './call-crypto';
-import { type DecryptedCall, getCall, listCalls } from './calls';
+import { type DecryptedCall, getCall, listCalls, updateCallTags } from './calls';
 import type { ClientContext } from './context';
+import { intentTagId } from './tags';
 import { translateTranscript, translationPlan, withoutTranslations } from './translation';
 
 /**
  * Re-indexing (translation backfill, synonym changes): the device decrypts a call, re-derives
  * everything search needs from the transcript, re-signs it and replaces it in one request
- * (`PUT /api/calls/:id/content`). Tags, the recording and the content token stay as they are.
+ * (`PUT /api/calls/:id/content`). The recording and the content token stay as they are, and so
+ * do tags, unless `intents` asks for the call's intent tags to be worked out again.
  */
 
 export type ReindexOutcome =
@@ -38,6 +40,8 @@ export type ReindexOutcome =
 export interface ReindexOptions {
   /** Add missing translations first. False re-indexes with what the transcript already has. */
   translate: boolean;
+  /** Replace the call's intent tags with the ones its chunks match now; other tags stay. */
+  intents?: boolean;
   signal?: AbortSignal;
 }
 
@@ -124,6 +128,7 @@ async function reindexOnce(
     synonyms: synonyms.entries,
     intents,
     intentThreshold: settings.intentThreshold,
+    ...(ctx.embedder.minSimilarity !== undefined && { minSimilarity: ctx.embedder.minSimilarity }),
     embed: (texts) => ctx.embedder.embed(texts),
     region,
   });
@@ -177,6 +182,13 @@ async function reindexOnce(
   await ctx.vocabulary
     .append(vocabularyDiff(indexed.vocabularyDelta, before.vocabularyDelta))
     .catch(() => {});
+  if (opts.intents) {
+    const want = new Set(indexed.intentIds.map(intentTagId));
+    const have = new Set(call.tags.flatMap((t) => (t.kind === 'intent' ? [t.id] : [])));
+    const add = [...want].filter((id) => !have.has(id));
+    const remove = [...have].filter((id) => !want.has(id));
+    if (add.length || remove.length) await updateCallTags(ctx, call, { add, remove });
+  }
   session.touch();
   return outcome;
 }
@@ -210,9 +222,14 @@ export interface ReindexProgress {
   failed: number;
 }
 
+export type ReindexMode = 'translate' | 'all' | 'intents';
+
 export interface ReindexRunOptions {
-  /** `translate`: only calls missing a translation. `all`: every call (synonym changes). */
-  mode: 'translate' | 'all';
+  /**
+   * `translate`: only calls missing a translation. `all`: every call (synonym changes).
+   * `intents`: every call, with its intent tags worked out again.
+   */
+  mode: ReindexMode;
   onProgress?: (p: ReindexProgress) => void;
   signal?: AbortSignal;
   /** Calls re-indexed at the same time. Default 2. */
@@ -220,17 +237,14 @@ export interface ReindexRunOptions {
 }
 
 /** The ids a run would touch: from the calls list, decrypting metadata only. */
-export async function reindexCandidates(
-  ctx: ClientContext,
-  mode: 'translate' | 'all',
-): Promise<string[]> {
+export async function reindexCandidates(ctx: ClientContext, mode: ReindexMode): Promise<string[]> {
   const ids: string[] = [];
   const { rules } = (await ctx.userData.get('providers')).translation;
   let cursor: string | null = null;
   do {
     const page = await listCalls(ctx, { limit: 100, cursor });
     for (const row of page.items) {
-      if (mode === 'all' || needsTranslation(await row.meta(), rules)) ids.push(row.id);
+      if (mode !== 'translate' || needsTranslation(await row.meta(), rules)) ids.push(row.id);
     }
     cursor = page.nextCursor;
   } while (cursor);
@@ -262,6 +276,7 @@ export async function reindexCalls(
       try {
         const outcome = await reindexCall(ctx, id, {
           translate: opts.mode === 'translate',
+          intents: opts.mode === 'intents',
           ...(opts.signal && { signal: opts.signal }),
         });
         if (outcome === 'untranslated') progress.untranslated++;

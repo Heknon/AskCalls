@@ -3,13 +3,59 @@ import { EMBEDDING_PASSAGE_PREFIX } from './constants';
 
 /**
  * Zero-shot intent tags (spec 7.10). An intent's prototype is the normalized mean of its example
- * embeddings; a call gets the intent when some chunk's cosine similarity to the prototype reaches
- * the threshold. Examples are embedded with the `passage: ` prefix, like chunks, so both sides of
- * the comparison are the same kind of vector.
+ * embeddings; a call gets the intent when some chunk is closer to the prototype than to everyday
+ * chatter (`NEUTRAL_EXAMPLES`) by the margin. Examples are embedded with the `passage: ` prefix,
+ * like chunks, so both sides of the comparison are the same kind of vector.
  */
 export type EmbedFn = (texts: string[]) => Promise<Float32Array[]>;
 
 export const DEFAULT_INTENT_THRESHOLD = 0.82;
+
+/**
+ * How much closer to an intent than to small talk a chunk must be. The model scores most text
+ * between 0.7 and 0.9, so a long call always has some chunk near every prototype; the margin over
+ * `NEUTRAL_EXAMPLES` is what separates a request from chatter (`bun run models:calibrate-intents`).
+ */
+export const DEFAULT_INTENT_MARGIN = 0.01;
+
+/**
+ * A matching chunk must also be at least this similar to the intent: the pinned model scores
+ * every intent above it for the chunks that carry one, and it keeps vectors that carry no meaning
+ * from passing on the margin alone.
+ */
+export const MIN_INTENT_SIMILARITY = 0.75;
+
+/**
+ * The margin for a strictness setting (the 0 to 1 "threshold" users and custom intents store):
+ * the default setting gives `DEFAULT_INTENT_MARGIN`, and each 0.05 step moves it by 0.005.
+ */
+export function intentMargin(threshold: number): number {
+  return DEFAULT_INTENT_MARGIN + (threshold - DEFAULT_INTENT_THRESHOLD) * 0.1;
+}
+
+/** Everyday phone chatter in Hebrew and English: the baseline every intent must beat. */
+export const NEUTRAL_EXAMPLES: readonly string[] = [
+  'מה נשמע? הכל טוב, ברוך השם',
+  'רגע, אני לא שומע אותך, אני בחניון',
+  'תגיד לאמא שאני אתקשר בערב',
+  'הילדים כבר ישנים, היה יום ארוך',
+  'וואלה, איזה משחק היה אתמול',
+  'אני בדרך, יש פקקים מטורפים',
+  'מה אכלתם בסוף? הזמנו פיצה',
+  'סבבה אחי, יאללה ביי',
+  'כן, כן, אני פה, תמשיך',
+  'אוי, רפואה שלמה, שיהיה בריא',
+  "How's it going? Yeah, all good here",
+  "Sorry, you're breaking up, I'm in the car",
+  "Tell your mom I'll call her tonight",
+  'The kids are finally asleep, long day',
+  'Did you see the game last night?',
+  "I'm on my way, traffic is crazy",
+  'We just ordered pizza for dinner',
+  'Okay, talk later, bye',
+  "Yeah, yeah, I'm listening, go on",
+  'Oh no, I hope she feels better soon',
+];
 
 export const IntentDefinitionSchema = z.object({
   id: z.string().min(1).max(64),
@@ -25,12 +71,14 @@ export interface IntentPrototype {
   id: string;
   /** L2-normalized mean of the example embeddings. */
   vector: Float32Array;
+  /** The small-talk prototype every intent is measured against (shared by all intents). */
+  neutral: Float32Array;
   threshold?: number;
 }
 
 export interface IntentMatch {
   id: string;
-  /** Highest cosine similarity between any chunk and the prototype. */
+  /** Highest margin of any chunk: its similarity to the prototype minus to small talk. */
   score: number;
   /** Ord of the chunk with that score. */
   chunkOrd: number;
@@ -215,37 +263,47 @@ export async function buildIntentPrototypes(
 ): Promise<IntentPrototype[]> {
   const texts = intents.flatMap((i) => i.examples.map((e) => EMBEDDING_PASSAGE_PREFIX + e));
   if (texts.length === 0) return [];
+  texts.push(...NEUTRAL_EXAMPLES.map((e) => EMBEDDING_PASSAGE_PREFIX + e));
   const vectors = await embed(texts);
   if (vectors.length !== texts.length) throw new RangeError('Embedder returned a different count');
+  const neutral = meanVector(vectors.slice(texts.length - NEUTRAL_EXAMPLES.length));
   let offset = 0;
   return intents.map((intent) => {
     const own = vectors.slice(offset, offset + intent.examples.length);
     offset += intent.examples.length;
-    const proto: IntentPrototype = { id: intent.id, vector: meanVector(own) };
+    const proto: IntentPrototype = { id: intent.id, vector: meanVector(own), neutral };
     if (intent.threshold !== undefined) proto.threshold = intent.threshold;
     return proto;
   });
 }
 
-/** Intents whose best chunk reaches the threshold, best first. */
+/** Intents whose best chunk beats small talk by the margin for its strictness, best first. */
 export function classifyIntents(
   chunkVectors: readonly Float32Array[],
   prototypes: readonly IntentPrototype[],
-  opts: { threshold?: number } = {},
+  opts: { threshold?: number; minSimilarity?: number } = {},
 ): IntentMatch[] {
   const threshold = opts.threshold ?? DEFAULT_INTENT_THRESHOLD;
+  const floor = opts.minSimilarity ?? MIN_INTENT_SIMILARITY;
   const out: IntentMatch[] = [];
+  const baseline = new Map<Float32Array, number[]>();
   for (const p of prototypes) {
-    let best = -1;
+    let base = baseline.get(p.neutral);
+    if (!base) {
+      base = chunkVectors.map((v) => cosine(v, p.neutral));
+      baseline.set(p.neutral, base);
+    }
+    let best = Number.NEGATIVE_INFINITY;
     let ord = -1;
     chunkVectors.forEach((v, i) => {
-      const s = cosine(v, p.vector);
+      const sim = cosine(v, p.vector);
+      const s = sim < floor ? Number.NEGATIVE_INFINITY : sim - base[i]!;
       if (s > best) {
         best = s;
         ord = i;
       }
     });
-    if (ord >= 0 && best >= (p.threshold ?? threshold))
+    if (ord >= 0 && best >= intentMargin(p.threshold ?? threshold))
       out.push({ id: p.id, score: best, chunkOrd: ord });
   }
   return out.sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : 1));

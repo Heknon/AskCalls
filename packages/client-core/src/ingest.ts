@@ -328,6 +328,9 @@ async function runIngest(
       synonyms: synonyms.entries,
       intents,
       intentThreshold: settings.intentThreshold,
+      ...(ctx.embedder.minSimilarity !== undefined && {
+        minSimilarity: ctx.embedder.minSimilarity,
+      }),
       rules: parseRules(rules.rules),
       embed: (texts) => ctx.embedder.embed(texts),
       region,

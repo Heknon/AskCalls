@@ -1,0 +1,92 @@
+{
+  "chunks": [
+    {
+      "intents": [],
+      "text": "אלון? מה נשמע חוליגן? מה אומר? תגיד, אה, תפסתי אותך בבית או...? לא, לא, אני פה. יש מצב שאתה פותח את הלוח שם ותגיד לי מה רואים? כן רגע, אני עוד בדרך, יש פקקים מטורפים באיילון. מה עם אבא? הוא בסדר, היה אצל החברים שלו אתמול, ישבו עד מאוחר. טוב, תגיד לו שאני אתקשר אליו בערב. סבבה, אחי."
+    },
+    {
+      "intents": [],
+      "text": "שמע, רגע, לי לא אכפת, אוקיי? כשאריץ במעבדות שתיים אני לא מניח, אני לא מחזיק את זה כשירותי. כן אכפת לך. לא, באמת, תעשה מה שאתה רוצה. אתה יודע מה, בוא נדבר על זה אחר כך, אני באמצע משהו. יאללה. מה עם הילדים? הקטן חולה קצת, נשאר בבית היום. אוי, רפואה שלמה. תודה, יהיה בסדר."
+    },
+    {
+      "intents": [],
+      "text": "הלו? כן, שומע אותך עכשיו? עכשיו כן, קודם זה נקטע. אני בחניון, אין פה קליטה. טוב. מה אכלתם בסוף אתמול? הזמנו פיצה, הילדים לא רצו כלום אחר. חחח קלאסי. ואיך היה במשחק? הפסדנו בדקה האחרונה, הייתי בטירוף. אתה רציני? כן, שוער שלנו פשוט נרדם. וואלה מבאס. טוב, נדבר."
+    },
+    {
+      "intents": [],
+      "text": "מה קורה איתך? הכל טוב, עייף. גם אני, לא ישנתי כל הלילה, הכלב נבח על כל חתול. אתה צריך לסגור לו את החלון. ניסיתי, הוא פותח לבד. חחח. ומה עם הדירה החדשה? עוד לא עברנו, הצבע לוקח זמן. איזה צבע בחרתם בסוף? אפור בהיר, אשתי החליטה. ברור. טוב יאללה, אני צריך לזוז, ביי."
+    },
+    {
+      "intents": [],
+      "text": "Hey, it's me. Yeah, I'm just driving back from my mom's. Traffic is insane today, everyone is going to the beach. How was the wedding on Saturday? Honestly it was great, the food was amazing and the band played until two in the morning. I'm so tired. Did you see Jake there? Yeah, he came with his new girlfriend, she's nice. Anyway, I'll let you go. Talk later."
+    },
+    {
+      "intents": [],
+      "text": "Yo, what's up man. Nothing much, just chilling at home, watching the game. Did you see that last play? Unbelievable, right? I literally jumped off the couch. Ha, same. Hey, is your brother still in town? I think he flies back Wednesday. Cool, tell him I said hi. Will do. Alright, I gotta go, my food's here. Later."
+    },
+    {
+      "intents": [],
+      "text": "Hello? Can you hear me? You're breaking up a little. Okay, now it's better, I moved to the window. So anyway, the kids loved the zoo, the little one wouldn't leave the penguins. Of course. It was so hot though, we were all melting. Did you get ice cream? Twice. Ha. Okay, I'm about to go into the tunnel, I'll lose you. Bye, bye."
+    },
+    {
+      "intents": [],
+      "text": "Hi sweetie, did you get home okay? Yes, I'm home, I just took a shower. Good. Did you remember to feed the cat? Yes mom. And did you eat something? I had leftovers. Okay. Your dad says hi. Tell him hi. Okay, love you, sleep well. Love you too, goodnight."
+    },
+    {
+      "intents": ["purchase_interest", "price_question"],
+      "text": "שלום, ראיתי אצלכם את הספה האפורה בחלון הראווה. אני מאוד מעוניינת בה, היא בדיוק מה שחיפשנו לסלון. כמה היא עולה? והאם יש הנחה אם לוקחים גם את הכורסה? כי אם המחיר סביר אני רוצה להזמין עוד השבוע. אפשר לשלם בתשלומים? מעולה, אז תשלח לי הצעה ואני סוגרת."
+    },
+    {
+      "intents": ["price_question"],
+      "text": "Hi, quick question about the cleaning service. How much do you charge for a three bedroom apartment? Is it per hour or a fixed price? And does that include the windows? What about if we book every two weeks, is it cheaper? And is VAT included in the price you quoted on the website?"
+    },
+    {
+      "intents": ["complaint"],
+      "text": "אני מתקשר כבר פעם שלישית השבוע ואף אחד לא חוזר אליי. המקרר שקניתי אצלכם הגיע עם שריטה גדולה בדלת, והטכנאי שהיה אמור להגיע ביום ראשון פשוט לא הגיע. זה ממש לא בסדר, אני מאוד לא מרוצה מהשירות שלכם. שילמתי הרבה כסף ואני מצפה ליחס אחר."
+    },
+    {
+      "intents": ["complaint"],
+      "text": "Look, I've been a customer for six years and this is the worst service I've ever had. I was charged twice for the same order, I've sent three emails and nobody answered. Then the package arrived damaged. This is completely unacceptable and honestly I'm thinking about cancelling everything."
+    },
+    {
+      "intents": ["service_request"],
+      "text": "היי, המזגן בסלון הפסיק לקרר מאתמול בערב, הוא עושה רעש מוזר ומטפטף מים. אני צריך טכנאי שיבוא לבדוק אותו. אפשר לפתוח קריאת שירות? יש לי אחריות עד סוף השנה, המספר של המכשיר כתוב על המדבקה בצד."
+    },
+    {
+      "intents": ["service_request"],
+      "text": "Hi, my internet has been down since this morning. The router has a red light blinking and I already restarted it twice. I work from home so I really need someone to look at it. Can you open a ticket or send a technician today? My account number should be under my name."
+    },
+    {
+      "intents": ["scheduling"],
+      "text": "רציתי לקבוע פגישה עם הרופאה לשבוע הבא. יש משהו פנוי ביום שלישי בבוקר? אם לא, גם רביעי אחרי ארבע מתאים לי. ואם אפשר, תזיזו לי את התור של הבת שלי מחמישי לאותו יום, שאגיע פעם אחת."
+    },
+    {
+      "intents": ["scheduling"],
+      "text": "Hey, can we set up a meeting to go over the plans? I'm free Tuesday after two or anytime Thursday morning. If that doesn't work, let's book something next week. Just send me an invite with the address and I'll put it in my calendar."
+    },
+    {
+      "intents": ["legal"],
+      "text": "קיבלתי ממך מכתב התראה ואני רוצה שתדע שלפי החוזה שחתמנו מגיע לי החזר מלא. העברתי את זה לעורך הדין שלי, והוא אומר שאם זה לא ייפתר עד סוף החודש נגיש תביעה. אני לא רוצה להגיע לבית משפט, אבל אני אעשה את זה."
+    },
+    {
+      "intents": ["legal"],
+      "text": "I read the agreement again and clause seven clearly says the deposit is refundable. My lawyer reviewed it too. If you don't return the money we'll have no choice but to file a claim. I'd prefer to settle this without going to court, but that's up to you."
+    },
+    {
+      "intents": ["follow_up"],
+      "text": "טוב, אז אני אבדוק את זה מול המחסן ואחזור אליך עד מחר בצהריים. תשלח לי בינתיים את הפרטים במייל, ואם לא שמעת ממני עד יום חמישי תזכיר לי. נדבר שוב בשבוע הבא כדי לסגור את כל השאר."
+    },
+    {
+      "intents": ["follow_up"],
+      "text": "Okay, let me check with my manager and I'll get back to you by end of day tomorrow. In the meantime, send me the details by email. If you don't hear from me by Friday, give me a call. We'll talk again next week to wrap everything up."
+    },
+    {
+      "intents": ["purchase_interest"],
+      "text": "We've decided we want to go ahead with the premium plan for the whole team, that's twelve seats. Can you send the contract over this week so we can sign? We'd like to start on the first of the month. And how do we add more users later if we grow?"
+    },
+    {
+      "intents": ["purchase_interest", "scheduling"],
+      "text": "אנחנו רוצים לקנות את הדירה בקומה השלישית, זה בדיוק מה שחיפשנו. אפשר לקבוע פגישה עם עורך הדין שלכם ביום ראשון לחתימה? אם נוח לכם בעשר בבוקר, אנחנו נגיע עם הצ׳ק."
+    }
+  ]
+}

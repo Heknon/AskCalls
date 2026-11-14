@@ -24,6 +24,7 @@ import {
   preflight,
   processInbox,
   readRecording,
+  reindexCall,
   searchCalls,
   starCall,
   startDeviceLink,
@@ -33,6 +34,7 @@ import {
   updateCallMeta,
   updateCallTags,
 } from '@askcalls/client-core';
+import { intentTagId } from '@askcalls/client-core/tags';
 import {
   FakeEmbedder,
   FakePasskeys,
@@ -394,6 +396,23 @@ describe('client-core end to end against the route handlers', () => {
     const hits = await searchCalls(browser.ctx, { tagIds: [bulkTag.id], contacts: ['0539876543'] });
     expect(hits.items).toHaveLength(1);
     expect(JSON.stringify(store.state)).not.toContain('Gondolieri');
+  });
+
+  it('re-checks intents: drops intent tags the call no longer matches, keeps the others', async () => {
+    const before = await getCall(browser.ctx, ids.en);
+    await updateCallTags(browser.ctx, before, { add: [intentTagId('legal')] });
+    const stale = await getCall(browser.ctx, ids.en);
+    expect(stale.tags.some((t) => t.kind === 'intent' && t.intentId === 'legal')).toBe(true);
+
+    await reindexCall(browser.ctx, ids.en, { translate: false, intents: true });
+    const after = await getCall(browser.ctx, ids.en);
+    expect(after.tags.filter((t) => t.kind === 'intent')).toEqual([]);
+    expect(after.tags.map((t) => t.id).sort()).toEqual(
+      before.tags
+        .filter((t) => t.kind !== 'intent')
+        .map((t) => t.id)
+        .sort(),
+    );
   });
 
   it('keeps recordings with no speech as calls without a transcript when asked', async () => {
