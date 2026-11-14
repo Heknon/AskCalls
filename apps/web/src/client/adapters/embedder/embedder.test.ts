@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MODEL_BUILD_PATH } from '../../assets';
+import { EMBEDDING_MODEL, MODEL_BUILD_PATH } from '../../assets';
 import { WorkerEmbedder } from './embedder';
 import type { EmbedderRequest } from './protocol';
 
@@ -76,5 +76,79 @@ describe('WorkerEmbedder', () => {
       details: { embedder: 'download' },
     });
     await expect(inference).rejects.toMatchObject({ details: { embedder: 'inference' } });
+  });
+
+  it('fails a load that goes quiet, and retries on WebAssembly once the files had arrived', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('location', { origin: 'https://app.example.com' });
+      const workers: FakeWorker[] = [];
+      const e = new WorkerEmbedder({
+        stallMs: 1000,
+        createWorker: () => {
+          const w = new FakeWorker();
+          workers.push(w);
+          return w as unknown as Worker;
+        },
+      });
+      const first = e.embed(['a']);
+      for (const f of EMBEDDING_MODEL.files) {
+        vi.advanceTimersByTime(900);
+        workers[0]!.emit({ type: 'progress', file: f.path, loaded: f.bytes, total: f.bytes });
+      }
+      expect(e.status.state).toBe('loading');
+      vi.advanceTimersByTime(1000);
+      await expect(first).rejects.toMatchObject({ code: 'unsupported' });
+      expect(e.status).toEqual({ state: 'failed', reason: 'other' });
+
+      const second = e.embed(['b']);
+      expect(workers).toHaveLength(2);
+      expect(workers[1]!.sent[0]).toMatchObject({ type: 'load', prefer: 'wasm' });
+      workers[1]!.emit({ type: 'ready', device: 'wasm', loadMs: 5 });
+      vi.advanceTimersByTime(1000);
+      const id = workers[1]!.sent.find((m) => m.type === 'embed')!;
+      workers[1]!.emit({
+        type: 'result',
+        id: (id as { id: number }).id,
+        vectors: new Float32Array(384),
+        count: 1,
+      });
+      await expect(second).resolves.toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('fails an embed that hangs on WebGPU and moves to WebAssembly', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('location', { origin: 'https://app.example.com' });
+      const stored = new Map<string, string>();
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string) => stored.get(k) ?? null,
+        setItem: (k: string, v: string) => stored.set(k, v),
+      });
+      const workers: FakeWorker[] = [];
+      const create = () => {
+        const w = new FakeWorker();
+        workers.push(w);
+        return w as unknown as Worker;
+      };
+      const e = new WorkerEmbedder({ stallMs: 3000, createWorker: create });
+      const query = e.embed(['a query']);
+      workers[0]!.emit({ type: 'ready', device: 'webgpu', loadMs: 5 });
+      vi.advanceTimersByTime(2900);
+      expect(e.status.state).toBe('ready');
+      vi.advanceTimersByTime(200);
+      await expect(query).rejects.toMatchObject({ code: 'unsupported' });
+
+      void e.embed(['again']).catch(() => {});
+      expect(workers[1]!.sent[0]).toMatchObject({ type: 'load', prefer: 'wasm' });
+      expect(stored.get('askcalls-embedder-device')).toBe('wasm');
+      new WorkerEmbedder({ createWorker: create }).load();
+      expect(workers[2]!.sent[0]).toMatchObject({ prefer: 'wasm' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

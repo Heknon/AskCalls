@@ -13,7 +13,8 @@ export interface Embedder {
    * Meaning search drops hits under it. Absent: every hit is kept.
    */
   readonly minSimilarity?: number;
-  embed(texts: string[]): Promise<Float32Array[]>;
+  /** `signal`: drop work nobody waits for any more (a superseded search). */
+  embed(texts: string[], opts?: { signal?: AbortSignal }): Promise<Float32Array[]>;
 }
 
 export interface DecodedAudio {
