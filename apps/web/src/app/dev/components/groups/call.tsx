@@ -7,6 +7,7 @@ import { CallHeader } from '@askcalls/ui/components/CallHeader';
 import { ConsentSheet } from '@askcalls/ui/components/ConsentSheet';
 import { DataFlowNote } from '@askcalls/ui/components/DataFlowNote';
 import { NotesEditor } from '@askcalls/ui/components/NotesEditor';
+import { NowPlaying } from '@askcalls/ui/components/NowPlaying';
 import { RecordingPlayer } from '@askcalls/ui/components/RecordingPlayer';
 import { SaveStatus } from '@askcalls/ui/components/SaveStatus';
 import { SignatureBadge } from '@askcalls/ui/components/SignatureBadge';
@@ -69,6 +70,7 @@ const copy = {
       of: (a: string, b: string) => `${a} of ${b}`,
       error: "Couldn't decrypt the recording",
     },
+    nowPlaying: { region: 'Now playing', play: 'Play', pause: 'Pause', close: 'Stop playback' },
     askLabels: {
       placeholder: 'Ask about this call',
       send: 'Send',
@@ -159,6 +161,7 @@ const copy = {
       of: (a: string, b: string) => `${a} מתוך ${b}`,
       error: 'לא ניתן לפענח את ההקלטה',
     },
+    nowPlaying: { region: 'מתנגן עכשיו', play: 'ניגון', pause: 'השהיה', close: 'עצירת הניגון' },
     askLabels: {
       placeholder: 'שאלה על השיחה הזאת',
       send: 'שליחה',
@@ -224,6 +227,18 @@ export function CallViewGroup() {
   const [consent, setConsent] = useState(false);
   const [remember, setRemember] = useState(false);
   const [notes, setNotes] = useState(c.notesText);
+  const [playerTime, setPlayerTime] = useState(29);
+  const [playerPlaying, setPlayerPlaying] = useState(false);
+  const [playerRate, setPlayerRate] = useState(1);
+  const idlePlayer = {
+    durationSec: 492,
+    time: 0,
+    playing: false,
+    rate: 1,
+    onToggle: () => {},
+    onSeek: () => {},
+    onRateChange: () => {},
+  };
   const headerLabels = { ...k, addTag: c.addTag, decrypting: k.decrypting };
   const nodes = { device: k.device, server: k.server, provider: 'Anthropic' };
   const actions = (phone?: string, hits?: boolean) => (
@@ -308,19 +323,51 @@ export function CallViewGroup() {
         <State label="ready">
           <RecordingPlayer
             durationSec={492}
-            defaultTime={29}
+            time={playerTime}
+            playing={playerPlaying}
+            rate={playerRate}
+            onToggle={() => setPlayerPlaying((p) => !p)}
+            onSeek={setPlayerTime}
+            onRateChange={setPlayerRate}
             hits={[15, 35, 48]}
             state="ready"
-            src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="
             locale={locale}
             labels={c.player}
           />
         </State>
         <State label="decrypting">
-          <RecordingPlayer durationSec={492} state="decrypting" locale={locale} labels={c.player} />
+          <RecordingPlayer {...idlePlayer} state="decrypting" locale={locale} labels={c.player} />
         </State>
         <State label="error">
-          <RecordingPlayer durationSec={492} state="error" locale={locale} labels={c.player} />
+          <RecordingPlayer {...idlePlayer} state="error" locale={locale} labels={c.player} />
+        </State>
+      </Specimen>
+      <Specimen name="NowPlaying" note="floats at the bottom end edge on every page but its call">
+        <State label="playing">
+          <NowPlaying
+            title="Dana Levi"
+            href="#"
+            time={29}
+            durationSec={492}
+            playing
+            onToggle={() => {}}
+            onClose={() => {}}
+            labels={c.nowPlaying}
+            className="static"
+          />
+        </State>
+        <State label="paused">
+          <NowPlaying
+            title="+972 54-123-4567"
+            href="#"
+            time={410}
+            durationSec={492}
+            playing={false}
+            onToggle={() => {}}
+            onClose={() => {}}
+            labels={c.nowPlaying}
+            className="static"
+          />
         </State>
       </Specimen>
       <Specimen name="TimestampLink">

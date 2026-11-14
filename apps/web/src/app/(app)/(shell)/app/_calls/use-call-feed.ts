@@ -191,8 +191,15 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
   queryRef.current = query;
   const stateRef = useRef(state);
   stateRef.current = state;
+  /** Aborted when a newer query starts or the session locks: the model runs one job at a time. */
+  const work = useRef(new AbortController());
+  const restart = () => {
+    work.current.abort();
+    work.current = new AbortController();
+  };
 
   useLockWipe(() => {
+    restart();
     run.current++;
     metas.current = new Map();
     setState(INITIAL);
@@ -250,12 +257,14 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     (p: Page, id: number) => {
       const vector = p.vector;
       if (!vector) return;
+      const signal = work.current.signal;
       import('@askcalls/client-core/meaning')
         .then(({ meaningHighlights }) =>
           meaningHighlights(
             ctx.embedder,
             vector,
             p.items.map((i) => i.snippet),
+            signal,
           ),
         )
         .then(
@@ -309,6 +318,7 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
   const key = JSON.stringify(query);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands for the query
   useEffect(() => {
+    restart();
     const id = ++run.current;
     const q = queryRef.current;
     if (stateRef.current.status === 'ready') setRefreshing(true);
