@@ -76,5 +76,11 @@
       "ask": "Ask about this call",
       "send": "Send question"
     }
+  },
+  "nowPlaying": {
+    "region": "Now playing",
+    "play": "Play",
+    "pause": "Pause",
+    "close": "Stop playback"
   }
 }

@@ -14,13 +14,10 @@ import { CallActions } from '@askcalls/ui/components/CallActions';
 import { CallHeader } from '@askcalls/ui/components/CallHeader';
 import { DecryptingPlaceholder } from '@askcalls/ui/components/DecryptingPlaceholder';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
-import {
-  RecordingPlayer,
-  type RecordingPlayerHandle,
-} from '@askcalls/ui/components/RecordingPlayer';
+import { RecordingPlayer } from '@askcalls/ui/components/RecordingPlayer';
 import type { SignatureBadgeProps } from '@askcalls/ui/components/SignatureBadge';
 import { TranscriptSegment } from '@askcalls/ui/components/TranscriptSegment';
-import { formatClock } from '@askcalls/ui/lib/format';
+import { formatClock, formatPhone } from '@askcalls/ui/lib/format';
 import { useIsPhone } from '@askcalls/ui/lib/use-media-query';
 import { Alert } from '@askcalls/ui/primitives/alert';
 import { Button } from '@askcalls/ui/primitives/button';
@@ -32,6 +29,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { nativeName } from '../../../../../../../client/i18n/language-names';
 import { useNotify } from '../../../../../../../client/notices/notices';
+import { usePlayback } from '../../../../../../../client/playback/use-playback';
 import { useUnlocked } from '../../../../../../../client/session/session';
 import { useShortcut } from '../../../../../../../client/shortcuts/shortcuts';
 import { intlLocale } from '../../../../../../../i18n/locales';
@@ -190,22 +188,41 @@ function CallView({
   const [tagging, setTagging] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [tab, setTab] = useState<'ask' | 'notes'>('ask');
-  const [time, setTime] = useState(0);
   const [focused, setFocused] = useState<number | null>(null);
   const [follow, setFollow] = useState(true);
+  const playback = usePlayback();
+  const playbackRef = useRef(playback);
+  playbackRef.current = playback;
+  const resumed = playback.track?.callId === initial.id ? playback.track.src : undefined;
   const [recording, setRecording] = useState<{
     state: 'decrypting' | 'ready' | 'error';
     src?: string;
-  }>(initial.recording ? { state: 'decrypting' } : { state: 'ready' });
-  const player = useRef<RecordingPlayerHandle>(null);
+  }>(
+    resumed
+      ? { state: 'ready', src: resumed }
+      : initial.recording
+        ? { state: 'decrypting' }
+        : { state: 'ready' },
+  );
   const listRef = useRef<HTMLOListElement>(null);
   const meta = call.meta;
   const segments = call.transcript.segments;
   const duration = meta.durationSec ?? segments.at(-1)?.end ?? 0;
   const hasRecording = initial.recording !== null;
+  const name = contactName(meta, catalogs.contacts);
+  const title = name ?? (meta.phoneE164 ? formatPhone(meta.phoneE164) : tc('hiddenNumber'));
+  const active = playback.track?.callId === call.id;
+  const time = active ? playback.time : 0;
 
+  const track = () => ({ callId: call.id, src: recording.src!, title, durationSec: duration });
+  /** Hands this call's recording to the shell's player, which then owns its URL. */
+  const activate = () => {
+    if (!active && recording.src) playback.load(track());
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: decrypt once per call
   useEffect(() => {
-    if (!initial.recording) return;
+    if (!initial.recording || resumed) return;
     let url: string | undefined;
     let stale = false;
     readRecording(ctx, initial).then(
@@ -219,9 +236,15 @@ function CallView({
     );
     return () => {
       stale = true;
-      if (url) client.blobUrls.revoke(url);
+      if (url && playbackRef.current.track?.src !== url) client.blobUrls.revoke(url);
     };
   }, [ctx, client, initial]);
+
+  // Ready and nothing else playing: load it, so play, seek and the keys act on it at once.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: on the recording becoming ready
+  useEffect(() => {
+    if (recording.src && !playbackRef.current.playing && !active) playback.load(track());
+  }, [recording.src]);
 
   const forms = back.search?.forms ?? [];
   const tv = useTranscriptView(
@@ -282,7 +305,8 @@ function CallView({
     const index = segments.findIndex((s) => s.start === seconds);
     if (hasRecording && recording.state === 'ready') {
       setFollow(true);
-      player.current?.seek(seconds, true);
+      activate();
+      playback.seek(seconds, true);
     } else {
       const at = index >= 0 ? index : segments.findIndex((s) => s.end > seconds);
       if (at >= 0) {
@@ -292,8 +316,14 @@ function CallView({
     }
   };
 
-  const audio = () =>
-    document.querySelector<HTMLAudioElement>('[data-component="RecordingPlayer"] audio');
+  const toggle = () => {
+    activate();
+    playback.toggle();
+  };
+  const seekBy = (by: number) => {
+    activate();
+    playback.seek(time + by);
+  };
 
   const star = async (starred: boolean) => {
     const before = call;
@@ -349,10 +379,7 @@ function CallView({
     enabled: hasRecording && recording.state === 'ready',
     run: (e) => {
       e.preventDefault();
-      const a = audio();
-      if (!a) return;
-      if (a.paused) void a.play();
-      else a.pause();
+      toggle();
     },
   });
   useShortcut({
@@ -361,12 +388,12 @@ function CallView({
     group: 'callView',
     label: tk('seek'),
     enabled: hasRecording && recording.state === 'ready',
-    run: () => player.current?.seek(time - 5),
+    run: () => seekBy(-5),
   });
   useShortcut({
     keys: ['ArrowRight'],
     enabled: hasRecording && recording.state === 'ready',
-    run: () => player.current?.seek(time + 5),
+    run: () => seekBy(5),
   });
   useShortcut({
     keys: ['n'],
@@ -396,7 +423,6 @@ function CallView({
   useShortcut({ keys: ['k'], enabled: position >= 0, run: () => neighbour(-1) });
   useShortcut({ keys: ['Escape'], run: () => router.push(back.href) });
 
-  const name = contactName(meta, catalogs.contacts);
   const signature = signatureOf(call, t);
   const labels = speakerLabels(segments, {
     you: t('you'),
@@ -585,12 +611,18 @@ function CallView({
               </Button>
             ) : null}
             <RecordingPlayer
-              ref={player}
-              src={recording.src}
               state={recording.state}
               durationSec={duration}
+              time={time}
+              playing={active && playback.playing}
+              rate={playback.rate}
+              onToggle={toggle}
+              onSeek={(s) => {
+                activate();
+                playback.seek(s);
+              }}
+              onRateChange={playback.setRate}
               hits={hitSegments.map((i) => segments[i]!.start)}
-              onTimeUpdate={setTime}
               locale={locale}
               labels={{
                 play: t('player.play'),

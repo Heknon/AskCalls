@@ -19,14 +19,7 @@ export function formatDuration(seconds: number, uiLocale: string, long = false) 
   );
 }
 
-/** Media clock: "0:48", "12:05", "1:02:09". */
-export function formatClock(totalSeconds: number) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = String(s % 60).padStart(2, '0');
-  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
-}
+export { formatClock } from './clock';
 
 /** "2 minutes 14 seconds" for `aria-valuetext`. */
 export function formatSpokenClock(totalSeconds: number, uiLocale: string) {
