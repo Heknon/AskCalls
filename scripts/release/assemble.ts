@@ -20,7 +20,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '../..');
 
@@ -40,7 +40,9 @@ function listFiles(dir: string, prefix = ''): string[] {
     .sort();
 }
 
-export function assemble(version: string, dist: string): string[] {
+/** `distDir` may be relative (release.yml passes dist/release): tar runs inside it. */
+export function assemble(version: string, distDir: string): string[] {
+  const dist = resolve(distDir);
   const images = join(dist, 'images');
   const archs = existsSync(images)
     ? readdirSync(images)
