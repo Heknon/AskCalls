@@ -285,7 +285,7 @@
     "callsDetail": "A call is one transcript, with or without a recording. Deleting a call frees its place.",
     "minutesDetail": "Counted by audio length. Transcripts you upload ready-made don't count.",
     "storageDetail": "Encrypted and compressed on your device. With your own bucket or Google Drive, there is no limit from us.",
-    "asksDetail": "One question about one call. Resets at midnight UTC.",
+    "asksDetail": "One question about one call. Resets at midnight.",
     "tokensDetail": "For the local agent, remote MCP and scripts. Each token has its own scopes.",
     "fetchesDetail": "Ciphertext fetches over remote MCP. The local agent decrypts on your machine."
   },

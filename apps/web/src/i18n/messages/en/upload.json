@@ -106,6 +106,7 @@
     "overCalls": "This import has {n} calls and your plan has room for {m} more. Delete calls to make room for the rest.",
     "storage": "Recording storage is {n}% full. Recordings that don't fit aren't backed up; their calls still import.",
     "backup": "Back up recordings",
+    "timeZone": "Recording time zone",
     "start": "Import {n, plural, one {# call} other {# calls}}",
     "change": "Choose different files",
     "progressDone": "{done} of {total} files done.",
@@ -179,7 +180,7 @@
       "col": {
         "file": "Recording or transcript file name",
         "phone": "With country code",
-        "started_at": "ISO 8601, or YYYY-MM-DD HH:MM read as UTC",
+        "started_at": "ISO 8601, or YYYY-MM-DD HH:MM in the recording time zone",
         "direction": "in, out or unknown",
         "contact_name": "Contact name",
         "tags": "Separated by ;"

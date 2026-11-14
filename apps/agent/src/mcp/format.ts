@@ -1,5 +1,10 @@
 import type { ResolvedTag } from '@askcalls/client-core';
-import { type CallMeta, type DurationBucket, dateFromDay, wrapTranscript } from '@askcalls/domain';
+import {
+  type CallMeta,
+  callStartedAt,
+  type DurationBucket,
+  wrapTranscript,
+} from '@askcalls/domain';
 
 export const DURATION_LABELS: Record<DurationBucket, string> = {
   0: 'under 1 min',
@@ -8,8 +13,6 @@ export const DURATION_LABELS: Record<DurationBucket, string> = {
   3: '15–60 min',
   4: 'over 60 min',
 };
-
-export const dayDate = (day: number) => dateFromDay(day).toISOString().slice(0, 10);
 
 /** Tag names for display: catalog names and `intent:<id>`; the star is reported separately. */
 export const tagNames = (tags: readonly ResolvedTag[]) =>
@@ -27,7 +30,7 @@ export function callSummary(row: {
   const { meta } = row;
   return {
     id: row.id,
-    date: meta.startedAt ?? dayDate(row.day),
+    date: callStartedAt(row, meta.startedAt).toISOString(),
     duration:
       meta.durationSec !== null
         ? `${Math.round(meta.durationSec)} s`

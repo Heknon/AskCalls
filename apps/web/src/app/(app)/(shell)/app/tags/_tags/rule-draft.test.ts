@@ -14,8 +14,8 @@ import {
 import { checkGroups } from './synonyms';
 
 const contacts = [
-  { id: 'c1', name: 'Dana Levi', phones: ['+972525550134'] },
-  { id: 'c2', name: 'Avi', phones: ['+972545550000', '+97235550199'] },
+  { id: 'c1', name: 'Dana Levi', phones: ['+972525550134'], aliases: [] },
+  { id: 'c2', name: 'Avi', phones: ['+972545550000', '+97235550199'], aliases: [] },
 ];
 const known = { tagIds: new Set(['t1']), contactIds: new Set(['c1', 'c2']) };
 

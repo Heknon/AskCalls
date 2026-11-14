@@ -457,7 +457,7 @@ Mock: [`call-view.html`](mocks/call-view.html).
 - No recording: no player; timestamps still scroll and highlight but don't play (tooltip "No recording saved for this call").
 - Number hidden or missing: WhatsApp and Call back disabled with tooltip "No phone number for this call".
 - Ask off on this instance or for this user: Ask tab shows `EmptyState` "Ask is turned off." + "Settings → Providers" (link only for users who can change it).
-- Ask quota: "You've used today's 50 questions. More at 00:00 UTC."
+- Ask quota: "You've used today's 50 questions. More at 02:00." (the next UTC midnight, in local time)
 - Ask error: "Anthropic didn't respond. Try again." (provider name from config).
 - Delete: `ConfirmDialog` "Delete this call?" / "The transcript, notes, tags and recording are deleted for good." / Cancel · Delete call; then navigate back with a toast with Undo (5 s; the delete request is sent when the toast closes).
 
@@ -501,7 +501,7 @@ Mock: [`call-view.html`](mocks/call-view.html).
 | `ask.route.managed` | {model} via AskCalls · sends this call to {provider} | {model} דרך AskCalls · השיחה נשלחת ל-{provider} |
 | `ask.route.direct` | {model} with your key · sends this call to {provider} | {model} עם המפתח שלך · השיחה נשלחת ל-{provider} |
 | `ask.off` | Ask is turned off. | שאלות כבויות. |
-| `ask.quota` | You've used today's {n} questions. More at 00:00 UTC. | ניצלת את {n} השאלות של היום. עוד שאלות ב-00:00 UTC. |
+| `ask.quota` | You've used today's {n} questions. More at {time}. | ניצלת את {n} השאלות של היום. עוד שאלות ב-{time}. |
 | `ask.error` | {provider} didn't respond. Try again. | {provider} לא הגיבה. כדאי לנסות שוב. |
 | `notes.placeholder` | Notes | הערות |
 | `notes.saving` / `saved` / `error` | Saving… / Saved / Couldn't save. Retry | שומר… / נשמר / השמירה נכשלה. ניסיון חוזר |
@@ -536,7 +536,7 @@ Tabs: Single, Bulk. The active transcription provider and its `DataFlowNote` app
 
 ### U1 Single upload
 
-**Layout:** `FileDropZone` (audio and/or transcript; "Choose files" button plus drop), then a form: phone number (parsed from metadata or file name, editable, `PhoneNumber` formatting, default region IL), date and time, direction (Incoming / Outgoing / Unknown segmented), contact name (autocomplete from contacts), "Back up recording" switch (default from S2), `DataFlowNote` for transcription when audio has no transcript, primary "Upload". Progress replaces the button with `QueueItemStatus` steps (Decoding, Transcribing, Indexing, Encrypting, Uploading) and ends with "Done" + "Open call" / "Upload another".
+**Layout:** `FileDropZone` (audio and/or transcript; "Choose files" button plus drop), then a form: phone number (parsed from metadata or file name, editable, `PhoneNumber` formatting, default region IL), date and time, direction (Incoming / Outgoing / Unknown segmented), contact name (autocomplete from contacts), "Back up recording" switch (default from S2), `DataFlowNote` for transcription when audio has no transcript, primary "Upload". Progress replaces the button with `QueueItemStatus` steps (Decoding, Transcribing, Indexing, Encrypting, Uploading) and ends with "Done" + "Open call" / "Upload another". Files that make more than one call (paired as in U2) open in U2's review instead, so the calls can be grouped and corrected.
 
 **States:** duplicate ("Already uploaded" + "Open the existing call"); transcription off and audio only ("Transcription is off. Add a transcript file to upload this call."); unsupported file ("This file type isn't supported. Use audio, or TXT, SRT, VTT or JSON transcripts."); quota ("Transcription limit reached for this month. Upload the transcript instead, or use your own key."); failure at a step (one line naming the step + Retry).
 
@@ -567,9 +567,9 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 
 **Pick:** under the drop zone, `ImportFormatGuide` ("Folder layout and manifest.csv", closed): how recordings and transcripts pair, an example folder, an example `manifest.csv` to copy or download, and what each column takes.
 
-**Review:** the planned calls in `ImportGroup`s, by Contact (default; the number, else the name; "No contact" last), Folder ("Top folder" first) or Month (newest first; "No date" last). A group's checkbox puts all its calls in or leaves them out; open a group to include or leave out single calls (`QueueRow` with `select`, status "Queued" or "Left out"). The toolbar has "All calls" with "{n} of {total} selected", the group-by toggle and, at 12 groups or more, "Filter groups". Groups are collapsed unless there is one. Only the selected calls are queued; the summary counts and minutes are of the selected calls.
+**Review:** the planned calls in `ImportGroup`s, by Contact (default; the number, else the name; "No contact" last), Folder ("Top folder" first) or Month (newest first; "No date" last). A group's checkbox puts all its calls in or leaves them out; open a group to include or leave out single calls (`QueueRow` with `select`, status "Queued" or "Left out"). The toolbar has "All calls" with "{n} of {total} selected", the group-by toggle and, at 12 groups or more, "Filter groups". Groups are collapsed unless there is one or the import has 10 calls or fewer. Only the selected calls are queued; the summary counts and minutes are of the selected calls.
 
-**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), `DataFlowNote`, "Back up recordings" switch, primary "Import {n} calls" (disabled with "Select calls to import." when none is selected), secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
+**Pre-flight (`PreflightSummary`):** four counts (audio only, will be transcribed; audio with transcript; transcript only; likely duplicates, skipped), estimated transcription minutes with `UsageMeter` showing the month after this import, manifest coverage ("manifest.csv set names and dates for {n} files"), "Recording time zone" (a `NativeSelect` of IANA zones, the device's by default; shown when some call takes its time from a file name or `manifest.csv`, whose times without an offset are read in it; edits are kept when it changes, and a resumed import keeps the zone it started with), `DataFlowNote`, "Back up recordings" switch, primary "Import {n} calls" (disabled with "Select calls to import." when none is selected), secondary "Choose different files". If the import would exceed the minute quota: warning "This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key."
 
 **Queue:** `JobProgress` ("{done} of {total} files done. {active} in progress, {failed} failed, {dup} duplicates skipped. About {t} left.") with Pause; hint "You can close this tab and resume later."; filter tabs All / In progress / Failed / Duplicates; table rows (`QueueRow`): file name (mono, LTR, truncates with the full name in a tooltip), kind badges, contact (from manifest, file name or metadata), `QueueItemStatus` with a thin progress bar for transcription, Retry for failed rows, a link to the existing call for duplicates. "Retry all failed". Desktop: the summary stays in a 320 px side column. Mobile: the table becomes stacked cards; the summary moves above the queue and collapses to one line.
 
@@ -586,6 +586,7 @@ Mock: [`upload-bulk.html`](mocks/upload-bulk.html) (queue in progress).
 | `bulk.minutes` | About {n} minutes of audio to transcribe. | כ-{n} דקות שמע לתמלול. |
 | `bulk.usage` | Transcription this month, after this import | תמלול החודש, אחרי הייבוא |
 | `bulk.manifestApplied` | manifest.csv set names and dates for {n} files. | manifest.csv קבע שמות ותאריכים ל-{n} קבצים. |
+| `bulk.timeZone` | Recording time zone | אזור הזמן של ההקלטות |
 | `bulk.overQuota` | This import needs about {n} minutes; you have {m} left. Files over the limit stay queued until next month or until you add your own key. | הייבוא דורש כ-{n} דקות ונותרו {m}. קבצים מעבר למגבלה יחכו בתור עד החודש הבא או עד שיתווסף מפתח משלך. |
 | `bulk.start` / `change` | Import {n} calls / Choose different files | ייבוא {n} שיחות / בחירת קבצים אחרים |
 | `bulk.review.all` / `selected` | All calls / {n} of {total} selected | כל השיחות / {n} מתוך {total} נבחרו |
@@ -702,6 +703,8 @@ Mock: [`tags-rules.html`](mocks/tags-rules.html).
 ### K1 Contacts `/app/contacts`
 
 **Purpose:** names for numbers. **Layout:** title "Contacts", "New contact" and "Import VCF" (optional in R1; `FileDropZone` for `.vcf`), filter input, list of `ContactRow`s (name, one or more numbers, call count); selecting a row opens a side panel (sheet on mobile) with editable name and numbers and the contact's calls as compact `CallRow`s. Names are used for redaction and display.
+
+**Made by import:** every import (single, bulk, agent, inbox) adds the call's other party when it isn't listed: a known number changes nothing, a known name gains the number, and a contact named only by its number takes the call's name. A call with a name and no number (a recording of a saved contact) carries a token of the normalised name, so the contact finds it; a renamed contact keeps its old names (`aliases`) for that. A number is optional. The first visit to K1 adds the other parties of calls stored before import made contacts, on the device.
 
 **States:** empty ("No contacts yet." + New contact · Import VCF); VCF imported (toast "{n} contacts imported, {d} already existed."); invalid number (inline "Enter a number with country code, like +972 52 555 0134.").
 

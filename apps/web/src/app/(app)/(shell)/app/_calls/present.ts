@@ -39,7 +39,7 @@ export function tagChips(
   return out;
 }
 
-/** The name a call shows: its own contact name, else the contact list's name for the number. */
+/** The name a call shows: its own contact name, else the contact list's name for the number, unless that name is the number. */
 export function contactName(
   meta: Pick<CallMeta, 'contactName' | 'phoneE164'>,
   contacts: readonly Contact[],
@@ -48,12 +48,10 @@ export function contactName(
   const phone = meta.phoneE164;
   if (!phone) return undefined;
   const digits = phone.replace(/\D/g, '');
-  return contacts.find((c) => c.phones.some((p) => p.replace(/\D/g, '').endsWith(digits.slice(-9))))
-    ?.name;
-}
-
-export function startedAt(meta: Pick<CallMeta, 'startedAt'>, day: number): Date {
-  return meta.startedAt ? new Date(meta.startedAt) : new Date(day * 86_400_000);
+  const name = contacts.find((c) =>
+    c.phones.some((p) => p.replace(/\D/g, '').endsWith(digits.slice(-9))),
+  )?.name;
+  return name?.replace(/\D/g, '') === digits ? undefined : name;
 }
 
 /** `https://wa.me/<digits>` for an E.164 number. */

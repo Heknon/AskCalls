@@ -41,7 +41,9 @@ function ExportSection() {
     setFailed(false);
     try {
       const zip = await exportAll(ctx, { includeRecordings: true, onProgress: setProgress });
-      saveFile(zip, t('fileName', { date: new Date().toISOString().slice(0, 10) }));
+      const now = new Date();
+      const today = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+      saveFile(zip, t('fileName', { date: today.toISOString().slice(0, 10) }));
       notify({ kind: 'event', icon: Download, title: t('exported') });
     } catch {
       setFailed(true);

@@ -141,13 +141,17 @@ export function highlightRanges(text: string, forms: ReadonlySet<string>): Highl
 
 async function contactTokens(ctx: ClientContext, values: readonly string[], region: string) {
   const r = isPhoneRegion(region) ? region : DEFAULT_PHONE_REGION;
-  const { contacts } = await ctx.userData.get('contacts');
-  const phones = values.flatMap((v) => {
+  const [{ contacts }, { contactKeys }] = await Promise.all([
+    ctx.userData.get('contacts'),
+    import('./contacts'),
+  ]);
+  const keys = values.flatMap((v) => {
     const contact = contacts.find((c) => c.id === v);
-    return contact ? contact.phones : [v];
+    if (contact) return contactKeys(contact, r);
+    const e164 = parsePhone(v, r);
+    return e164 ? [e164] : [];
   });
-  const e164 = [...new Set(phones.map((p) => parsePhone(p, r)).filter((p): p is string => !!p))];
-  return Promise.all(e164.map((p) => token(ctx.session.keys.indexKey, 'c', p)));
+  return Promise.all([...new Set(keys)].map((k) => token(ctx.session.keys.indexKey, 'c', k)));
 }
 
 /** Search (spec 9.1, 11.2): expand and hash locally, query, decrypt metadata and snippets. */

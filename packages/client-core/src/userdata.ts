@@ -34,6 +34,8 @@ export const ContactSchema = z.object({
   id: Id,
   name: z.string().min(1).max(200),
   phones: z.array(z.string().min(1).max(40)).max(20),
+  /** Names it had before a rename: calls with only a name still find it. */
+  aliases: z.array(z.string().min(1).max(200)).max(20).default([]),
 });
 export const ContactsDocSchema = z.object({
   v: z.literal(1),
@@ -62,6 +64,8 @@ export const SettingsDocSchema = z.object({
   language: z.string().max(35).default('auto'),
   phoneRegion: z.string().length(2).default('IL'),
   customIntents: z.array(IntentDefinitionSchema).max(50).default([]),
+  /** Calls stored before import made contacts have been added to the contact list. */
+  contactsFromCalls: z.boolean().default(false),
 });
 
 const OwnKey = z.object({

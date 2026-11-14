@@ -491,7 +491,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Use:** call view side panel (desktop) or drawer (mobile). **Don't use:** for cross-call questions (not in R1).
 - **Props:** `provider` (name, model, route), `enabled` (false when Ask is Off: shows `EmptyState`).
 - **Composes:** `ScrollArea`, `Textarea`, `Button`, `AskMessage`, `DataFlowNote` (compact), `ConsentSheet`.
-- **Screens:** C3, C4. **States:** empty (suggested questions), consent required, sending, streaming, answered, error ("Anthropic didn't respond. Try again."), quota reached ("50 questions a day. Resets at 00:00 UTC."), off.
+- **Screens:** C3, C4. **States:** empty (suggested questions), consent required, sending, streaming, answered, error ("Anthropic didn't respond. Try again."), quota reached ("50 questions a day. Resets at 02:00.", the next UTC midnight in local time), off.
 - **A11y:** answer region `aria-live="polite"` with `aria-busy` while streaming. **RTL:** messages `dir="auto"`.
 
 #### AskMessage
@@ -574,7 +574,8 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### PreflightSummary
 - **Purpose:** what an import will do before it starts: counts, transcription minutes and the data flow.
-- **Composes:** `Card`, `DataFlowNote`, `UsageMeter`. **Screens:** U2.
+- **Props:** `timeZone` (the IANA zone the times in file names and `manifest.csv` are read in, with the zones to pick from; the screen passes it only when some call takes its time from them), `backup` (the "Back up recordings" switch).
+- **Composes:** `Card`, `DataFlowNote`, `UsageMeter`, `NativeSelect`, `Switch`. **Screens:** U2.
 
 #### QueueItemStatus
 - **Purpose:** the state of one file in an import.

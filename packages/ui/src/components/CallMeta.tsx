@@ -1,5 +1,6 @@
 import { cn } from '../lib/cn';
-import { formatDateTime, formatDuration, formatDurationExact, formatWhen } from '../lib/format';
+import { formatDateTime, formatWhen } from '../lib/dates';
+import { formatDuration, formatDurationExact } from '../lib/format';
 import { DecryptingPlaceholder } from './DecryptingPlaceholder';
 
 export type CallMetaProps = {

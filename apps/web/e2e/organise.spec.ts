@@ -49,7 +49,10 @@ test('a keyword rule applied to existing calls tags the calls that say it', asyn
   await expect(row).toContainText('2 calls');
 });
 
-test('a contact names a number, and the contact shows its calls', async ({ page, context }) => {
+test('imports add contacts; naming one shows its calls under the name', async ({
+  page,
+  context,
+}) => {
   await onboard(page, context, 'contacts');
   await uploadSingle(page, txt('quote.txt', 'Maya: Can you send the quote again?'), {
     phone: '052-555-0134',
@@ -59,8 +62,11 @@ test('a contact names a number, and the contact shows its calls', async ({ page,
   });
 
   await go(page, 'Contacts');
-  await expect(page.getByText('No contacts yet')).toBeVisible();
-  await page.getByRole('button', { name: 'New contact' }).first().click();
+  const rows = page.locator('[data-component="ContactRow"]');
+  await expect(rows).toHaveCount(2, { timeout: 30_000 });
+  await page.getByLabel('Search contacts').fill('0134');
+  await expect(rows).toHaveCount(1);
+  await rows.first().getByRole('link').first().click();
   const panel = page.getByRole('dialog');
   await panel.getByLabel('Name').fill('Maya Cohen');
   await panel.getByLabel('Number 1').fill('12');
@@ -68,21 +74,17 @@ test('a contact names a number, and the contact shows its calls', async ({ page,
   await expect(panel.getByText('Enter a number with country code')).toBeVisible();
   await panel.getByLabel('Number 1').fill('+972 52 555 0134');
   await panel.getByRole('button', { name: 'Save' }).click();
-  await expect(panel).toBeHidden();
-
-  const contact = page.locator('[data-component="ContactRow"]', { hasText: 'Maya Cohen' });
-  await expect(contact).toContainText('+972 52-555-0134');
-  await page.getByLabel('Search contacts').fill('0134');
-  await expect(contact).toBeVisible();
-  await page.getByLabel('Search contacts').fill('nobody');
-  await expect(page.getByText('No contact matches')).toBeVisible();
-  await page.getByLabel('Search contacts').fill('');
-
-  await contact.getByRole('link', { name: 'Maya Cohen' }).click();
-  const calls = page.getByRole('dialog').locator('[data-component="CallRow"]');
+  const calls = panel.locator('[data-component="CallRow"]');
   await expect(calls).toHaveCount(1, { timeout: 30_000 });
   await expect(calls.first()).toContainText('Maya Cohen');
   await expect(calls.first().getByRole('link')).toHaveAttribute('href', /\/app\/calls\//);
+  await panel.getByRole('button', { name: 'Close' }).click();
+  await expect(panel).toBeHidden();
+
+  const contact = rows.filter({ hasText: 'Maya Cohen' });
+  await expect(contact).toContainText('+972 52-555-0134');
+  await page.getByLabel('Search contacts').fill('nobody');
+  await expect(page.getByText('No contact matches')).toBeVisible();
 });
 
 test('a VCF import adds contacts once', async ({ page, context }) => {

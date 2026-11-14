@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from 'react';
 import { Card } from '../primitives/card';
 import { Label } from '../primitives/label';
+import { NativeSelect } from '../primitives/native-select';
 import { Switch } from '../primitives/switch';
 
 export type PreflightSummaryProps = {
@@ -15,6 +16,13 @@ export type PreflightSummaryProps = {
   note?: string;
   /** The `DataFlowNote` for transcription. */
   dataFlow: ReactNode;
+  /** IANA zone the times in file names and manifest.csv are read in ("Asia/Jerusalem"). */
+  timeZone?: {
+    value: string;
+    options: readonly string[];
+    onChange: (v: string) => void;
+    label: string;
+  };
   backup?: { checked: boolean; onChange: (v: boolean) => void; label: string };
 };
 
@@ -26,6 +34,7 @@ export function PreflightSummary({
   usage,
   note,
   dataFlow,
+  timeZone,
   backup,
 }: PreflightSummaryProps) {
   const id = useId();
@@ -43,6 +52,22 @@ export function PreflightSummary({
       </div>
       {usage}
       {note ? <p className="text-muted-foreground text-sm">{note}</p> : null}
+      {timeZone ? (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`${id}-zone`}>{timeZone.label}</Label>
+          <NativeSelect
+            id={`${id}-zone`}
+            value={timeZone.value}
+            onChange={(e) => timeZone.onChange(e.target.value)}
+          >
+            {timeZone.options.map((zone) => (
+              <option key={zone} value={zone}>
+                {zone.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+      ) : null}
       {dataFlow}
       {backup ? (
         <div className="flex items-center gap-2.5">

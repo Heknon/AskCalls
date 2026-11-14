@@ -108,11 +108,14 @@ describe('UserDataStore', () => {
     let attempts = 0;
     await b.update('contacts', (d) => ({
       ...d,
-      contacts: [...d.contacts, { id: 'b', name: 'From B', phones: [] }],
+      contacts: [...d.contacts, { id: 'b', name: 'From B', phones: [], aliases: [] }],
     }));
     await a.update('contacts', (d) => {
       attempts++;
-      return { ...d, contacts: [...d.contacts, { id: 'a', name: 'From A', phones: ['0541'] }] };
+      return {
+        ...d,
+        contacts: [...d.contacts, { id: 'a', name: 'From A', phones: ['0541'], aliases: [] }],
+      };
     });
     expect(attempts).toBe(2);
     const fresh = await new UserDataStore(server.api, session).get('contacts');

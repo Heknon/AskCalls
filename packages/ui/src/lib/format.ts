@@ -2,36 +2,6 @@
 
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
-const DAY_MS = 86_400_000;
-
-function startOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-}
-
-function capitalise(s: string, locale: string) {
-  return s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
-}
-
-/** "Today, 14:32", "Yesterday, 18:05", "10 Nov, 09:12", "10 Nov 2024, 09:12". */
-export function formatWhen(at: Date, locale: string, now: Date = new Date()) {
-  const time = new Intl.DateTimeFormat(locale, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(at);
-  const days = Math.round((startOfDay(now) - startOfDay(at)) / DAY_MS);
-  if (days === 0 || days === 1) {
-    const word = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-days, 'day');
-    return `${capitalise(word, locale)}, ${time}`;
-  }
-  const date = new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: at.getFullYear() === now.getFullYear() ? undefined : 'numeric',
-  }).format(at);
-  return `${date}, ${time}`;
-}
-
 /** Units follow the language, not the region: "8 min" in every English locale (design-system 8.7). */
 const unitLocale = (locale: string) => new Intl.Locale(locale).language;
 
@@ -91,16 +61,4 @@ export function formatDurationExact(seconds: number, uiLocale: string) {
   const m = Math.floor(s / 60);
   if (m === 0) return unit(s, 'second');
   return s % 60 === 0 ? unit(m, 'minute') : `${unit(m, 'minute')} ${unit(s % 60, 'second')}`;
-}
-
-/** "12 Nov 2026, 14:32". */
-export function formatDateTime(at: Date, locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(at);
 }

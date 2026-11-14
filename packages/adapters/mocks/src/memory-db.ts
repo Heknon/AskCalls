@@ -340,6 +340,7 @@ export class MemoryDb {
       if (!c) throw new DomainError('not_found', 'call not found');
       if (patch.metaCt) c.metaCt = patch.metaCt;
       if (patch.tagToks) c.tagToks = [...patch.tagToks];
+      if (patch.contactTok !== undefined) c.contactTok = patch.contactTok;
       if (patch.recording !== undefined) c.recording = patch.recording;
       c.updatedAt = new Date();
       return { ...c };

@@ -14,6 +14,7 @@ export const PATCH = route(
     update(ports, actor, params.id, {
       ...(body.metaCt && { metaCt: body.metaCt }),
       ...(body.tagToks && { tagToks: body.tagToks }),
+      ...(body.contactTok !== undefined && { contactTok: body.contactTok }),
       ...(body.recording !== undefined && { recording: body.recording }),
     }),
   { maxBodyBytes: 256 * 1024 },

@@ -25,6 +25,7 @@ export default function UploadPage() {
     return { providers, settings, contacts: contacts.contacts, bulk: !!bulk?.items.length };
   }, [ctx, client]);
   const [tab, setTab] = useState<Tab | null>(null);
+  const [handoff, setHandoff] = useState<File[] | null>(null);
 
   return (
     <Screen title={t('title')}>
@@ -46,6 +47,10 @@ export default function UploadPage() {
                   settings={settings}
                   contacts={contacts}
                   recordingsOff={recordingsOff}
+                  onManyCalls={(files) => {
+                    setHandoff(files);
+                    setTab('bulk');
+                  }}
                 />
               </TabsContent>
               <TabsContent value="bulk">
@@ -55,6 +60,8 @@ export default function UploadPage() {
                   settings={settings}
                   contacts={contacts}
                   recordingsOff={recordingsOff}
+                  handoff={handoff}
+                  onHandoff={() => setHandoff(null)}
                 />
               </TabsContent>
             </Tabs>

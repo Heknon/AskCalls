@@ -64,6 +64,7 @@ const copy = {
     note: 'About 214 minutes of audio to transcribe. manifest.csv set names and dates for 41 files.',
     flow: 'Audio passes through AskCalls to ElevenLabs Scribe v2, streamed and not stored. ElevenLabs may keep request logs under its standard policy.',
     backup: 'Back up recordings',
+    timeZone: 'Recording time zone',
     job: '38 of 138 files done. 6 in progress, 2 failed, 4 duplicates skipped. About 35 min left.',
     paused: 'Import paused: 38 of 138 done.',
     rules: 'Applying to existing calls: 136 of 212',
@@ -85,7 +86,7 @@ const copy = {
       col: [
         'Recording or transcript file name',
         'With country code',
-        'ISO 8601, or YYYY-MM-DD HH:MM read as UTC',
+        'ISO 8601, or YYYY-MM-DD HH:MM in the recording time zone',
         'in, out or unknown',
         'Contact name',
         'Separated by ;',
@@ -133,6 +134,7 @@ const copy = {
     note: 'כ-214 דקות שמע לתמלול. manifest.csv קבע שמות ותאריכים ל-41 קבצים.',
     flow: 'השמע עובר דרך AskCalls אל ElevenLabs Scribe v2, בזרימה ובלי שמירה. ElevenLabs עשויה לשמור יומני בקשות לפי המדיניות הרגילה שלה.',
     backup: 'גיבוי הקלטות',
+    timeZone: 'אזור הזמן של ההקלטות',
     job: '38 מתוך 138 קבצים הושלמו. 6 בתהליך, 2 נכשלו, 4 כפילויות דולגו. נותרו כ-35 דקות.',
     paused: 'הייבוא הושהה: 38 מתוך 138 הושלמו.',
     rules: 'מחיל על שיחות קיימות: 136 מתוך 212',
@@ -154,7 +156,7 @@ const copy = {
       col: [
         'שם קובץ ההקלטה או התמלול',
         'עם קידומת מדינה',
-        'ISO 8601, או YYYY-MM-DD HH:MM לפי UTC',
+        'ISO 8601, או YYYY-MM-DD HH:MM באזור הזמן של ההקלטות',
         'in, out או unknown',
         'שם איש הקשר',
         'מופרדות ב-;',
@@ -174,6 +176,7 @@ export function UploadGroup() {
   const k = useCopy(common);
   const { locale, lang } = useEnv();
   const [backup, setBackup] = useState(true);
+  const [zone, setZone] = useState('Asia/Jerusalem');
   const [paused, setPaused] = useState(false);
   const [left, setLeft] = useState<ReadonlySet<string>>(new Set(['b2']));
   const [open, setOpen] = useState(true);
@@ -259,6 +262,12 @@ export function UploadGroup() {
               {c.flow}
             </DataFlowNote>
           }
+          timeZone={{
+            value: zone,
+            options: ['Asia/Jerusalem', 'Europe/London', 'America/New_York', 'UTC'],
+            onChange: setZone,
+            label: c.timeZone,
+          }}
           backup={{ checked: backup, onChange: setBackup, label: c.backup }}
         />
       </Specimen>

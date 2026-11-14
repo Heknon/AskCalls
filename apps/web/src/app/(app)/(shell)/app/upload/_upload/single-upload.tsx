@@ -1,5 +1,6 @@
 'use client';
 
+import { deviceTimeZone } from '@askcalls/client-core/bulk/time-zone';
 import type { FailureReason } from '@askcalls/client-core/errors';
 import { type ActiveStatus, type IngestResult, ingestCall } from '@askcalls/client-core/ingest';
 import type { Contact, Settings } from '@askcalls/client-core/userdata';
@@ -21,6 +22,7 @@ import { useId, useState } from 'react';
 import { useAppSession } from '../../../../../../client/session/session';
 import { failureKey, minutesLeft, type TranscriptionFlow, type TranslationFlow } from './plan';
 import {
+  callCount,
   contactFor,
   defaultsFor,
   fromLocalInput,
@@ -51,6 +53,8 @@ export interface SingleUploadProps {
   settings: Settings;
   contacts: readonly Contact[];
   recordingsOff: boolean;
+  /** Files that make more than one call go to bulk import, to be grouped and reviewed there. */
+  onManyCalls?: (files: File[]) => void;
 }
 
 /** U1: one call from audio and/or a transcript, with its number, time and direction confirmed. */
@@ -60,6 +64,7 @@ export function SingleUpload({
   settings,
   contacts,
   recordingsOff,
+  onManyCalls,
 }: SingleUploadProps) {
   const t = useTranslations('upload');
   const { client, me, refreshMe } = useAppSession();
@@ -74,19 +79,17 @@ export function SingleUpload({
   if (!client || !me) return null;
 
   const onFiles = (files: File[]) => {
+    const all = [picked.audio, picked.transcript, ...files].filter((f): f is File => f !== null);
+    if (onManyCalls && callCount(all) > 1) {
+      reset();
+      onManyCalls(all);
+      return;
+    }
     const next = pickFiles(picked, files);
     setUnsupported(next.unsupported);
     if (!next.picked.audio && !next.picked.transcript) return;
     setPicked(next.picked);
-    setForm(
-      (f) =>
-        f ??
-        defaultsFor(next.picked, {
-          region,
-          contacts,
-          utcOffsetMinutes: -new Date().getTimezoneOffset(),
-        }),
-    );
+    setForm((f) => f ?? defaultsFor(next.picked, { region, contacts, timeZone: deviceTimeZone() }));
   };
   const removeFile = (kind: keyof Picked) => {
     const next = { ...picked, [kind]: null };

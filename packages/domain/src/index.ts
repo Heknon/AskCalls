@@ -1,4 +1,5 @@
 export * from './entities/call';
+export * from './entities/call-time';
 export * from './entities/common';
 export * from './entities/errors';
 export * from './entities/keyring';
