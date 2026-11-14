@@ -132,7 +132,9 @@
       "minutes": "{n} minutes",
       "hours": "{n} hours",
       "never": "Never",
-      "saved": "Auto-lock saved"
+      "saved": "Auto-lock saved",
+      "onReload": "Lock on reload",
+      "onReloadDetail": "When off, reloading the page keeps AskCalls unlocked in this browser."
     }
   },
   "link": {

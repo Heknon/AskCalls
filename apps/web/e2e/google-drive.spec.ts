@@ -25,7 +25,7 @@ async function unlock(page: Page) {
   await expect(card(page)).toBeVisible();
 }
 
-/** A save that changes the CSP origins reloads the page, which locks it; others don't. */
+/** A save that changes the CSP origins reloads the page, which normally stays unlocked. */
 async function unlockIfReloaded(page: Page) {
   const heading = page.getByRole('heading', { name: 'Unlock your calls' });
   if (
@@ -105,7 +105,7 @@ test('Google Drive stores recordings: connect, back up, play, move both ways, di
   await card(page).getByRole('button', { name: 'Connect Google Drive' }).click();
   await (await popup).waitForEvent('close');
   // The Drive origin reaches the CSP with the next page load.
-  await unlock(page);
+  await unlockIfReloaded(page);
   await expect(
     card(page).getByText(/Folder AskCalls recordings in dana@example\.test/),
   ).toBeVisible({ timeout: 30_000 });
@@ -137,7 +137,7 @@ test('Google Drive stores recordings: connect, back up, play, move both ways, di
   await card(page).getByLabel('Access key ID').fill('AKIAE2E');
   await card(page).getByLabel('Secret access key').fill('e2e-secret');
   await card(page).getByRole('button', { name: 'Save' }).click();
-  await unlock(page);
+  await unlockIfReloaded(page);
   await moveAll(page, /1 recording is in Google Drive\. This device can move it to your bucket\./);
   expect(await recordings()).toEqual([]);
   expect(bucket.size).toBe(1);

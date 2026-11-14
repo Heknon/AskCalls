@@ -108,8 +108,10 @@ export class KeySession {
     this.#emit({ type: 'locked', reason });
   }
 
+  /** A listener added while unlocked (after a reload resumed the session) hears `unlocked` at once. */
   subscribe(listener: (e: SessionEvent) => void): () => void {
     this.#listeners.add(listener);
+    if (this.#state) listener({ type: 'unlocked', userId: this.#state.userId });
     return () => this.#listeners.delete(listener);
   }
 

@@ -76,12 +76,19 @@ test('sign up, onboard with a PRF passkey, try the sample, lock and unlock both 
   await page.getByRole('button', { name: 'Unlock with passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Calls', level: 1 })).toBeVisible();
 
-  // A deep link while locked opens after unlock, and Shift+L locks.
+  // A deep link while locked opens after unlock.
+  await lockFromSidebar(page);
   await page.goto('/app/settings/privacy');
   await expect(page.getByRole('heading', { name: 'Unlock your calls' })).toBeVisible();
   await page.getByRole('button', { name: 'Unlock with passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Privacy', level: 1 })).toBeVisible();
+
+  // A reload stays unlocked; Shift+L locks, and a reload after that stays locked.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Privacy', level: 1 })).toBeVisible();
   await page.keyboard.press('Shift+L');
+  await expect(page.getByRole('heading', { name: 'Unlock your calls' })).toBeVisible();
+  await page.reload();
   await expect(page.getByRole('heading', { name: 'Unlock your calls' })).toBeVisible();
 
   expect(foreign, 'requests to other origins').toEqual([]);

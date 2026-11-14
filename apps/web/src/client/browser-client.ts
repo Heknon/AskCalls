@@ -32,6 +32,7 @@ import {
   PROVIDER_ORIGINS,
 } from './direct-origins';
 import { BlobUrls, installLockRules } from './lock';
+import { ReloadResume } from './resume';
 import { readConnectSrc, readEmbeddingModelUrl } from './runtime-config';
 
 export interface BrowserClient {
@@ -56,6 +57,8 @@ export interface BrowserClient {
   ownStores: RecordingStores;
   /** Object URLs for decrypted media; revoked on lock. */
   blobUrls: BlobUrls;
+  /** Unlocks again after a reload of this tab; `refresh()` after the setting changes. */
+  resume: ReloadResume;
   /**
    * Registers the own-key providers and bucket with the server, which sets the signed
    * `askcalls-direct` cookie so the next page load's CSP allows them. Runs after every unlock;
@@ -206,6 +209,8 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     audio.dispose();
     if (!opts.keepEmbedderOnLock) worker?.dispose();
   });
+  const deviceKeys = new IdbDeviceKeyStore(db);
+  const resume = new ReloadResume({ session, db, deviceKeys });
   const uninstall = installLockRules(session);
 
   return {
@@ -213,7 +218,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     api,
     session,
     secrets,
-    deviceKeys: new IdbDeviceKeyStore(db),
+    deviceKeys,
     passkeys: new WebAuthnPasskeyAuthenticator(),
     bulkState: new IdbBulkStateStore(db, session),
     bulkFiles: new BrowserBulkFiles(db),
@@ -223,6 +228,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
     audio,
     ownStores,
     blobUrls,
+    resume,
     syncDirectAccess,
     clearDirectAccess: async () => {
       await putDirect({ providers: [], origins: [] });
@@ -231,6 +237,7 @@ export function createBrowserClient(opts: BrowserClientOptions = {}): BrowserCli
       uninstall();
       unsubscribe();
       session.lock('manual');
+      resume.dispose();
       unwipe();
       worker?.dispose();
       audio.dispose();

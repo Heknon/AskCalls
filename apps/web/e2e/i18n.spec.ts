@@ -44,12 +44,13 @@ test('the account setting wins over the cookie and survives an unlock', async ({
   await page.getByRole('button', { name: 'Go to my calls' }).click();
 
   await page.goto('/app/settings/privacy');
-  await page.getByRole('button', { name: 'Unlock with passkey' }).click();
   await page.getByRole('button', { name: 'Language: עברית' }).first().click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   // Still unlocked: the switch re-renders in place.
   await expect(page.getByRole('heading', { name: 'פרטיות', level: 1 })).toBeVisible();
 
+  await page.keyboard.press('Shift+L');
+  await expect(page.getByRole('heading', { name: 'פתיחת הנעילה של השיחות' })).toBeVisible();
   await context.clearCookies({ name: 'locale' });
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
