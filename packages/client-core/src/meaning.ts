@@ -85,6 +85,7 @@ export async function meaningHighlights(
   embedder: Embedder,
   query: Float32Array,
   snippets: readonly (string | null)[],
+  signal?: AbortSignal,
 ): Promise<(HighlightRange | null)[]> {
   const candidates = snippets.map((s) => {
     if (!s) return [];
@@ -98,7 +99,7 @@ export async function meaningHighlights(
     ps.map((r) => EMBEDDING_PASSAGE_PREFIX + snippets[i]!.slice(r.start, r.end)),
   );
   if (texts.length === 0) return snippets.map(() => null);
-  const vectors = await embedder.embed(texts);
+  const vectors = await embedder.embed(texts, { signal });
   let at = 0;
   return candidates.map((ps) => {
     let best: HighlightRange | null = null;
