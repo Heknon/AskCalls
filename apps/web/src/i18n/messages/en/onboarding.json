@@ -24,6 +24,7 @@
     "done": "Passkey created",
     "cancelled": "Passkey wasn't created. Try again or use a passphrase.",
     "noPrf": "This browser can't unlock AskCalls with a passkey yet. Use a passphrase on this device.",
+    "passwordManager": "Your password manager can't unlock AskCalls with a passkey. Try again and save the passkey in this browser or on a security key.",
     "browsers": "Browsers that can: Chrome, Edge and Safari 18 or later, Firefox 135 or later.",
     "usePassphrase": "Use a passphrase",
     "label": "Passkey"

@@ -593,6 +593,12 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Composes:** `Checkbox`, a disclosure button. A `tbody` of the queue table. **Screens:** U2.
 - **A11y:** the checkbox is labelled "Include {name}"; the toggle button carries `aria-expanded` and is named by the group label.
 
+#### ImportEditDialog
+- **Purpose:** corrects the contact name, number, direction and (for one call) time of planned calls of a bulk import before it starts: one call from its `QueueRow`, or a whole `ImportGroup` at once.
+- **Props:** `values` (a field the calls disagree on is left out and shown as "Mixed"), `date` (one call only), `contactNames`, `phoneError`, `onSave(changed)` (only the fields the user changed), `onRevert?` (back to file names and the manifest), `labels`.
+- **Composes:** `Dialog`, `Input`, `ToggleGroup`, `ErrorState`, `Button`. **Screens:** U2. Opened by the `edit` prop of `ImportGroup` and `QueueRow` (`pencil` icon button; `QueueRow` takes the button as a node so the queue view doesn't load it).
+- **A11y:** every field labelled; Esc closes. **RTL:** the name is `dir="auto"`, the number LTR.
+
 #### ImportFormatGuide
 - **Purpose:** the folder layout and `manifest.csv` a bulk import reads, with an example of each, under the drop zone. Closed until opened.
 - **Props:** `title`, `pairing`, `tree`, `manifest`, `csv`, `columns`, `labels`, `onDownload` (saves the example `manifest.csv`).
@@ -817,7 +823,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
 | U1 | Upload: single | FileDropZone, PhoneNumber, CallDirection, DataFlowNote, QueueItemStatus, ErrorState |
-| U2 | Upload: bulk | FileDropZone, ImportFormatGuide, PreflightSummary, ImportGroup, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
+| U2 | Upload: bulk | FileDropZone, ImportFormatGuide, PreflightSummary, ImportGroup, ImportEditDialog, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |
 | T1 | Tags | TagManagerRow, TagChip, ConfirmDialog, SaveStatus, EmptyState |
 | T2 | Intents | IntentEditor, SaveStatus |
 | T3 | Rules | RuleListItem, RuleBuilder, RuleCondition, RuleAction, TermInput, TagChip, JobProgress, SaveStatus |

@@ -2,7 +2,7 @@
 
 import type { BulkItemState } from '@askcalls/client-core/bulk/queue';
 import { getCall } from '@askcalls/client-core/calls';
-import type { Settings } from '@askcalls/client-core/userdata';
+import type { Contact, Settings } from '@askcalls/client-core/userdata';
 import { dateFromDay } from '@askcalls/domain';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { FileDropZone } from '@askcalls/ui/components/FileDropZone';
@@ -68,11 +68,18 @@ export interface BulkUploadProps {
   flow: TranscriptionFlow;
   translation: TranslationFlow;
   settings: Settings;
+  contacts: readonly Contact[];
   recordingsOff: boolean;
 }
 
 /** U2: a folder, files or a ZIP, then the pre-flight summary, then the queue. */
-export function BulkUpload({ flow, translation, settings, recordingsOff }: BulkUploadProps) {
+export function BulkUpload({
+  flow,
+  translation,
+  settings,
+  contacts,
+  recordingsOff,
+}: BulkUploadProps) {
   const t = useTranslations('upload.bulk');
   const tu = useTranslations('upload');
   const controller = useBulk();
@@ -154,8 +161,10 @@ export function BulkUpload({ flow, translation, settings, recordingsOff }: BulkU
             controller={controller}
             pairing={plan.pairing}
             meta={plan.meta}
+            edits={plan.edits}
             excluded={excluded}
             region={settings.phoneRegion}
+            contacts={contacts}
           />
         </Suspense>
       </Layout>

@@ -1,5 +1,5 @@
 import type { FailureReason } from '../errors';
-import type { IngestGates, IngestOptions, IngestResult, IngestStatus } from '../ingest';
+import type { IngestGates, IngestOptions, IngestResult, IngestStatus, MetaEdits } from '../ingest';
 import type { FileRef, Pairing } from './pairing';
 
 export const BULK_STATE_VERSION = 1;
@@ -18,6 +18,8 @@ export interface BulkItemState {
   callId: string | null;
   existingId: string | null;
   attempts: number;
+  /** Corrections made before the import started; they win over file names and the manifest. */
+  edits?: MetaEdits;
 }
 
 export interface BulkState {
@@ -49,7 +51,10 @@ export type BulkRunner = (
 const TERMINAL: readonly IngestStatus[] = ['done', 'duplicate', 'failed'];
 export const isTerminal = (s: IngestStatus) => TERMINAL.includes(s);
 
-export function planBatch(pairing: Pairing, opts: { backupRecordings?: boolean } = {}): BulkState {
+export function planBatch(
+  pairing: Pairing,
+  opts: { backupRecordings?: boolean; edits?: ReadonlyMap<string, MetaEdits> } = {},
+): BulkState {
   return {
     v: BULK_STATE_VERSION,
     manifest: pairing.manifest,
@@ -65,6 +70,7 @@ export function planBatch(pairing: Pairing, opts: { backupRecordings?: boolean }
       callId: null,
       existingId: null,
       attempts: 0,
+      ...(opts.edits?.get(p.key) && { edits: opts.edits.get(p.key) }),
     })),
   };
 }

@@ -46,6 +46,17 @@ test('search engines without a language preference get English and a canonical U
   expect(res.headers()['cache-control']).toContain('no-store');
 });
 
+test('a shared app link previews with the share card', async ({ request }) => {
+  for (const path of ['/login', '/app/upload']) {
+    const html = await (await request.get(path)).text();
+    expect(html).toMatch(/<meta property="og:image" content="https?:\/\/[^"]+\/og-image"/);
+    expect(html).toContain('property="og:title"');
+    expect(html).toContain('name="twitter:card" content="summary_large_image"');
+  }
+  const image = await request.get('/og-image');
+  expect(image.headers()['content-type']).toBe('image/png');
+});
+
 test('the language button switches the page to Hebrew and back, and it sticks', async ({
   page,
 }) => {

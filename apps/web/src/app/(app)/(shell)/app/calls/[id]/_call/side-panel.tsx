@@ -83,7 +83,7 @@ function Ask({ ctx, me, call, onSeek }: Pick<SidePanelProps, 'ctx' | 'me' | 'cal
   const route = useAskRoute(ctx, me);
   const transcriptText = useMemo(() => transcriptFile(call, 'txt').content, [call]);
   const quota = me.usage.asksToday >= me.limits.asksPerDay;
-  const conversation = useAsk(ctx, transcriptText, route, quota);
+  const conversation = useAsk(ctx, call.id, transcriptText, route, quota);
   const [value, setValue] = useState('');
   const [consenting, setConsenting] = useState<string | null>(null);
   const [remember, setRemember] = useState(true);

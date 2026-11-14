@@ -15,7 +15,7 @@ import {
   type PreflightSummary,
   preflight,
 } from '@askcalls/client-core/bulk/runner';
-import type { ActiveStatus, IngestMeta } from '@askcalls/client-core/ingest';
+import type { ActiveStatus, IngestMeta, MetaEdits } from '@askcalls/client-core/ingest';
 import { isDomainError } from '@askcalls/domain';
 import type { BrowserClient } from '../../../../../../client/browser-client';
 import { remainingSeconds } from './plan';
@@ -28,8 +28,10 @@ export interface Plan {
   summary: PreflightSummary;
   /** Keys of the items a manifest row describes. */
   manifestKeys: ReadonlySet<string>;
-  /** Number and name per item, from the manifest and file names. */
+  /** Number, name, time and direction per item: file names, then the manifest, then edits. */
   meta: ReadonlyMap<string, IngestMeta>;
+  /** What the user corrected per item, by key. */
+  edits: ReadonlyMap<string, MetaEdits>;
 }
 
 export interface QueueView {
@@ -102,6 +104,8 @@ export class BulkController {
   #unsubscribe: (() => void) | null = null;
   #disposed = false;
   #planRun = 0;
+  #metaOptions: { manifest: Manifest | null; region: string; utcOffsetMinutes: number } | null =
+    null;
 
   constructor(
     private readonly client: BrowserClient,
@@ -310,16 +314,13 @@ export class BulkController {
         : [],
     );
     const region = (await ctx.userData.get('settings')).phoneRegion;
-    const meta = new Map(
-      pairing.items.map((i) => [
-        i.key,
-        itemMeta(i, { manifest, region, utcOffsetMinutes: utcOffsetMinutes() }),
-      ]),
-    );
+    const options = { manifest, region, utcOffsetMinutes: utcOffsetMinutes() };
+    const meta = new Map(pairing.items.map((i) => [i.key, itemMeta(i, options)]));
     if (run !== this.#planRun) return;
+    this.#metaOptions = options;
     this.#set({
       phase: 'preflight',
-      plan: { pairing, summary, manifestKeys, meta },
+      plan: { pairing, summary, manifestKeys, meta, edits: new Map() },
       excluded: new Set(),
       error: error ?? (manifestError ? 'manifestError' : null),
     });
@@ -337,6 +338,43 @@ export class BulkController {
     this.#set({ ...s, excluded });
   }
 
+  /**
+   * Corrects the metadata of planned calls before the import starts: the given fields are set on
+   * every key; fields left out keep each call's value.
+   */
+  editMeta(keys: readonly string[], patch: MetaEdits) {
+    const s = this.#snapshot;
+    const options = this.#metaOptions;
+    if (s.phase !== 'preflight' || !options || Object.keys(patch).length === 0) return;
+    const byKey = new Map(s.plan.pairing.items.map((i) => [i.key, i]));
+    const edits = new Map(s.plan.edits);
+    const meta = new Map(s.plan.meta);
+    for (const k of keys) {
+      const item = byKey.get(k);
+      if (!item) continue;
+      const next = { ...edits.get(k), ...patch };
+      edits.set(k, next);
+      meta.set(k, itemMeta({ ...item, edits: next }, options));
+    }
+    this.#set({ ...s, plan: { ...s.plan, meta, edits } });
+  }
+
+  /** Drops the edits of planned calls: back to what file names and the manifest say. */
+  revertMeta(keys: readonly string[]) {
+    const s = this.#snapshot;
+    const options = this.#metaOptions;
+    if (s.phase !== 'preflight' || !options) return;
+    const byKey = new Map(s.plan.pairing.items.map((i) => [i.key, i]));
+    const edits = new Map(s.plan.edits);
+    const meta = new Map(s.plan.meta);
+    for (const k of keys) {
+      const item = byKey.get(k);
+      if (!item || !edits.delete(k)) continue;
+      meta.set(k, itemMeta(item, options));
+    }
+    this.#set({ ...s, plan: { ...s.plan, meta, edits } });
+  }
+
   // The queue
 
   async start(backupRecordings: boolean) {
@@ -344,7 +382,10 @@ export class BulkController {
     if (s.phase !== 'preflight') return;
     const items = s.plan.pairing.items.filter((i) => !s.excluded.has(i.key));
     if (items.length === 0) return;
-    const state = planBatch({ ...s.plan.pairing, items }, { backupRecordings });
+    const state = planBatch(
+      { ...s.plan.pairing, items },
+      { backupRecordings, edits: s.plan.edits },
+    );
     this.#restored = false;
     this.#missing = null;
     this.#lastStep.clear();

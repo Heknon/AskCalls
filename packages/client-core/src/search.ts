@@ -225,9 +225,15 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
     },
   });
 
+  // Meaning hits arrive most similar first, so the first one under the floor ends the results.
+  const floor = vector ? ctx.embedder.minSimilarity : undefined;
+  const related =
+    floor === undefined ? res.items : res.items.filter((h) => h.score !== null && h.score >= floor);
+  const nextCursor = related.length < res.items.length ? null : res.nextCursor;
+
   const formSet = new Set(forms);
   const items = await Promise.all(
-    res.items.map(async (hit): Promise<SearchResultItem> => {
+    related.map(async (hit): Promise<SearchResultItem> => {
       const keyCtx = { userId: session.userId, callId: hit.id };
       const dek = await openDek(session, hit.id, hit.wrappedDek);
       const [meta, snippet] = await Promise.all([
@@ -258,7 +264,7 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
   session.touch();
   return {
     items,
-    nextCursor: res.nextCursor,
+    nextCursor,
     alsoMatched: prepared.alsoMatched,
     ignored: prepared.ignored,
     forms,

@@ -1,6 +1,7 @@
 import type { IngestMeta } from '@askcalls/client-core/ingest';
 import { describe, expect, it } from 'vitest';
-import { groupItems, groupState, selectionSummary } from './selection';
+import { groupItems, groupState } from './grouping';
+import { selectionSummary } from './selection';
 
 const ref = (name: string, size = 8_000) => ({ ref: name, name, size });
 const item = (key: string, audio?: string, transcript?: string) => ({
@@ -31,6 +32,18 @@ const metas = new Map([
 ]);
 
 describe('groupItems', () => {
+  it('puts names that only look different in one group, and name-only calls with their number', () => {
+    const list = [item('x', 'x.m4a'), item('y', 'y.m4a'), item('z', 'z.m4a')];
+    const m = new Map([
+      ['x', meta({ contactName: 'אלון שני' })],
+      ['y', meta({ contactName: '\u202Bאלון  שני\u202C' })],
+      ['z', meta({ contactName: 'אלון שני', phone: '+972501234567' })],
+    ]);
+    const groups = groupItems(list, m, 'contact', 'IL');
+    expect(groups.map((g) => g.keys)).toEqual([['x', 'y', 'z']]);
+    expect(groups[0]!.key).toBe('+972501234567');
+  });
+
   it('groups by number, in local format too, and keeps the known name', () => {
     const groups = groupItems(items, metas, 'contact', 'IL');
     expect(groups.map((g) => g.keys)).toEqual([['a', 'b'], ['d'], ['c']]);

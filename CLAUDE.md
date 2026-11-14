@@ -12,7 +12,10 @@ bun run test               # unit and contract tests (Vitest under Bun)
 bun run test:integration   # *.int.test.ts against real Postgres and MinIO (Docker)
 bun run test:e2e           # Playwright (apps/web/e2e)
 bun run format             # Biome autofix
+bun run --cwd apps/web build && bun run budget   # bundle-size ceilings CI enforces: run before every push that changes web or client code
 ```
+
+The bundle budget (`scripts/checks/bundle-budget.json`) caps each page's first-load JS, and many pages sit within bytes of their ceiling. Run it locally before pushing, not after CI fails. Previews measure the `vercel build` output, which can come out a few bytes larger than a local build, so a page within about 100 B of its ceiling fails there even when it passes locally; leave that margin. Over a ceiling: move code a page doesn't need at first paint behind `import()`, or trim it; raise a ceiling only as a reviewed edit called out in the PR.
 
 ## Layout and ownership
 

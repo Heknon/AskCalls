@@ -13,6 +13,12 @@ export interface FileNameMeta {
 const PREFIX =
   /^(?:call[ _-]?recording|call[ _]with|call@|recording|הקלטת[ _]שיחה|שיחה[ _]עם|הקלטה)[ _\-–]*/i;
 
+/** A bare `Call ` before the contact (Samsung in some languages); stripped, but not a sign on its own. */
+const BARE_CALL = /^call[ _]+/i;
+
+/** Bidi marks and zero-width characters recorders put around right-to-left names. */
+const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+
 /**
  * Date and time stamps, tried in order. Digits on either side end a match, so a stamp is never
  * cut out of a phone number.
@@ -88,6 +94,8 @@ const DIRECTION = /(?:^|\s)(?:in|out|incoming|outgoing)(?=\s|$)/gi;
 
 function tidy(text: string): string {
   return text
+    .normalize('NFC')
+    .replace(INVISIBLE, '')
     .replace(/\(\s*\)|\[\s*\]/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^[\s\-–()@,]+|[\s\-–()@,]+$/g, '');
@@ -118,9 +126,11 @@ export function parseRecordingFileName(
 ): FileNameMeta | null {
   const region = opts.region ?? DEFAULT_PHONE_REGION;
   // Samsung appends `_1`, `_2` to repeated names.
-  const stem = baseName(path).replace(/(?<=\d{6})_\d{1,2}$/, '');
+  const stem = baseName(path)
+    .replace(INVISIBLE, '')
+    .replace(/(?<=\d{6})_\d{1,2}$/, '');
   const prefixed = PREFIX.test(stem);
-  const rest = stem.replace(PREFIX, '');
+  const rest = prefixed ? stem.replace(PREFIX, '') : stem.replace(BARE_CALL, '');
   const stamp = findStamp(rest, opts.utcOffsetMinutes ?? 0);
   if (stamp) {
     const part = `${rest.slice(0, stamp.index)} ${rest.slice(stamp.index + stamp.length)}`;
