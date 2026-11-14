@@ -536,6 +536,9 @@ function CallView({
             ))}
           </div>
         ) : null}
+        {segments.length === 0 ? (
+          <p className="py-6 text-muted-foreground">{t('noSpeech')}</p>
+        ) : null}
         <ol
           ref={listRef}
           data-columns={cols}

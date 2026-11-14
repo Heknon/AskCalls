@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  type ReindexMode,
   type ReindexProgress,
   reindexCalls,
   reindexCandidates,
@@ -14,11 +15,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useNotify } from '../../../../../client/notices/notices';
 import { useAppSession, useUnlocked } from '../../../../../client/session/session';
 
-type Ns = 'settings.prov.backfill' | 'tags.syn.reindex';
+type Ns = 'settings.prov.backfill' | 'tags.syn.reindex' | 'tags.intents.reindex';
 
 /**
  * A re-index of existing calls on this device (`reindexCalls`): the translation backfill, or
- * applying synonyms to calls already stored. Counts the calls first, then runs a few at a time
+ * applying synonyms or intents to calls already stored. Counts the calls first, then runs a few at a time
  * with progress. Stop finishes the calls in flight; starting again resumes, because calls
  * already done are no longer candidates in `translate` mode.
  */
@@ -28,7 +29,7 @@ export function ReindexJob({
   icon,
   hideWhenNone = true,
 }: {
-  mode: 'translate' | 'all';
+  mode: ReindexMode;
   ns: Ns;
   icon: LucideIcon;
   /** Renders nothing when no call needs it. */

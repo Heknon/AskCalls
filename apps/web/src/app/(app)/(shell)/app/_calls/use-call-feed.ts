@@ -45,6 +45,11 @@ export interface Feed {
   reload: () => void;
   /** `search`: the server got words, contacts or meaning; otherwise the plain list. */
   mode: 'list' | 'search';
+  /**
+   * On a meaning search: the index of the first call found by meaning, after the calls that
+   * contain the words. Null until those have come, and when a sort mixes the two.
+   */
+  meaningFrom: number | null;
   alsoMatched: string[];
   forms: string[];
   /** Metadata decrypted so far (catalog suggestions, sort, direction). */
@@ -66,6 +71,9 @@ const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(
 export const isSearchQuery = (q: FeedQuery) =>
   q.text.trim() !== '' || q.filters.contacts.length > 0 || q.filters.numbers.length > 0;
 
+/** A meaning search shows the calls that contain the words first, then the ones found by meaning. */
+const isHybrid = (q: FeedQuery) => q.filters.match === 'meaning' && q.text.trim() !== '';
+
 type Page = {
   items: FeedItem[];
   nextCursor: string | null;
@@ -75,7 +83,12 @@ type Page = {
   vector: Float32Array | null;
 };
 
-async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null): Promise<Page> {
+async function fetchPage(
+  ctx: ClientContext,
+  q: FeedQuery,
+  cursor: string | null,
+  semantic: boolean,
+): Promise<Page> {
   const f = q.filters;
   const { from, to } = dateRange(f.date);
   const dates = { ...(from && { dateFrom: from }), ...(to && { dateTo: endOfDay(to) }) };
@@ -109,7 +122,7 @@ async function fetchPage(ctx: ClientContext, q: FeedQuery, cursor: string | null
     intents: f.intents,
     starred: f.starred,
     ...dates,
-    semantic: f.match === 'meaning',
+    semantic,
     exclude: q.excluded,
     limit: PAGE,
     cursor,
@@ -142,6 +155,9 @@ type State = {
   error: unknown;
   raw: FeedItem[];
   cursor: string | null;
+  /** `words` while the word matches of a meaning search are still paging in. */
+  phase: 'words' | 'meaning';
+  meaningFrom: number | null;
   alsoMatched: string[];
   forms: string[];
   mode: 'list' | 'search';
@@ -152,6 +168,8 @@ const INITIAL: State = {
   error: null,
   raw: [],
   cursor: null,
+  phase: 'meaning',
+  meaningFrom: null,
   alsoMatched: [],
   forms: [],
   mode: 'list',
@@ -194,7 +212,7 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
 
   /** Fetches from `cursor` until the query's needs are met: a full sort, or enough rows. */
   const fetchMore = useCallback(
-    async (q: FeedQuery, cursor: string | null, id: number) => {
+    async (q: FeedQuery, cursor: string | null, id: number, semantic: boolean) => {
       const f = q.filters;
       const needAll = f.sort === 'oldest' || f.sort === 'longest';
       const out: Page = {
@@ -205,7 +223,7 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
         vector: null,
       };
       for (let page = 0; page < MAX_PAGES; page++) {
-        const p = await fetchPage(ctx, q, out.nextCursor);
+        const p = await fetchPage(ctx, q, out.nextCursor, semantic);
         if (id !== run.current) return null;
         if (page === 0) {
           out.alsoMatched = p.alsoMatched;
@@ -258,6 +276,36 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     [ctx],
   );
 
+  /** The meaning half of a meaning search, after every word match: new calls only. */
+  const addMeaning = useCallback(
+    (q: FeedQuery, id: number) => {
+      setLoadingMore(true);
+      fetchMore(q, null, id, true).then(
+        (p) => {
+          setLoadingMore(false);
+          if (!p) return;
+          const mixed = q.filters.sort === 'oldest' || q.filters.sort === 'longest';
+          setState((st) => {
+            const known = new Set(st.raw.map((i) => i.id));
+            return {
+              ...st,
+              raw: [...st.raw, ...p.items.filter((i) => !known.has(i.id))],
+              cursor: p.nextCursor,
+              phase: 'meaning',
+              meaningFrom: mixed ? null : st.raw.length,
+            };
+          });
+          markMeaning(p, id);
+        },
+        () => {
+          setLoadingMore(false);
+          if (id === run.current) setState((st) => ({ ...st, phase: 'meaning' }));
+        },
+      );
+    },
+    [fetchMore, markMeaning],
+  );
+
   const key = JSON.stringify(query);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands for the query
   useEffect(() => {
@@ -265,7 +313,8 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     const q = queryRef.current;
     if (stateRef.current.status === 'ready') setRefreshing(true);
     else setState((s) => ({ ...s, status: 'loading' }));
-    fetchMore(q, null, id).then(
+    const hybrid = isHybrid(q);
+    fetchMore(q, null, id, q.filters.match === 'meaning' && !hybrid).then(
       (p) => {
         if (!p) return;
         setRefreshing(false);
@@ -274,11 +323,14 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
           error: null,
           raw: p.items,
           cursor: p.nextCursor,
+          phase: hybrid ? 'words' : 'meaning',
+          meaningFrom: null,
           alsoMatched: p.alsoMatched,
           forms: p.forms,
           mode: isSearchQuery(q) ? 'search' : 'list',
         });
-        markMeaning(p, id);
+        if (hybrid && !p.nextCursor) addMeaning(q, id);
+        else markMeaning(p, id);
       },
       (error: unknown) => {
         if (id !== run.current) return;
@@ -286,14 +338,16 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
         setState({ ...INITIAL, status: 'error', error });
       },
     );
-  }, [key, attempt, fetchMore, markMeaning]);
+  }, [key, attempt, fetchMore, markMeaning, addMeaning]);
 
   const loadMore = useCallback(() => {
     const s = stateRef.current;
     if (s.status !== 'ready' || !s.cursor || loadingMore) return;
     const id = run.current;
+    const q = queryRef.current;
+    const words = s.phase === 'words';
     setLoadingMore(true);
-    fetchMore(queryRef.current, s.cursor, id).then(
+    fetchMore(q, s.cursor, id, q.filters.match === 'meaning' && !words).then(
       (p) => {
         setLoadingMore(false);
         if (!p) return;
@@ -303,11 +357,12 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
           raw: [...st.raw, ...p.items.filter((i) => !known.has(i.id))],
           cursor: p.nextCursor,
         }));
-        markMeaning(p, id);
+        if (words && !p.nextCursor) addMeaning(q, id);
+        else markMeaning(p, id);
       },
       () => setLoadingMore(false),
     );
-  }, [fetchMore, loadingMore, markMeaning]);
+  }, [fetchMore, loadingMore, markMeaning, addMeaning]);
 
   const reload = useCallback(() => setAttempt((a) => a + 1), []);
 
@@ -338,11 +393,12 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
     error: state.error,
     refreshing,
     items,
-    hasMore: state.cursor !== null,
+    hasMore: state.cursor !== null || (state.phase === 'words' && state.status === 'ready'),
     loadingMore,
     loadMore,
     reload,
     mode: state.mode,
+    meaningFrom: state.meaningFrom,
     alsoMatched: state.alsoMatched,
     forms: state.forms,
     metas: metas.current,

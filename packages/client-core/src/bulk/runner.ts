@@ -69,7 +69,9 @@ export function createBulkRunner(ctx: ClientContext, opts: BulkRunnerOptions): B
   return async (item: Readonly<BulkItemState>, ingestOpts) => {
     const [audio, transcript] = await Promise.all([
       item.audio ? opts.reader.audio(item.audio) : Promise.resolve(undefined),
-      item.transcript ? opts.reader.bytes(item.transcript) : Promise.resolve(undefined),
+      item.transcript && !item.empty
+        ? opts.reader.bytes(item.transcript)
+        : Promise.resolve(undefined),
     ]);
     return ingestCall(
       runCtx,
@@ -81,6 +83,7 @@ export function createBulkRunner(ctx: ClientContext, opts: BulkRunnerOptions): B
         sourceFileName: (item.audio ?? item.transcript)!.name,
         meta: itemMeta(item, opts),
         backupRecording: opts.backupRecordings && !!item.audio,
+        ...(item.empty && { empty: true }),
       },
       ingestOpts,
     );

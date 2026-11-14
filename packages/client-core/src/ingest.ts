@@ -106,6 +106,11 @@ export interface IngestInput {
   backupRecording?: boolean;
   /** Overrides the settings' language hint for transcription. */
   language?: string;
+  /**
+   * Store the audio as a call with no transcript, without transcribing it: the user listened and
+   * confirmed it has no speech. Audio only.
+   */
+  empty?: boolean;
 }
 
 export type IngestResult =
@@ -232,7 +237,10 @@ async function runIngest(
 
   // 2. Transcript: parse, or transcribe the audio.
   let parsed: { transcript: Transcript; language: string | null; format: string };
-  if (input.transcript !== undefined) {
+  const empty = input.empty === true && audioTok !== null;
+  if (empty) {
+    parsed = { transcript: buildTranscript([]), language: null, format: 'empty' };
+  } else if (input.transcript !== undefined) {
     parsed = toTranscript(input.transcript, input.transcriptFileName);
   } else {
     const audio = decoded;
@@ -255,14 +263,17 @@ async function runIngest(
     };
   }
   const { transcript } = parsed;
-  if (transcript.segments.length === 0 || transcript.text.trim() === '') {
+  if (!empty && (transcript.segments.length === 0 || transcript.text.trim() === '')) {
     throw new IngestError('transcript_empty', 'transcript has no text');
   }
 
-  // 3. Content token and duplicate check, before anything is sent for translation.
+  // 3. Content token and duplicate check, before anything is sent for translation. Empty calls
+  // share no text, so their token comes from the audio: two silent recordings aren't duplicates.
   const language = resolveLanguage(parsed.language, transcript.text);
   const dup = await gates.indexing(async () => {
-    const contentTok = await contentToken(session.keys.indexKey, contentText(transcript.text));
+    const contentTok = empty
+      ? await contentToken(session.keys.indexKey, `empty:${audioTok}`)
+      : await contentToken(session.keys.indexKey, contentText(transcript.text));
     return { contentTok, existing: await findExisting(ctx, { content_tok: contentTok }) };
   });
   if (dup.existing) return { status: 'duplicate', existingId: dup.existing, match: 'content' };
@@ -270,7 +281,7 @@ async function runIngest(
 
   // 3a. Translation by the user's rules (in transit only, through the Ask provider).
   const providers = await ctx.userData.get('providers');
-  const targets = translationTargets(language, providers.translation.rules);
+  const targets = empty ? [] : translationTargets(language, providers.translation.rules);
   let full: Transcript = transcript;
   let translation: TranslationOutcome = targets.length ? 'done' : 'none';
   if (targets.length) {
@@ -317,6 +328,9 @@ async function runIngest(
       synonyms: synonyms.entries,
       intents,
       intentThreshold: settings.intentThreshold,
+      ...(ctx.embedder.minSimilarity !== undefined && {
+        minSimilarity: ctx.embedder.minSimilarity,
+      }),
       rules: parseRules(rules.rules),
       embed: (texts) => ctx.embedder.embed(texts),
       region,

@@ -7,12 +7,17 @@ import { ConfirmDialog } from '@askcalls/ui/components/ConfirmDialog';
 import { ErrorState } from '@askcalls/ui/components/ErrorState';
 import { IntentEditor } from '@askcalls/ui/components/IntentEditor';
 import { Button } from '@askcalls/ui/primitives/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Lightbulb, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useUnlocked } from '../../../../../../client/session/session';
 import { AsyncView, useAsync } from '../../../_shell/states';
 import { SaveIndicator, useSaver } from './shared';
+
+/** Re-indexing runs the whole indexing pipeline: loaded only where it is offered. */
+const ReindexJob = lazy(() =>
+  import('../../_calls/reindex-job').then((m) => ({ default: m.ReindexJob })),
+);
 
 const MIN_EXAMPLES = 3;
 const SAVE_AFTER_MS = 800;
@@ -171,6 +176,9 @@ function IntentList({ initial }: { initial: Settings }) {
           <SaveIndicator saver={saver} />
         </span>
       </div>
+      <Suspense fallback={null}>
+        <ReindexJob mode="intents" ns="tags.intents.reindex" icon={Lightbulb} />
+      </Suspense>
       {cards.map((card) => (
         <div key={card.id} className="flex flex-col gap-2">
           <IntentEditor

@@ -62,6 +62,20 @@
       "scheduling": "Scheduling",
       "legal": "Legal",
       "follow_up": "Follow-up needed"
+    },
+    "reindex": {
+      "title": "Re-check intents on existing calls",
+      "body": "{count, plural, one {Tag # call with the intents it matches now. This runs on this device.} other {Tag # calls with the intents they match now. This runs on this device.}}",
+      "start": "Re-check intents",
+      "progress": "Re-checking intents: {done} of {total}",
+      "progressLabel": "Re-checking intents",
+      "stop": "Stop",
+      "pause": "Pause",
+      "resume": "Resume",
+      "stopped": "Stopped after {done} of {total}. Resume to re-check the rest.",
+      "done": "{count, plural, one {# call re-checked} other {# calls re-checked}}",
+      "failed": "{count, plural, one {# call couldn't be re-checked. Try again.} other {# calls couldn't be re-checked. Try again.}}",
+      "keepOpen": "Keep this tab open while it runs."
     }
   },
   "rules": {

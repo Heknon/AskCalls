@@ -411,7 +411,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### CallRow
 - **Purpose:** one call in any list.
 - **Use:** calls list, search results, contact detail's call list, "duplicate of" links in the upload queue. **Don't use:** in the call view header (use `CallHeader`).
-- **Props:** `context="list" | "search"` (search shows the snippet), `density="comfortable" | "compact"` (compact for the contact detail list), `selected` (keyboard cursor), `call` (decrypted meta or `locked`).
+- **Props:** `context="list" | "search"` (search shows the snippet), `density="comfortable" | "compact"` (compact for the contact detail list), `selected` (keyboard cursor), `call` (decrypted meta or `locked`), `section` (a heading above the row that starts a group: "Related by meaning" after the calls that contain the searched words).
 - **Composes:** `StarToggle`, `ContactLabel`, `CallDirection`, `CallMeta`, `TagChip`, `SearchSnippet`, `DropdownMenu` / `ContextMenu` (row actions).
 - **Screens:** C1, C2, K1.
 - **States:** locked (all text replaced by `DecryptingPlaceholder`), default, hover, selected (start-edge accent bar + accent background), focus ring, starred.
@@ -584,7 +584,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 
 #### QueueRow
 - **Purpose:** one file (or audio + transcript pair) in the import queue.
-- **Props:** `select` (before the import starts: `checked` and the `Checkbox` that puts the call in or leaves it out, passed in so the queue view doesn't load it; a left-out row is dimmed).
+- **Props:** `select` (before the import starts: `checked` and the `Checkbox` that puts the call in or leaves it out, passed in so the queue view doesn't load it; a left-out row is dimmed), `actions` (buttons passed in as nodes: Edit before the import starts; Listen and Save empty for a recording with no speech).
 - **Composes:** `QueueItemStatus`, `ContactLabel`, `Button` (retry), `Checkbox`, `CallRow` link for duplicates. **Screens:** U2.
 
 #### ImportGroup
@@ -596,7 +596,7 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 #### ImportEditDialog
 - **Purpose:** corrects the contact name, number, direction and (for one call) time of planned calls of a bulk import before it starts: one call from its `QueueRow`, or a whole `ImportGroup` at once.
 - **Props:** `values` (a field the calls disagree on is left out and shown as "Mixed"), `date` (one call only), `contactNames`, `phoneError`, `onSave(changed)` (only the fields the user changed), `onRevert?` (back to file names and the manifest), `labels`.
-- **Composes:** `Dialog`, `Input`, `ToggleGroup`, `ErrorState`, `Button`. **Screens:** U2. Opened by the `edit` prop of `ImportGroup` and `QueueRow` (`pencil` icon button; `QueueRow` takes the button as a node so the queue view doesn't load it).
+- **Composes:** `Dialog`, `Input`, `ToggleGroup`, `ErrorState`, `Button`. **Screens:** U2. Opened by the `edit` prop of `ImportGroup` and a `pencil` button in `QueueRow`'s `actions`.
 - **A11y:** every field labelled; Esc closes. **RTL:** the name is `dir="auto"`, the number LTR.
 
 #### ImportFormatGuide

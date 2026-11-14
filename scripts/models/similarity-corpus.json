@@ -7,7 +7,15 @@
     "internet_en": "I've had no internet since yesterday evening. The router light is blinking red. Did you try restarting it? Three times. Okay, I see an outage in your area, a technician is working on the line. When will it be fixed? Estimated by this evening. Can I get a credit on my bill for the downtime? I'll add a credit for two days to your next invoice.",
     "lawyer_he": "שלום, אני מתקשר מהמשרד של עורך הדין. קיבלנו את החוזה ששלחתם ויש כמה סעיפים שצריך לתקן. איזה סעיפים? סעיף הפיצוי המוסכם וסעיף הבוררות. אנחנו מבקשים שהבוררות תהיה בתל אביב. אני אעביר למנהל ונחזור אליכם עד יום שלישי.",
     "car_he": "היי, האוטו שלי עשה רעש מוזר מהבלמים. מתי אפשר להביא למוסך? יש לנו מקום מחר בשמונה בבוקר. כמה זה יעלה בערך? החלפת רפידות זה בערך שש מאות שקל, אם צריך גם דיסקים זה יותר. אוקיי, אני אביא מחר.",
-    "delivery_en": "Hi, my order was supposed to arrive Monday and it's Thursday now. Let me check the tracking. It looks like the package is stuck at the regional depot. This is the second time. I want a refund for the shipping. I'm sorry, I'll refund the shipping fee and escalate the delivery."
+    "delivery_en": "Hi, my order was supposed to arrive Monday and it's Thursday now. Let me check the tracking. It looks like the package is stuck at the regional depot. This is the second time. I want a refund for the shipping. I'm sorry, I'll refund the shipping fee and escalate the delivery.",
+    "chat_he_family": "אלון? מה נשמע חוליגן? מה אומר? תגיד, אה, תפסתי אותך בבית או...? לא, לא, אני פה. יש מצב שאתה פותח את הלוח שם ותגיד לי מה רואים? כן רגע, אני עוד בדרך, יש פקקים מטורפים באיילון. מה עם אבא? הוא בסדר, היה אצל החברים שלו אתמול, ישבו עד מאוחר. טוב, תגיד לו שאני אתקשר אליו בערב. סבבה, אחי.",
+    "chat_he_argue": "שמע, רגע, לי לא אכפת, אוקיי? כשאריץ במעבדות שתיים אני לא מניח, אני לא מחזיק את זה כשירותי. כן אכפת לך. לא, באמת, תעשה מה שאתה רוצה. אתה יודע מה, בוא נדבר על זה אחר כך, אני באמצע משהו. יאללה. מה עם הילדים? הקטן חולה קצת, נשאר בבית היום. אוי, רפואה שלמה. תודה, יהיה בסדר.",
+    "chat_he_parking": "הלו? כן, שומע אותך עכשיו? עכשיו כן, קודם זה נקטע. אני בחניון, אין פה קליטה. טוב. מה אכלתם בסוף אתמול? הזמנו פיצה, הילדים לא רצו כלום אחר. חחח קלאסי. ואיך היה במשחק? הפסדנו בדקה האחרונה, הייתי בטירוף. אתה רציני? כן, שוער שלנו פשוט נרדם. וואלה מבאס. טוב, נדבר.",
+    "chat_he_dog": "מה קורה איתך? הכל טוב, עייף. גם אני, לא ישנתי כל הלילה, הכלב נבח על כל חתול. אתה צריך לסגור לו את החלון. ניסיתי, הוא פותח לבד. חחח. ומה עם הדירה החדשה? עוד לא עברנו, הצבע לוקח זמן. איזה צבע בחרתם בסוף? אפור בהיר, אשתי החליטה. ברור. טוב יאללה, אני צריך לזוז, ביי.",
+    "chat_en_wedding": "Hey, it's me. Yeah, I'm just driving back from my mom's. Traffic is insane today, everyone is going to the beach. How was the wedding on Saturday? Honestly it was great, the food was amazing and the band played until two in the morning. I'm so tired. Did you see Jake there? Yeah, he came with his new girlfriend, she's nice. Anyway, I'll let you go. Talk later.",
+    "chat_en_game": "Yo, what's up man. Nothing much, just chilling at home, watching the game. Did you see that last play? Unbelievable, right? I literally jumped off the couch. Ha, same. Hey, is your brother still in town? I think he flies back Wednesday. Cool, tell him I said hi. Will do. Alright, I gotta go, my food's here. Later.",
+    "chat_en_zoo": "Hello? Can you hear me? You're breaking up a little. Okay, now it's better, I moved to the window. So anyway, the kids loved the zoo, the little one wouldn't leave the penguins. Of course. It was so hot though, we were all melting. Did you get ice cream? Twice. Ha. Okay, I'm about to go into the tunnel, I'll lose you. Bye, bye.",
+    "chat_en_mom": "Hi sweetie, did you get home okay? Yes, I'm home, I just took a shower. Good. Did you remember to feed the cat? Yes mom. And did you eat something? I had leftovers. Okay. Your dad says hi. Tell him hi. Okay, love you, sleep well. Love you too, goodnight."
   },
   "queries": [
     {
@@ -32,11 +40,11 @@
     },
     {
       "text": "football match",
-      "related": []
+      "related": ["chat_en_game", "chat_he_parking"]
     },
     {
       "text": "wedding",
-      "related": []
+      "related": ["chat_en_wedding"]
     },
     {
       "text": "weather forecast",
@@ -176,11 +184,43 @@
     },
     {
       "text": "planning a trip to the beach",
-      "related": []
+      "related": ["chat_en_wedding"]
     },
     {
       "text": "מתכון לעוגת שוקולד",
       "related": []
+    },
+    {
+      "text": "קיפוד",
+      "related": []
+    },
+    {
+      "text": "hedgehog",
+      "related": []
+    },
+    {
+      "text": "ג׳ירפה",
+      "related": []
+    },
+    {
+      "text": "giraffe",
+      "related": []
+    },
+    {
+      "text": "חשבון חשמל",
+      "related": []
+    },
+    {
+      "text": "tax return",
+      "related": []
+    },
+    {
+      "text": "פיצה",
+      "related": ["chat_he_parking"]
+    },
+    {
+      "text": "the kids are sick",
+      "related": ["chat_he_argue"]
     }
   ]
 }

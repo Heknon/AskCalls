@@ -81,6 +81,8 @@ export type CallRowProps = {
   };
   setSize?: number;
   posInSet?: number;
+  /** Starts a group of results with this heading: "Related by meaning". */
+  section?: string;
 };
 
 /** One call in any list: calls, search results, a contact's calls. */
@@ -99,12 +101,18 @@ export function CallRow({
   labels,
   setSize,
   posInSet,
+  section,
 }: CallRowProps) {
   const compact = density === 'compact';
   const rowClass = cn(
     'relative grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-start gap-x-2 gap-y-0.5 border-border border-b ps-2 pe-3 last:border-b-0 md:grid-cols-[2rem_minmax(0,1fr)_auto] md:gap-x-3 md:gap-y-1 md:ps-2.5 md:pe-4',
     compact ? 'py-2.5' : 'py-3.5',
   );
+  const sectionHeading = section ? (
+    <span className="col-span-full -mt-1 mb-2 font-medium text-muted-foreground text-xs">
+      {section}
+    </span>
+  ) : null;
   if (call === 'locked') {
     return (
       <li
@@ -115,6 +123,7 @@ export function CallRow({
         aria-posinset={posInSet}
         className={rowClass}
       >
+        {sectionHeading}
         <span className="inline-flex size-8 items-center justify-center text-subtle-foreground">
           <Star className="size-4.5" aria-hidden />
         </span>
@@ -150,6 +159,7 @@ export function CallRow({
           'bg-accent hover:bg-accent before:absolute before:inset-y-0 before:start-0 before:w-0.75 before:bg-primary',
       )}
     >
+      {sectionHeading}
       <StarToggle
         starred={call.starred}
         onStarredChange={(v) => onStarredChange?.(v)}

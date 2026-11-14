@@ -20,6 +20,8 @@ export interface BulkItemState {
   attempts: number;
   /** Corrections made before the import started; they win over file names and the manifest. */
   edits?: MetaEdits;
+  /** The user listened and chose to keep it as a call with no transcript. */
+  empty?: boolean;
 }
 
 export interface BulkState {
@@ -213,6 +215,26 @@ export class BulkQueue {
     let n = 0;
     for (const item of this.#state.items) {
       if (item.status !== 'failed' || (ids && !ids.includes(item.id))) continue;
+      item.status = 'queued';
+      item.reason = null;
+      n++;
+      this.#emit(item);
+    }
+    void this.#persist();
+    if (!this.#state.paused) this.#pump();
+    return n;
+  }
+
+  /**
+   * Keeps audio whose transcript came back empty as calls with no transcript (all such items, or
+   * the given ids): requeued without transcribing again.
+   */
+  saveEmpty(ids?: readonly string[]): number {
+    let n = 0;
+    for (const item of this.#state.items) {
+      if (item.status !== 'failed' || item.reason !== 'transcript_empty' || !item.audio) continue;
+      if (ids && !ids.includes(item.id)) continue;
+      item.empty = true;
       item.status = 'queued';
       item.reason = null;
       n++;

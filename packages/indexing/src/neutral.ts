@@ -1,0 +1,23 @@
+/** Everyday phone chatter in Hebrew and English: the baseline every intent must beat. */
+export const NEUTRAL_EXAMPLES: readonly string[] = [
+  'מה נשמע? הכל טוב, ברוך השם',
+  'רגע, אני לא שומע אותך, אני בחניון',
+  'תגיד לאמא שאני אתקשר בערב',
+  'הילדים כבר ישנים, היה יום ארוך',
+  'וואלה, איזה משחק היה אתמול',
+  'אני בדרך, יש פקקים מטורפים',
+  'מה אכלתם בסוף? הזמנו פיצה',
+  'סבבה אחי, יאללה ביי',
+  'כן, כן, אני פה, תמשיך',
+  'אוי, רפואה שלמה, שיהיה בריא',
+  "How's it going? Yeah, all good here",
+  "Sorry, you're breaking up, I'm in the car",
+  "Tell your mom I'll call her tonight",
+  'The kids are finally asleep, long day',
+  'Did you see the game last night?',
+  "I'm on my way, traffic is crazy",
+  'We just ordered pizza for dinner',
+  'Okay, talk later, bye',
+  "Yeah, yeah, I'm listening, go on",
+  'Oh no, I hope she feels better soon',
+];

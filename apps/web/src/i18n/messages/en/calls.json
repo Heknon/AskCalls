@@ -153,7 +153,8 @@
       "longest": "Longest first",
       "best": "Best match"
     },
-    "meaningLoading": "Loading the meaning model ({size}, once)"
+    "meaningLoading": "Loading the meaning model ({size}, once)",
+    "byMeaning": "Related by meaning"
   },
   "noMatches": {
     "title": "No calls match all of these.",
