@@ -3,7 +3,7 @@ import { contentToken } from '@askcalls/crypto';
 import { contentText, DEFAULT_PHONE_REGION, isPhoneRegion } from '@askcalls/indexing';
 import { parseTranscript } from '@askcalls/transcript-formats';
 import type { ClientContext } from '../context';
-import { type IngestMeta, ingestCall, type MetaEdits } from '../ingest';
+import { type IngestMeta, ingestCall, type MetaEdits, type Transcribed } from '../ingest';
 import type { AudioSource } from '../ports/index';
 import { parseRecordingFileName } from './filenames';
 import { type Manifest, parseManifest } from './manifest';
@@ -70,6 +70,8 @@ export interface BulkRunnerOptions extends Omit<MetaOptions, 'manifest'> {
 /** Runs one queue item through the ingest pipeline. */
 export function createBulkRunner(ctx: ClientContext, opts: BulkRunnerOptions): BulkRunner {
   const runCtx = opts.transcribe === 'never' ? { ...ctx, transcriber: null } : ctx;
+  /** Transcriptions of items that failed later, by item id, so a retry doesn't pay again. */
+  const transcribed = new Map<string, Transcribed>();
   return async (item: Readonly<BulkItemState>, ingestOpts) => {
     const [audio, transcript] = await Promise.all([
       item.audio ? opts.reader.audio(item.audio) : Promise.resolve(undefined),
@@ -77,7 +79,8 @@ export function createBulkRunner(ctx: ClientContext, opts: BulkRunnerOptions): B
         ? opts.reader.bytes(item.transcript)
         : Promise.resolve(undefined),
     ]);
-    return ingestCall(
+    const earlier = transcribed.get(item.id);
+    const result = await ingestCall(
       runCtx,
       {
         source: opts.source ?? 'app',
@@ -88,9 +91,14 @@ export function createBulkRunner(ctx: ClientContext, opts: BulkRunnerOptions): B
         meta: itemMeta(item, opts),
         backupRecording: opts.backupRecordings && !!item.audio,
         ...(item.empty && { empty: true }),
+        ...(earlier && { transcribed: earlier }),
       },
       ingestOpts,
     );
+    if (result.status === 'failed' && result.transcribed) {
+      transcribed.set(item.id, result.transcribed);
+    } else transcribed.delete(item.id);
+    return result;
   };
 }
 

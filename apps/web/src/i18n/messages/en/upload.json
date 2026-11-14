@@ -82,6 +82,9 @@
     "unauthorized": "You were signed out. Sign in again and retry.",
     "upload_failed": "Upload failed. Check your connection and retry.",
     "indexing_failed": "Indexing failed on this device. Retry.",
+    "model_unavailable": "Couldn't download the search model. Check your connection and retry.",
+    "model_unverified": "The search model download didn't match its checksum. Retry.",
+    "model_unsupported": "This browser couldn't start the search model. Update it or use another browser.",
     "unknown": "This file couldn't be uploaded. Retry."
   },
   "bulk": {
