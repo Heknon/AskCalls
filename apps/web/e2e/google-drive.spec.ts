@@ -42,7 +42,7 @@ async function playsBack(page: Page) {
   await page.locator('[data-component="CallRow"]').first().click();
   const player = page.locator('[data-component="RecordingPlayer"]');
   await expect(player).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
-  await expect(player.locator('audio')).toHaveAttribute('src', /^blob:/);
+  await expect(page.locator('audio[data-playback]')).toHaveAttribute('src', /^blob:/);
 }
 
 async function moveAll(page: Page, body: RegExp) {

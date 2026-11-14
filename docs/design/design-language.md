@@ -480,11 +480,18 @@ Showing [all calls] · with [anyone] · tagged [any tag] · about [Purchase inte
 - **Composes:** `Button` (link variant, mono digits). **Screens:** C3. **A11y:** "Play from 0:48"; disabled with tooltip when there is no recording but still scrolls the transcript. **RTL:** LTR island.
 
 #### RecordingPlayer
-- **Purpose:** plays the decrypted recording backup of a call.
-- **Use:** only when a recording backup exists. **Props:** `src` (Blob URL), `duration`, `hits: seconds[]`, `rate`.
+- **Purpose:** controls for the decrypted recording backup of a call.
+- **Use:** only when a recording backup exists. **Props:** `durationSec`, `time`, `playing`, `rate`, `hits: seconds[]`, `onToggle`, `onSeek`, `onRateChange`. The audio element belongs to the app shell, so playback continues on other pages (`NowPlaying`).
 - **Composes:** custom controls with `Button`, `Slider`, `Select` (speed).
 - **Screens:** C3. **States:** decrypting (placeholder with progress), ready, playing, error ("Couldn't decrypt the recording").
 - **A11y:** buttons named, slider with `aria-valuetext`, `Space` and arrow keys. **RTL:** never mirrored; the whole player has `dir="ltr"`.
+
+#### NowPlaying
+- **Purpose:** the recording that keeps playing after the user leaves its call.
+- **Use:** every app page but the call view of the playing recording. **Don't use:** on the call view itself (`RecordingPlayer` is there).
+- **Props:** `title` (contact, number or "Hidden number"), `href` (its call), `time`, `durationSec`, `playing`, `onToggle`, `onClose`, `aboveTabBar`.
+- **Composes:** a floating pill at the bottom end edge: play/pause with a progress ring, a link to the call, `Button` (close stops playback). **Screens:** all `/app/**`.
+- **States:** playing, paused. **A11y:** a `section` named "Now playing"; buttons named. **RTL:** sits at the end edge; the clock is an LTR island; the title is `dir="auto"`.
 
 #### AskPanel
 - **Purpose:** ask the LLM questions about this one call.
@@ -821,7 +828,7 @@ Screen codes are used in the catalog above and in `screens.md`.
 | G1 | Unlock gate | GateLayout, GateHeading, GateAccount, GateNote, LanguageSwitcher, CodeGroupInput, PassphraseField, ConfirmDialog, ErrorState, Notice |
 | C1 | Calls list | Logo, AppSidebar, AppTopBar, MobileTabBar, MobileTopBar, PageHeader, SearchBox, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, DecryptingPlaceholder, EmptyState, ErrorState, StatusBanner |
 | C2 | Search results | SearchBox, SearchSuggestion, FilterSentence, FilterBlank, FilterPicker, ResultLine, FoldedFilterSummary, CallRow, SearchSnippet, HitMark, StarToggle, TagChip, EmptyState |
-| C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
+| C3 | Call view | CallHeader, ContactLabel, PhoneNumber, CallDirection, CallMeta, SignatureBadge, StarToggle, TagChip, CallActions, TranscriptSegment, TimestampLink, HitMark, RecordingPlayer, NowPlaying, AskPanel, AskMessage, DataFlowNote, NotesEditor, SaveStatus, DecryptingPlaceholder, ConfirmDialog, ErrorState |
 | C4 | Ask consent | ConsentSheet, DataFlowNote |
 | U1 | Upload: single | FileDropZone, PhoneNumber, CallDirection, DataFlowNote, QueueItemStatus, ErrorState |
 | U2 | Upload: bulk | FileDropZone, ImportFormatGuide, PreflightSummary, ImportGroup, ImportEditDialog, DataFlowNote, UsageMeter, JobProgress, QueueRow, QueueItemStatus, StatusBanner, EmptyState |

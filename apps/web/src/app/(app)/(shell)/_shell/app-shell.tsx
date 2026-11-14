@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useMemo, useState, useSyncExternalStore } from 'react';
+import { PlaybackProvider } from '../../../../client/playback/playback';
 import { useAppSession } from '../../../../client/session/session';
 import type { ShortcutGroup as Group } from '../../../../client/shortcuts/registry';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../../../../client/shortcuts/shortcuts';
 import { initials } from '../../_gate/unlock-gate';
 import { keyCaps } from './keys';
+import { ShellNowPlaying } from './now-playing';
 import { APP_HREFS, routeOf } from './routes';
 import { ShellContext } from './shell-context';
 
@@ -155,51 +157,54 @@ export function AppShell({
 
   return (
     <ShortcutsProvider>
-      <ShellContext.Provider value={shell}>
-        <GlobalShortcuts onDialog={() => setDialog(true)} onLock={lock} />
-        <div className="flex min-h-dvh">
-          <AppSidebar
-            active={active}
-            hrefs={APP_HREFS}
-            isAdmin={me.user.role === 'admin'}
-            callCount={me.usage.calls}
-            labels={{
-              ...nav,
-              main: t('nav.main'),
-              instance: t('nav.instance'),
-              shortcuts: t('shortcuts.open'),
-              brand: tc('brand'),
-            }}
-            account={{
-              name: me.user.name ?? me.user.email ?? '',
-              initials: initials(me),
-              detail,
-            }}
-            lock={
-              <LockStatus variant="sidebar" onLock={lock} labels={lockLabels} shortcut={false} />
-            }
-            onShortcuts={() => setDialog(true)}
-            linkAs={Link}
-          />
-          <div
-            className={`flex min-w-0 flex-1 flex-col md:pb-0 ${tabBar ? 'pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))]' : ''}`}
-          >
-            {online || localServer ? null : (
-              <StatusBanner condition="offline">{t('banner.offline')}</StatusBanner>
-            )}
-            {children}
+      <PlaybackProvider>
+        <ShellContext.Provider value={shell}>
+          <GlobalShortcuts onDialog={() => setDialog(true)} onLock={lock} />
+          <div className="flex min-h-dvh">
+            <AppSidebar
+              active={active}
+              hrefs={APP_HREFS}
+              isAdmin={me.user.role === 'admin'}
+              callCount={me.usage.calls}
+              labels={{
+                ...nav,
+                main: t('nav.main'),
+                instance: t('nav.instance'),
+                shortcuts: t('shortcuts.open'),
+                brand: tc('brand'),
+              }}
+              account={{
+                name: me.user.name ?? me.user.email ?? '',
+                initials: initials(me),
+                detail,
+              }}
+              lock={
+                <LockStatus variant="sidebar" onLock={lock} labels={lockLabels} shortcut={false} />
+              }
+              onShortcuts={() => setDialog(true)}
+              linkAs={Link}
+            />
+            <div
+              className={`flex min-w-0 flex-1 flex-col md:pb-0 ${tabBar ? 'pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))]' : ''}`}
+            >
+              {online || localServer ? null : (
+                <StatusBanner condition="offline">{t('banner.offline')}</StatusBanner>
+              )}
+              {children}
+            </div>
           </div>
-        </div>
-        {tabBar ? (
-          <MobileTabBar
-            active={active}
-            hrefs={APP_HREFS}
-            labels={{ ...nav, tags: t('nav.tagsShort'), main: t('nav.main') }}
-            linkAs={Link}
-          />
-        ) : null}
-        <Shortcuts open={dialog} onOpenChange={setDialog} />
-      </ShellContext.Provider>
+          {tabBar ? (
+            <MobileTabBar
+              active={active}
+              hrefs={APP_HREFS}
+              labels={{ ...nav, tags: t('nav.tagsShort'), main: t('nav.main') }}
+              linkAs={Link}
+            />
+          ) : null}
+          <ShellNowPlaying pathname={pathname} aboveTabBar={tabBar} />
+          <Shortcuts open={dialog} onOpenChange={setDialog} />
+        </ShellContext.Provider>
+      </PlaybackProvider>
     </ShortcutsProvider>
   );
 }
