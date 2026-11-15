@@ -221,6 +221,14 @@
     {
       "text": "the kids are sick",
       "related": ["chat_he_argue"]
+    },
+    {
+      "text": "טמפרטורה",
+      "related": []
+    },
+    {
+      "text": "temperature",
+      "related": []
     }
   ]
 }
