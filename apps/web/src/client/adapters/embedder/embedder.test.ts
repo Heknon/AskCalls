@@ -19,7 +19,7 @@ class FakeWorker {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('WorkerEmbedder', () => {
-  it('starts nothing until load or embed, then asks for the configured model host', async () => {
+  it('starts nothing until load or embed, then asks for the configured model host on WebAssembly', async () => {
     vi.stubGlobal('location', { origin: 'https://app.example.com' });
     const workers: FakeWorker[] = [];
     const e = new WorkerEmbedder({
@@ -37,7 +37,7 @@ describe('WorkerEmbedder', () => {
     expect(workers).toHaveLength(1);
     expect(workers[0]!.sent[0]).toEqual({
       type: 'load',
-      prefer: 'auto',
+      prefer: 'wasm',
       modelUrl: `https://models.example.com/${MODEL_BUILD_PATH}`,
     });
     const status = e.status;
@@ -84,6 +84,7 @@ describe('WorkerEmbedder', () => {
       vi.stubGlobal('location', { origin: 'https://app.example.com' });
       const workers: FakeWorker[] = [];
       const e = new WorkerEmbedder({
+        prefer: 'auto',
         stallMs: 1000,
         createWorker: () => {
           const w = new FakeWorker();
@@ -119,22 +120,17 @@ describe('WorkerEmbedder', () => {
     }
   });
 
-  it('fails an embed that hangs on WebGPU and moves to WebAssembly', async () => {
+  it('on auto, fails an embed that hangs on WebGPU and moves to WebAssembly', async () => {
     vi.useFakeTimers();
     try {
       vi.stubGlobal('location', { origin: 'https://app.example.com' });
-      const stored = new Map<string, string>();
-      vi.stubGlobal('localStorage', {
-        getItem: (k: string) => stored.get(k) ?? null,
-        setItem: (k: string, v: string) => stored.set(k, v),
-      });
       const workers: FakeWorker[] = [];
       const create = () => {
         const w = new FakeWorker();
         workers.push(w);
         return w as unknown as Worker;
       };
-      const e = new WorkerEmbedder({ stallMs: 3000, createWorker: create });
+      const e = new WorkerEmbedder({ prefer: 'auto', stallMs: 3000, createWorker: create });
       const query = e.embed(['a query']);
       workers[0]!.emit({ type: 'ready', device: 'webgpu', loadMs: 5 });
       vi.advanceTimersByTime(2900);
@@ -144,9 +140,6 @@ describe('WorkerEmbedder', () => {
 
       void e.embed(['again']).catch(() => {});
       expect(workers[1]!.sent[0]).toMatchObject({ type: 'load', prefer: 'wasm' });
-      expect(stored.get('askcalls-embedder-device')).toBe('wasm');
-      new WorkerEmbedder({ createWorker: create }).load();
-      expect(workers[2]!.sent[0]).toMatchObject({ prefer: 'wasm' });
     } finally {
       vi.useRealTimers();
     }
