@@ -13,8 +13,14 @@ export interface Embedder {
    * Meaning search drops hits under it. Absent: every hit is kept.
    */
   readonly minSimilarity?: number;
-  /** `signal`: drop work nobody waits for any more (a superseded search). */
-  embed(texts: string[], opts?: { signal?: AbortSignal }): Promise<Float32Array[]>;
+  /**
+   * `signal`: drop work nobody waits for any more (a superseded search). `urgent`: someone is
+   * waiting on screen (a search query); run it ahead of background batches.
+   */
+  embed(
+    texts: string[],
+    opts?: { signal?: AbortSignal; urgent?: boolean },
+  ): Promise<Float32Array[]>;
 }
 
 export interface DecodedAudio {

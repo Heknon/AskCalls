@@ -66,6 +66,20 @@ const MAX_PAGES = 20;
 /** With direction set, keep fetching until this many new rows show (or the end). */
 const MIN_VISIBLE = 12;
 
+/**
+ * A meaning page waits on the on-device model, which can be busy, slow on a phone or stuck. Past
+ * this the meaning half gives up, so the list ends with the word matches instead of loading.
+ */
+const MEANING_TIMEOUT_MS = 30_000;
+
+function capped<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('meaning search timed out')), ms);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+}
+
 const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
 
 export const isSearchQuery = (q: FeedQuery) =>
@@ -115,7 +129,7 @@ async function fetchPage(
       vector: null,
     };
   }
-  const res = await searchCalls(ctx, {
+  const search = searchCalls(ctx, {
     text: q.text,
     contacts: [...f.contacts, ...f.numbers],
     tagIds: f.tags,
@@ -127,6 +141,7 @@ async function fetchPage(
     limit: PAGE,
     cursor,
   });
+  const res = await (semantic ? capped(search, MEANING_TIMEOUT_MS) : search);
   return {
     items: res.items.map((r) => ({
       id: r.id,
@@ -370,7 +385,13 @@ export function useCallFeed(ctx: ClientContext, query: FeedQuery, hidden: Readon
         if (words && !p.nextCursor) addMeaning(q, id);
         else markMeaning(p, id);
       },
-      () => setLoadingMore(false),
+      () => {
+        setLoadingMore(false);
+        if (id !== run.current) return;
+        // The list asks again as soon as it can: end it here rather than retry forever.
+        if (words) addMeaning(q, id);
+        else setState((st) => ({ ...st, cursor: null, phase: 'meaning' }));
+      },
     );
   }, [fetchMore, loadingMore, markMeaning, addMeaning]);
 
