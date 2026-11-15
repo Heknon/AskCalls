@@ -230,9 +230,13 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
   });
 
   // Meaning hits arrive most similar first, so the first one under the floor ends the results.
-  const floor = vector ? ctx.embedder.minSimilarity : undefined;
+  const floor = vector
+    ? await import('./meaning-floor').then((m) => m.meaningFloor(ctx.embedder, vector))
+    : undefined;
   const related =
-    floor === undefined ? res.items : res.items.filter((h) => h.score !== null && h.score >= floor);
+    floor === undefined
+      ? res.items
+      : res.items.filter((h) => h.score !== null && h.score >= floor(h.bestChunkLang));
   const nextCursor = related.length < res.items.length ? null : res.nextCursor;
 
   const formSet = new Set(forms);
