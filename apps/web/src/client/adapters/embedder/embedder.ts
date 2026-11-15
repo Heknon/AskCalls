@@ -24,6 +24,11 @@ export interface WorkerEmbedderOptions {
    * larger batches a vector depends on its neighbours and no longer matches the agent's.
    */
   batchSize?: number;
+  /**
+   * Default `wasm`. The model is int8 (q8), which WebGPU runs poorly: on a software adapter
+   * start-up took 47 s against 1 s and indexing a call 4 s against 0.4 s, and on a phone a
+   * search took minutes. `auto` tries WebGPU first and falls back to WebAssembly when it hangs.
+   */
   prefer?: EmbedderDevice | 'auto';
   /**
    * The instance's model host (`EMBEDDING_MODEL_URL`, from the page's runtime config); null or
@@ -51,20 +56,10 @@ const TOTAL_BYTES = EMBEDDING_MODEL.files.reduce((n, f) => n + f.bytes, 0);
 const STALL_MS = 45_000;
 /** An embed may take a third of `stallMs` plus this per text before it counts as hung. */
 const PER_TEXT_MS = 2_000;
-/** Set after WebGPU hung on this device, so later page loads start on WebAssembly. */
-const PREFER_KEY = 'askcalls-embedder-device';
-
-function rememberedPrefer(): EmbedderDevice | null {
-  try {
-    return globalThis.localStorage?.getItem(PREFER_KEY) === 'wasm' ? 'wasm' : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * The browser Embedder (spec 3.3): transformers.js and ONNX Runtime in a dedicated worker,
- * WebGPU when an adapter is available, WebAssembly otherwise. Nothing is downloaded until the
+ * on WebAssembly (see `prefer`). Nothing is downloaded until the
  * first `embed()` or `load()` (ingest, semantic search); keyword search and reading calls never
  * start it. `status` and `onStatus` report the first-load download progress for the UI.
  */
@@ -91,7 +86,7 @@ export class WorkerEmbedder implements Embedder {
 
   constructor(opts: WorkerEmbedderOptions = {}) {
     this.#batchSize = opts.batchSize ?? 1;
-    this.#prefer = opts.prefer ?? rememberedPrefer() ?? 'auto';
+    this.#prefer = opts.prefer ?? 'wasm';
     this.#stallMs = opts.stallMs ?? STALL_MS;
     this.#modelBaseUrl = opts.modelBaseUrl ?? null;
     this.#createWorker =
@@ -175,7 +170,7 @@ export class WorkerEmbedder implements Embedder {
   /**
    * Nothing may wait on the worker forever. While the model loads, every message restarts the
    * clock; once it is ready, the oldest embed (the worker runs them in order) gets a budget by
-   * its size. Silence means a download stopped or a backend hung (WebGPU can, on some phones):
+   * its size. Silence means a download stopped or a backend hung (WebGPU can):
    * fail what waits, so search shows what it has, and start the next try on WebAssembly.
    */
   #watch(mode: 'off' | 'auto' | 'downloaded' = 'auto') {
@@ -194,12 +189,7 @@ export class WorkerEmbedder implements Embedder {
       toWasm = status.device === 'webgpu';
     }
     this.#stall = setTimeout(() => {
-      if (toWasm && this.#prefer === 'auto') {
-        this.#prefer = 'wasm';
-        try {
-          globalThis.localStorage?.setItem(PREFER_KEY, 'wasm');
-        } catch {}
-      }
+      if (toWasm && this.#prefer === 'auto') this.#prefer = 'wasm';
       this.dispose();
       this.#setStatus({ state: 'failed', reason: 'other' });
     }, ms);
