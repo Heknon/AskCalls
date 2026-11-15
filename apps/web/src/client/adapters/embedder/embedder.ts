@@ -118,7 +118,10 @@ export class WorkerEmbedder implements Embedder {
     return this.#ready!;
   }
 
-  async embed(texts: string[], opts: { signal?: AbortSignal } = {}): Promise<Float32Array[]> {
+  async embed(
+    texts: string[],
+    opts: { signal?: AbortSignal; urgent?: boolean } = {},
+  ): Promise<Float32Array[]> {
     if (texts.length === 0) return [];
     opts.signal?.throwIfAborted();
     const worker = this.#ensure();
@@ -140,6 +143,7 @@ export class WorkerEmbedder implements Embedder {
         id,
         texts,
         batchSize: this.#batchSize,
+        ...(opts.urgent && { urgent: true }),
       } satisfies EmbedderRequest);
       if (!this.#stall) this.#watch();
     });
