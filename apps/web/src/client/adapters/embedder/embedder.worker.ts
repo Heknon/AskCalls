@@ -44,6 +44,16 @@ const post = (e: EmbedderEvent, transfer: Transferable[] = []) => self.postMessa
 let extractor: Promise<FeatureExtractionPipeline> | null = null;
 const cancelled = new Set<number>();
 let queue: Promise<void> = Promise.resolve();
+/**
+ * One inference at a time, first come first served, batch by batch: an urgent job (a search
+ * query) skips `queue` and so runs right after the batch in flight, not after the whole job.
+ */
+let gate: Promise<unknown> = Promise.resolve();
+function exclusive<T>(run: () => Promise<T>): Promise<T> {
+  const result = gate.then(run);
+  gate = result.catch(() => {});
+  return result;
+}
 
 async function webGpuAvailable(): Promise<boolean> {
   const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
@@ -118,9 +128,11 @@ async function embed(id: number, texts: string[], batchSize: number) {
     for (let b = 0; b < order.length; b += batchSize) {
       if (cancelled.has(id)) throw new Error('cancelled');
       const idx = order.slice(b, b + batchSize).map(([, i]) => i);
-      const t = await p(
-        idx.map((i) => texts[i]!),
-        { pooling: 'mean', normalize: true },
+      const t = await exclusive(() =>
+        p(
+          idx.map((i) => texts[i]!),
+          { pooling: 'mean', normalize: true },
+        ),
       );
       const data = t.data as Float32Array;
       idx.forEach((i, k) => {
@@ -149,5 +161,9 @@ self.onmessage = ({ data }: MessageEvent<EmbedderRequest>) => {
     return;
   }
   const { id, texts, batchSize } = data;
+  if (data.urgent) {
+    void embed(id, texts, batchSize);
+    return;
+  }
   queue = queue.then(() => embed(id, texts, batchSize));
 };

@@ -4,7 +4,8 @@ export type EmbedderDevice = 'webgpu' | 'wasm';
 export type EmbedderRequest =
   /** `modelUrl`: the build's directory (assets.ts `modelDirectoryUrl`). */
   | { type: 'load'; prefer: EmbedderDevice | 'auto'; modelUrl: string }
-  | { type: 'embed'; id: number; texts: string[]; batchSize: number }
+  /** `urgent`: runs between the batches of whatever is running, ahead of the queue. */
+  | { type: 'embed'; id: number; texts: string[]; batchSize: number; urgent?: boolean }
   | { type: 'cancel'; id: number };
 
 /**

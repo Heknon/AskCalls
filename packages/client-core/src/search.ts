@@ -198,7 +198,7 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
       ? contactTokens(ctx, req.contacts, settings.phoneRegion)
       : Promise.resolve(null),
     semantic
-      ? ctx.embedder.embed([prepared.embedText]).then((v) => v[0]!)
+      ? ctx.embedder.embed([prepared.embedText], { urgent: true }).then((v) => v[0]!)
       : Promise.resolve(undefined),
   ]);
   // A contact chip that matches no parsable phone can match no call.
