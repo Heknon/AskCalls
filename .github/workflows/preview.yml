@@ -189,7 +189,7 @@ jobs:
       # No AWS keys in GitHub: the job assumes a role that can only list and delete preview/
       # objects in the dev bucket (infra/, AskCallsGithubDeploy). The dev bucket's lifecycle rule
       # expires anything this misses after 14 days.
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         if: vars.AWS_PREVIEW_CLEANUP_ROLE_ARN != '' && vars.AWS_REGION != ''
         with:
           role-to-assume: ${{ vars.AWS_PREVIEW_CLEANUP_ROLE_ARN }}
