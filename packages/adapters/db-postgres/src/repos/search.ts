@@ -132,19 +132,28 @@ export function createSearchIndex(d: Driver): SearchIndex {
         );
         const items = rs.slice(0, limit).map(toHit);
         const last = items[items.length - 1];
-        return { items, nextCursor: rs.length > limit && last ? dayCursor(last) : null };
+        return {
+          items,
+          nextCursor: rs.length > limit && last ? dayCursor(last) : null,
+          scoreMedian: null,
+          scoredCalls: 0,
+        };
       }
 
       const vec = vectorLiteral(q.vector);
+      const matching = sql.join(where, sql` AND `);
       let after = sql`true`;
       if (q.cursor) {
         const [dist, id] = decodeCursor(q.cursor, VECTOR_CURSOR, ['n', 's']) as [number, string];
         after = sql`(best."dist" > ${dist}::float8 OR (best."dist" = ${dist}::float8 AND ${calls.id} < ${id}::text))`;
       }
-      const rs = await d.asUser(userId, (tx) =>
-        rows<HitRow>(
-          tx,
-          sql`SELECT ${summarySelect}, best."ord" AS "bestOrd", best."lang" AS "bestLang", best."snippetCt" AS "bestSnippetCt",
+      const [rs, statRows] = await d.asUser(
+        userId,
+        async (tx) =>
+          [
+            await rows<HitRow>(
+              tx,
+              sql`SELECT ${summarySelect}, best."ord" AS "bestOrd", best."lang" AS "bestLang", best."snippetCt" AS "bestSnippetCt",
                 best."dist" AS "dist"
               FROM "Call"
               CROSS JOIN LATERAL (
@@ -155,11 +164,27 @@ export function createSearchIndex(d: Driver): SearchIndex {
                 ORDER BY "dist", ch."ord"
                 LIMIT 1
               ) best
-              WHERE ${sql.join(where, sql` AND `)} AND ${after}
+              WHERE ${matching} AND ${after}
               ORDER BY best."dist" ASC, ${calls.id} DESC
               LIMIT ${limit + 1}`,
-        ),
+            ),
+            // Every matching call's best distance, without the cursor: the query's usual score.
+            await rows<{ medianDist: number | null; scored: number }>(
+              tx,
+              sql`SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY best."dist" DESC) AS "medianDist",
+                count(best."dist")::int AS "scored"
+              FROM "Call"
+              CROSS JOIN LATERAL (
+                SELECT min((ch."embedding" <=> ${vec}::halfvec(384))::float8) AS "dist"
+                FROM "CallChunk" ch
+                WHERE ch."callId" = ${calls.id} AND ch."userId" = ${userId}
+              ) best
+              WHERE ${matching}`,
+            ),
+          ] as const,
       );
+      const stats = statRows[0];
+      const medianDist = stats?.medianDist ?? null;
       const items = rs.slice(0, limit).map(toHit);
       const lastRow = rs[limit - 1];
       return {
@@ -168,6 +193,9 @@ export function createSearchIndex(d: Driver): SearchIndex {
           rs.length > limit && lastRow
             ? encodeCursor(VECTOR_CURSOR, [toNumber(lastRow.dist), lastRow.id])
             : null,
+        // Distance descending, so for an even count this is the lower-middle score, as medianOf.
+        scoreMedian: medianDist === null ? null : 1 - toNumber(medianDist),
+        scoredCalls: toNumber(stats?.scored ?? 0),
       };
     },
   };

@@ -231,7 +231,12 @@ export async function searchCalls(ctx: ClientContext, req: SearchRequest): Promi
 
   // Meaning hits arrive most similar first, so the first one under the floor ends the results.
   const floor = vector
-    ? await import('./meaning-floor').then((m) => m.meaningFloor(ctx.embedder, vector))
+    ? await import('./meaning-floor').then((m) =>
+        m.meaningFloor(ctx.embedder, vector, {
+          median: res.scoreMedian,
+          scoredCalls: res.scoredCalls,
+        }),
+      )
     : undefined;
   const related =
     floor === undefined

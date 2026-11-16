@@ -128,6 +128,24 @@ export function describeSearchIndexContract(name: string, harness: Harness<Searc
       expect(res.items).toHaveLength(2);
     });
 
+    it('reports the median score over every matching call, whatever the page', async () => {
+      const t = await seed();
+      const q = { keywordGroups: [], vector: axisVector(3), limit: 1 };
+      const p1 = await s.search.search(s.userA, q);
+      expect(p1.scoredCalls).toBe(3);
+      expect(p1.scoreMedian).toBeCloseTo(0, 2);
+      const p2 = await s.search.search(s.userA, { ...q, cursor: p1.nextCursor });
+      expect(ids(p2.items)).not.toContain(t.b.id);
+      expect([p2.scoreMedian, p2.scoredCalls]).toEqual([p1.scoreMedian, p1.scoredCalls]);
+      const two = await s.search.search(s.userA, { ...q, keywordGroups: [[t.w3]] });
+      expect(two.scoredCalls).toBe(2);
+      expect(two.scoreMedian).toBeCloseTo(0, 2);
+      const one = await s.search.search(s.userA, { ...q, vector: axisVector(2) });
+      expect(one.scoreMedian).toBeCloseTo(0, 2);
+      const words = await s.search.search(s.userA, { keywordGroups: [], limit: 1 });
+      expect([words.scoreMedian, words.scoredCalls]).toEqual([null, 0]);
+    });
+
     it("never returns another user's calls", async () => {
       const t = await seed();
       const res = await s.search.search(s.userA, {

@@ -10,12 +10,13 @@
 
 import { TransformersEmbedder } from '../../apps/agent/src/adapters/embedder';
 import { EMBEDDING_MODEL } from '../../apps/web/src/client/assets';
-import { BACKGROUND, MARGIN } from '../../packages/client-core/src/meaning-floor';
+import { ABOVE_MEDIAN, BACKGROUND, MARGIN } from '../../packages/client-core/src/meaning-floor';
 import { chunkSegments } from '../../packages/indexing/src/chunk';
 import {
   EMBEDDING_PASSAGE_PREFIX,
   EMBEDDING_QUERY_PREFIX,
 } from '../../packages/indexing/src/constants';
+import chatter from './chatter-corpus.json';
 import corpus from './similarity-corpus.json';
 
 const FLOORS = [0.76, 0.77, 0.775, 0.78, 0.785, 0.79];
@@ -64,77 +65,82 @@ for (const floor of FLOORS) {
 }
 
 /*
- * Real calls run for minutes and change topic, and a call scores as its best chunk, so the more
- * chunks a call has, the likelier one clears a fixed floor by chance. Long calls here are 3–6
- * corpus calls back to back, chunked like ingest; the floor that search uses (meaning-floor.ts)
- * is the query's best score against small talk in the language of the best chunk, plus MARGIN,
- * and never under minSimilarity.
+ * Real calls run for minutes, are mostly chatter, and a call scores as its best chunk, so the
+ * more chunks a call has, the likelier one clears a fixed floor by chance. Long calls here are
+ * 4–8 passages of chatter (chatter-corpus.json, mostly Hebrew) with one corpus call mixed into
+ * every other one, chunked like ingest, so each topic sits in a few calls. Rules are compared on
+ * how many related calls they keep and how many unrelated ones they show.
  */
 let seed = 11;
 const rnd = (n: number) => {
   seed = (seed * 1103515245 + 12345) % 2147483648;
   return seed % n;
 };
+const isHebrew = (t: string) => /[֐-׿]/.test(t);
 const ids = calls.map(([id]) => id);
 const text = Object.fromEntries(calls);
-const longCalls: string[][] = [];
+const chatterLines = [...chatter.he, ...chatter.he, ...chatter.en];
+const longCalls: { topic: string | null; passages: string[] }[] = [];
 for (let i = 0; i < 40; i++) {
-  const parts = new Set<string>();
-  const n = 3 + rnd(4);
-  while (parts.size < n) parts.add(ids[rnd(ids.length)]!);
-  longCalls.push([...parts]);
+  const passages = Array.from(
+    { length: 4 + rnd(5) },
+    () => chatterLines[rnd(chatterLines.length)]!,
+  );
+  const topic = i % 2 === 0 ? ids[rnd(ids.length)]! : null;
+  if (topic) passages.splice(rnd(passages.length + 1), 0, text[topic]!);
+  longCalls.push({ topic, passages });
 }
-const isHebrew = (t: string) => /[\u0590-\u05FF]/.test(t);
 const chunkVectors: Float32Array[][] = [];
 const chunkHebrew: boolean[][] = [];
-for (const parts of longCalls) {
-  const sentences = parts.flatMap((p) => text[p]!.split(/(?<=[.?!])\s+/));
+for (const c of longCalls) {
+  const sentences = c.passages.flatMap((p) => p.split(/(?<=[.?!])\s+/));
   const chunks = chunkSegments(sentences.map((s, i) => ({ start: i, end: i + 1, text: s })));
   const vectors: Float32Array[] = [];
-  for (const c of chunks) vectors.push(await embed(EMBEDDING_PASSAGE_PREFIX + c.text));
+  for (const ch of chunks) vectors.push(await embed(EMBEDDING_PASSAGE_PREFIX + ch.text));
   chunkVectors.push(vectors);
-  chunkHebrew.push(chunks.map((c) => isHebrew(c.text)));
+  chunkHebrew.push(chunks.map((ch) => isHebrew(ch.text)));
 }
 const smallTalkLines = Object.values(BACKGROUND).flat();
 const smallTalk: Float32Array[] = [];
 for (const b of smallTalkLines) smallTalk.push(await embed(EMBEDDING_PASSAGE_PREFIX + b));
 
-const long: { related: boolean; score: number; floor: number; langFloor: number; query: string }[] =
-  [];
+type Pair = { related: boolean; score: number; langFloor: number; query: string; median: number };
+const long: Pair[] = [];
 for (const q of corpus.queries) {
   const v = await embed(EMBEDDING_QUERY_PREFIX + q.text);
   const bg = smallTalk.map((b) => cosine(v, b));
-  const base = Math.max(...bg);
   const baseHe = Math.max(...bg.filter((_, k) => isHebrew(smallTalkLines[k]!)));
   const baseEn = Math.max(...bg.filter((_, k) => !isHebrew(smallTalkLines[k]!)));
-  longCalls.forEach((parts, i) => {
-    const scores = chunkVectors[i]!.map((c) => cosine(v, c));
+  const rows = longCalls.map((c, i) => {
+    const scores = chunkVectors[i]!.map((ch) => cosine(v, ch));
     const best = scores.indexOf(Math.max(...scores));
-    long.push({
-      related: parts.some((p) => q.related.includes(p)),
+    return {
+      related: c.topic !== null && q.related.includes(c.topic),
       score: scores[best]!,
-      floor: base,
       langFloor: chunkHebrew[i]![best] ? baseHe : baseEn,
       query: q.text,
-    });
+    };
   });
+  const sorted = rows.map((r) => r.score).sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)]!;
+  for (const r of rows) long.push({ ...r, median });
 }
 const longRelated = long.filter((p) => p.related);
 const longUnrelated = long.filter((p) => !p.related);
-const rule = (name: string, keep: (p: (typeof long)[number]) => boolean) => {
+const rule = (name: string, keep: (p: Pair) => boolean) => {
   const empty = offTopic.filter((q) => long.every((p) => p.query !== q || !keep(p))).length;
+  const shownFor = (q: string) => long.filter((p) => p.query === q && keep(p)).length;
   console.log(
-    `long calls, ${name.padEnd(38)} related kept ${pct(longRelated.filter(keep).length, longRelated.length)}  unrelated shown ${pct(longUnrelated.filter(keep).length, longUnrelated.length)}  off-topic queries with no results ${empty}/${offTopic.length}`,
+    `long calls, ${name.padEnd(44)} related kept ${pct(longRelated.filter(keep).length, longRelated.length)}  unrelated shown ${pct(longUnrelated.filter(keep).length, longUnrelated.length)}  off-topic empty ${empty}/${offTopic.length}  טמפרטורה ${shownFor('טמפרטורה')}/40`,
   );
 };
 const min = EMBEDDING_MODEL.minSimilarity;
+const smallTalkBar = (p: Pair, m: number) => p.score >= Math.max(min, p.langFloor + m);
+const medianBar = (p: Pair, d: number) => p.score >= Math.max(min, p.median + d);
 rule(`floor ${min}`, (p) => p.score >= min);
-for (const m of [0, 0.01, 0.02]) {
-  rule(`any-language small talk + ${m}`, (p) => p.score >= Math.max(min, p.floor + m));
-}
-for (const m of [0, 0.005, 0.01, MARGIN, 0.02]) {
-  rule(
-    `same-language small talk + ${m}${m === MARGIN ? ' (used)' : ''}`,
-    (p) => p.score >= Math.max(min, p.langFloor + m),
-  );
-}
+for (const m of [0.01, MARGIN, 0.02]) rule(`small talk + ${m}`, (p) => smallTalkBar(p, m));
+for (const d of [0.01, ABOVE_MEDIAN, 0.03]) rule(`median + ${d}`, (p) => medianBar(p, d));
+rule(
+  `median + ${ABOVE_MEDIAN} & small talk + ${MARGIN} (used)`,
+  (p) => medianBar(p, ABOVE_MEDIAN) && smallTalkBar(p, MARGIN),
+);

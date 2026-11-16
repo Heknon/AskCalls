@@ -1,6 +1,6 @@
 import type { CallChunk } from '../entities/call';
-import type { CallId, Page, UserId } from '../entities/common';
-import type { SearchHit, SearchQuery } from '../entities/search';
+import type { CallId, UserId } from '../entities/common';
+import type { SearchPage, SearchQuery } from '../entities/search';
 import type { HealthCheckable } from './health';
 
 export interface SearchIndex extends HealthCheckable {
@@ -13,7 +13,8 @@ export interface SearchIndex extends HealthCheckable {
   deleteChunks(userId: UserId, callId: CallId): Promise<void>;
   /**
    * One query combining every predicate (spec 9.1). With `vector`, results are ordered by the
-   * best chunk similarity per call; otherwise by day descending.
+   * best chunk similarity per call, and the page carries the median of those over every
+   * matching call; otherwise by day descending.
    */
-  search(userId: UserId, query: SearchQuery): Promise<Page<SearchHit>>;
+  search(userId: UserId, query: SearchQuery): Promise<SearchPage>;
 }
