@@ -44,7 +44,7 @@
     "@simplewebauthn/server": "9.0.3",
     "hash-wasm": "4.13.0",
     "jose": "6.2.17",
-    "next": "15.5.29",
+    "next": "16.4.6",
     "next-auth": "5.0.0-beta.32",
     "next-intl": "4.15.1",
     "nodemailer": "8.0.10",
