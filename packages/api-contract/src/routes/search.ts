@@ -40,5 +40,11 @@ export const search = defineRoute({
   path: '/api/search',
   auth: 'read',
   body: SearchBody,
-  response: z.object({ items: z.array(SearchHitSchema), nextCursor: z.string().nullable() }),
+  response: z.object({
+    items: z.array(SearchHitSchema),
+    nextCursor: z.string().nullable(),
+    /** With `vector`: the median best-chunk score over every matching call, and their count. */
+    scoreMedian: z.number().nullable(),
+    scoredCalls: z.number().int().min(0),
+  }),
 });
