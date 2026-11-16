@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BACKGROUND, MARGIN, meaningFloor } from './meaning-floor';
+import { ABOVE_MEDIAN, BACKGROUND, MARGIN, MIN_SCORED_CALLS, meaningFloor } from './meaning-floor';
 import type { Embedder } from './ports';
 
 const unit = (i: number) => {
@@ -63,5 +63,19 @@ describe('meaningFloor', () => {
     expect(floor('he')).toBeCloseTo(0.85 + MARGIN, 5);
     expect(floor('en')).toBe(0.78);
     expect(floor('ar')).toBeCloseTo(0.85 + MARGIN, 5);
+  });
+
+  it("raises the bar to the query's median over the user's calls once there are enough", async () => {
+    const e = embedder(0.78, unit(1));
+    const few = (await meaningFloor(e, unit(0), {
+      median: 0.83,
+      scoredCalls: MIN_SCORED_CALLS - 1,
+    }))!;
+    expect(few('he')).toBe(0.78);
+    const many = (await meaningFloor(e, unit(0), { median: 0.83, scoredCalls: MIN_SCORED_CALLS }))!;
+    expect(many('he')).toBeCloseTo(0.83 + ABOVE_MEDIAN, 5);
+    expect(many(null)).toBeCloseTo(0.83 + ABOVE_MEDIAN, 5);
+    const low = (await meaningFloor(e, unit(0), { median: 0.5, scoredCalls: 40 }))!;
+    expect(low('en')).toBe(0.78);
   });
 });

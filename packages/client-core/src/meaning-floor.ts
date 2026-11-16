@@ -54,28 +54,42 @@ const dot = (a: Float32Array, b: Float32Array) => {
   return d;
 };
 
+/** How far above the query's median score over the user's calls a call must score. */
+export const ABOVE_MEDIAN = 0.02;
+/** Under this many scored calls the median says little, and only small talk sets the bar. */
+export const MIN_SCORED_CALLS = 10;
+
 /**
  * The score a meaning hit needs for `query` (an L2-normalized query vector), by the language of
  * the hit's best chunk. The model scores almost any pair between 0.7 and 0.9, and where a query
- * lands in that band depends on the query and the language: "טמפרטורה" scores 0.81 against any
- * speech, and a Hebrew query scores Hebrew small talk above English text on its own topic. A
- * fixed floor either drops related calls or, on long calls (each scored by its best chunk), keeps
- * them all. So a hit must beat the query's best score against small talk in the hit's language
- * (every language's lines when it has none of its own) by MARGIN, and the model's
- * `minSimilarity`. On long multi-topic calls (`bun run models:calibrate`) unrelated calls shown
- * fall from 81% to 15% while 78% of related ones stay, and related calls still rank first.
- * Undefined when the embedder has no calibrated floor: every hit is kept.
+ * lands in that band depends on the query, the language and the calls: "טמפרטורה" scores about
+ * 0.81 against any speech, and a call scores as its best chunk, so long calls clear any fixed
+ * floor by chance. A hit must clear three bars:
+ * - the model's `minSimilarity`;
+ * - the query's best score against small talk in the hit's language (every language's lines
+ *   when it has none of its own), plus MARGIN;
+ * - with at least MIN_SCORED_CALLS scored calls, the query's median score over the user's own
+ *   calls (`median`, from the server), plus ABOVE_MEDIAN: a related call stands out from the
+ *   user's other calls, an unrelated query scores them all alike.
+ * On long chatter calls with a topic in some of them (`bun run models:calibrate`), unrelated
+ * calls shown fall from 61% to 4% and 67% of related ones stay. Undefined when the embedder has
+ * no calibrated floor: every hit is kept.
  */
 export async function meaningFloor(
   embedder: Embedder,
   query: Float32Array,
+  usual: { median: number | null; scoredCalls: number } = { median: null, scoredCalls: 0 },
 ): Promise<((lang: string | null) => number) | undefined> {
   const min = embedder.minSimilarity;
   if (min === undefined) return undefined;
   const scores = (await backgroundOf(embedder)).map((v) => dot(query, v));
   const best = (langs: readonly string[]) =>
     Math.max(...scores.filter((_, i) => langs.includes(LINES[i]!.lang)));
-  const byLang = new Map(LANGS.map((l) => [l, Math.max(min, best([l]) + MARGIN)]));
-  const any = Math.max(min, best(LANGS) + MARGIN);
+  const typical =
+    usual.median !== null && usual.scoredCalls >= MIN_SCORED_CALLS
+      ? usual.median + ABOVE_MEDIAN
+      : min;
+  const byLang = new Map(LANGS.map((l) => [l, Math.max(min, typical, best([l]) + MARGIN)]));
+  const any = Math.max(min, typical, best(LANGS) + MARGIN);
   return (lang) => (lang && byLang.get(lang)) || any;
 }

@@ -17,6 +17,7 @@ import {
   type KeyringRepository,
   type LinkedAccount,
   type LocalCredentialRepository,
+  medianOf,
   type Page,
   type SearchHit,
   type SearchIndex,
@@ -451,7 +452,12 @@ export class MemoryDb {
           score: null,
         }));
       }
-      return paginate(hits, q.limit, q.cursor);
+      const scores = q.vector ? hits.map((h) => h.score!) : [];
+      return {
+        ...paginate(hits, q.limit, q.cursor),
+        scoreMedian: medianOf(scores),
+        scoredCalls: scores.length,
+      };
     },
   };
 

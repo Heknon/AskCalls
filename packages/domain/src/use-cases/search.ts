@@ -1,6 +1,11 @@
 import type { Page, Token } from '../entities/common';
 import { DomainError } from '../entities/errors';
-import { EMBEDDING_DIMENSIONS, type SearchHit, type SearchQuery } from '../entities/search';
+import {
+  EMBEDDING_DIMENSIONS,
+  type SearchHit,
+  type SearchPage,
+  type SearchQuery,
+} from '../entities/search';
 import type { Ports } from '../ports-bundle';
 import { type Actor, audit } from './context';
 
@@ -25,7 +30,7 @@ export async function searchCalls(
   ports: Ports,
   actor: Actor,
   input: SearchInput,
-): Promise<Page<SearchResult>> {
+): Promise<Page<SearchResult> & Omit<SearchPage, 'items' | 'nextCursor'>> {
   const { starTok, ...query } = input;
   if (!Number.isInteger(query.limit) || query.limit < 1 || query.limit > SEARCH_LIMITS.maxLimit) {
     throw new DomainError('invalid', 'limit must be 1..50');
@@ -71,5 +76,7 @@ export async function searchCalls(
       starred: starTok === undefined ? null : h.tagToks.includes(starTok),
     })),
     nextCursor: page.nextCursor,
+    scoreMedian: page.scoreMedian,
+    scoredCalls: page.scoredCalls,
   };
 }
