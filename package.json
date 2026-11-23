@@ -35,13 +35,13 @@
     "models:calibrate-intents": "bun scripts/models/calibrate-intents.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.7",
+    "@biomejs/biome": "2.6.8",
     "@types/node": "26.6.6",
-    "dependency-cruiser": "18.7.2",
+    "dependency-cruiser": "18.8.0",
     "neonctl": "8.13.2",
-    "turbo": "2.11.11",
+    "turbo": "2.11.13",
     "typescript": "5.9.3",
     "vercel": "65.8.0",
-    "vitest": "5.1.0"
+    "vitest": "5.1.1"
   }
 }
