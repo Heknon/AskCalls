@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # AskCalls web app: Next.js standalone build served by Node.
 
-FROM oven/bun:1.4.4 AS build
+FROM oven/bun:1.4.5 AS build
 WORKDIR /repo
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
